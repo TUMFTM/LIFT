@@ -1,6 +1,7 @@
 import streamlit as st
 # from calculation_charging import simulate_charging
 
+from backend import run_backend
 
 from lift.interfaces import (
     LocationSettings,
@@ -211,7 +212,7 @@ def _show_and_get_subfleet(vehicle_type: str,
     return subfleet
 
 
-def main():
+def create_frontend():
     # define page settings
     st.set_page_config(
         page_title="LIFT - Logistics & Infrastructure Fleet Transformation",
@@ -222,8 +223,8 @@ def main():
     # css styles for sidebar
     st.markdown(sidebar_style, unsafe_allow_html=True)
     st.markdown(footer_css, unsafe_allow_html=True)
-    if "calc_results" not in st.session_state:
-        st.session_state["calc_results"] = False
+    if "run_backend" not in st.session_state:
+        st.session_state["run_backend"] = False
 
     # region define sidebar elements
     col1, col2 = st.sidebar.columns(2)
@@ -235,7 +236,7 @@ def main():
         button_reset = st.button("**Eingaben zurücksetzen**", icon="🔄")
 
     if button_calc_results:
-        st.session_state["calc_results"] = True
+        st.session_state["run_backend"] = True
 
     if button_reset:
         # ToDo: fix this; experimental_rerun() is deprecated
@@ -246,7 +247,7 @@ def main():
     # get depot parameters
     st.sidebar.subheader("Standort")
     with st.sidebar.expander(label="Verfügbare Optionen", icon="⚙️"):
-        location = _show_and_get_location()
+        location_settings = _show_and_get_location()
 
     # get fleet parameters
     st.sidebar.subheader("Flotte")
@@ -302,18 +303,6 @@ def main():
 
     phase_settings = list()
 
-    # Platz für die Gesamtziele
-    overall_goals = []
-
-    # Platz für die spezifischen Ziele je Klasse
-    detailed_goals = {
-        "schwere_lkw": [],
-        "schwerer_vv": [],
-        "urbaner_vv": []
-    }
-
-    selected_packages = []
-
     # Dynamische Sliders für jede Phase
     for i in range(1, num_phases + 1):
         overall = st.sidebar.slider(
@@ -324,7 +313,6 @@ def main():
             step=5,
             key=f"phase_{i}"
         )
-        overall_goals.append(overall)
 
         with st.sidebar.expander(f"⚙️ Erweiterte Ziele – Phase {i}"):
             goal_hlt = st.slider(f"Schwere Lkw – Phase {i}", 0, 100, overall, 5, key=f"hlt_{i}")
@@ -399,9 +387,14 @@ def main():
 
     st.subheader("Ergebnisse")
 
-    if st.session_state["calc_results"] is True:
+    if st.session_state["run_backend"] is True:
+        results = run_backend(location_settings=location_settings,
+                              fleet_settings=fleet_settings,
+                              charging_infrastructure_settings=charging_infrastructure_settings,
+                              electrification_phases_settings=electrification_phases,
+                              economic_settings=economic_settings)
         st.success(f"Berechnung erfolgreich!")
-        st.session_state["calc_results"] = False
+        st.session_state["run_backend"] = False
 
         # region tco bet
         tco_bet1 = round(
@@ -711,4 +704,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    create_frontend()
