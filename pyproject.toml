@@ -22,8 +22,8 @@ dependencies = [
 [tool.setuptools]
 packages = ["lift"]
 
-# [tool.setuptools.package-data]
-# lift = ["data/*", "example/*"]
+ [tool.setuptools.package-data]
+ lift = ["data/*"]
 
 [project.scripts]
 lift = "lift.main:main"
