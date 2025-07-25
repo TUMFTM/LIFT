@@ -1,6 +1,6 @@
 # LIFT
 
-## Logistics Infrastructure Fleet & Transformation
+## Logistics Infrastructure & Fleet Transformation
 
 
 ## Created by 

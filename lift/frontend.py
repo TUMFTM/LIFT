@@ -215,7 +215,7 @@ def _show_and_get_subfleet(vehicle_type: str,
 def create_frontend():
     # define page settings
     st.set_page_config(
-        page_title="LIFT - Logistics & Infrastructure Fleet Transformation",
+        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
         page_icon="🚚",
         layout="wide"
     )
@@ -376,7 +376,7 @@ def create_frontend():
     # endregion
 
 
-    st.title("LIFT - Logistics & Infrastructure Fleet Transformation")
+    st.title("LIFT - Logistics Infrastructure & Fleet Transformation")
     st.markdown("""
     Willkommen zu deinem datengetriebenen Framework für die Elektrifizierung von Lkw-Flotten 
     und die Optimierung von Speditionsstandorten. Nutze die Seitenleiste, um Parameter 
