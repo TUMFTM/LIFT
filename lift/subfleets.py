@@ -1,0 +1,192 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class SliderSettings:
+    min_value: float
+    max_value: float
+    value: float
+    step: float
+
+    @property
+    def dict(self):
+        return self.__dict__
+
+
+@dataclass
+class SubFleetDefinition:
+    label: str
+    icon: str
+    id: str
+    weight_max_str: str
+    weight_empty_bev: float
+    weight_empty_icev: float
+    settings_battery: SliderSettings
+    settings_dist_max: SliderSettings
+    settings_dist_avg: SliderSettings
+    settings_toll_share: SliderSettings
+    settings_depot_time: SliderSettings
+    settings_load: SliderSettings
+    settings_capex_bev: SliderSettings
+    settings_capex_icev: SliderSettings
+
+
+
+SUBFLEETS = dict(
+    # Leergewicht BET: 18t, Zuladung: 24t
+    hlt=SubFleetDefinition(label="Schwere Lkw",
+                           icon="🚛",
+                           id="hlt",
+                           weight_max_str="42 t zulässiges Zuggesamtgewicht",
+                           weight_empty_bev=18000,
+                           weight_empty_icev=16600,
+                           settings_battery=SliderSettings(min_value=0.0,
+                                                           max_value=1000.0,
+                                                           value=300.0,
+                                                           step=10.0),
+                           settings_dist_max=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=500.0,
+                                                            step=10.0),
+                           settings_dist_avg=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=200.0,
+                                                            step=10.0),
+                           settings_toll_share=SliderSettings(min_value=0.0,
+                                                              max_value=100.0,
+                                                              value=50.0,
+                                                              step=1.0),
+                           settings_depot_time=SliderSettings(min_value=0.0,
+                                                              max_value=24.0,
+                                                              value=8.0,
+                                                              step=0.5),
+                           settings_load=SliderSettings(min_value=0.0,
+                                                        max_value=100.0,
+                                                        value=50.0,
+                                                        step=1.0),
+                           settings_capex_bev=SliderSettings(min_value=0.0,
+                                                             max_value=100000.0,
+                                                             value=50000.0,
+                                                             step=1000.0),
+                           settings_capex_icev=SliderSettings(min_value=0.0,
+                                                              max_value=100000.0,
+                                                              value=50000.0,
+                                                              step=1000.0)),
+    # Leergewicht: 10.4t, Zuladung: 16.6t
+    hst=SubFleetDefinition(label="Schwerer Verteilerverkehr",
+                           icon="🚚",
+                           id="hst",
+                           weight_max_str="28 t zulässiges Gesamtgewicht",
+                           weight_empty_bev=10400,
+                           weight_empty_icev=9000,
+                           settings_battery=SliderSettings(min_value=0.0,
+                                                           max_value=1000.0,
+                                                           value=300.0,
+                                                           step=10.0),
+                           settings_dist_max=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=500.0,
+                                                            step=10.0),
+                           settings_dist_avg=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=200.0,
+                                                            step=10.0),
+                           settings_toll_share=SliderSettings(min_value=0.0,
+                                                              max_value=100.0,
+                                                              value=50.0,
+                                                              step=1.0),
+                           settings_depot_time=SliderSettings(min_value=0.0,
+                                                              max_value=24.0,
+                                                              value=8.0,
+                                                              step=0.5),
+                           settings_load=SliderSettings(min_value=0.0,
+                                                        max_value=100.0,
+                                                        value=50.0,
+                                                        step=1.0),
+                           settings_capex_bev=SliderSettings(min_value=0.0,
+                                                             max_value=100000.0,
+                                                             value=50000.0,
+                                                             step=1000.0),
+                           settings_capex_icev=SliderSettings(min_value=0.0,
+                                                              max_value=100000.0,
+                                                              value=50000.0,
+                                                              step=1000.0)),
+    # Leergewicht: 5.4t, Zuladung: 6.6t
+    ust=SubFleetDefinition(label="Urbaner Verteilerverkehr",
+                           icon="🚚",
+                           id="ust",
+                           weight_max_str="12 t zulässiges Gesamtgewicht",
+                           weight_empty_bev=5400,
+                           weight_empty_icev=5400,
+                           settings_battery=SliderSettings(min_value=0.0,
+                                                           max_value=1000.0,
+                                                           value=300.0,
+                                                           step=10.0),
+                           settings_dist_max=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=500.0,
+                                                            step=10.0),
+                           settings_dist_avg=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=200.0,
+                                                            step=10.0),
+                           settings_toll_share=SliderSettings(min_value=0.0,
+                                                              max_value=100.0,
+                                                              value=50.0,
+                                                              step=1.0),
+                           settings_depot_time=SliderSettings(min_value=0.0,
+                                                              max_value=24.0,
+                                                              value=8.0,
+                                                              step=0.5),
+                           settings_load=SliderSettings(min_value=0.0,
+                                                        max_value=100.0,
+                                                        value=50.0,
+                                                        step=1.0),
+                           settings_capex_bev=SliderSettings(min_value=0.0,
+                                                             max_value=100000.0,
+                                                             value=50000.0,
+                                                             step=1000.0),
+                           settings_capex_icev=SliderSettings(min_value=0.0,
+                                                              max_value=100000.0,
+                                                              value=50000.0,
+                                                              step=1000.0)),
+    # Leergewicht: 2.5t, Zuladung: 1.0t
+    usv=SubFleetDefinition(label="Lieferwagen",
+                           icon="🚐",
+                           id="usv",
+                           weight_max_str="3.5 t zulässiges Gesamtgewicht",
+                           weight_empty_bev=2500,
+                           weight_empty_icev=2300,
+                           settings_battery=SliderSettings(min_value=0.0,
+                                                           max_value=1000.0,
+                                                           value=300.0,
+                                                           step=10.0),
+                           settings_dist_max=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=500.0,
+                                                            step=10.0),
+                           settings_dist_avg=SliderSettings(min_value=0.0,
+                                                            max_value=1000.0,
+                                                            value=200.0,
+                                                            step=10.0),
+                           settings_toll_share=SliderSettings(min_value=0.0,
+                                                              max_value=100.0,
+                                                              value=50.0,
+                                                              step=1.0),
+                           settings_depot_time=SliderSettings(min_value=0.0,
+                                                              max_value=24.0,
+                                                              value=8.0,
+                                                              step=0.5),
+                           settings_load=SliderSettings(min_value=0.0,
+                                                        max_value=100.0,
+                                                        value=50.0,
+                                                        step=1.0),
+                           settings_capex_bev=SliderSettings(min_value=0.0,
+                                                             max_value=100000.0,
+                                                             value=50000.0,
+                                                             step=1000.0),
+                           settings_capex_icev=SliderSettings(min_value=0.0,
+                                                              max_value=100000.0,
+                                                              value=50000.0,
+                                                              step=1000.0)),
+)

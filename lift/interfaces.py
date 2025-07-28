@@ -6,9 +6,9 @@ class LocationSettings:
     latitude: float
     longitude: float
     consumption_annual: float
-    grid_capacity: float
-    pv_capacity: float
-    battery_capacity: float
+    grid_capacity_kw: float
+    pv_capacity_kwp: float
+    battery_capacity_kwh: float
 
 
 @dataclass
@@ -17,15 +17,15 @@ class SubFleetSettings:
     num_total: int
     num_bev: int
     battery_capacity_kwh: float
-    dist_max_km: float
-    dist_avg_km: float
+    dist_max_daily_km: float
+    dist_avg_daily_km: float
     toll_share_pct: float
     depot_time_h: float
     load_avg_t: float
     capex_bev: float
     capex_icev: float
-    weight_empty_bev: float
-    weight_empty_icev: float
+    weight_empty_bev_kg: float
+    weight_empty_icev_kg: float
 
 
 @dataclass
@@ -56,20 +56,47 @@ class EconomicSettings:
     toll_icev_eur_km: float
     toll_bev_eur_km: float
     driver_wage_eur_h: float
-    bev_mntex_eur_km: float
-    icev_mntex_eur_km: float
+    mntex_bev_eur_km: float
+    mntex_icev_eur_km: float
     insurance_pct: float
-    bev_salvage_pct: float
-    icev_salvage_pct: float
-    workingdays_per_year: int
+    salvage_bev_pct: float
+    salvage_icev_pct: float
+    working_days_yrl: int
 
 
 @dataclass
-class TcoResults:
-    dummy: float
+class Settings:
+    location: LocationSettings
+    subfleets: dict[str, SubFleetSettings]
+    charging_infrastructure: ChargingInfrastructureSettings
+    electrification_phases: ElectrificationPhasesSettings
+    economic: EconomicSettings
 
 
 @dataclass
-class VariousResults:
-    dummy: float
+class SubFleetResults:
+    num_total: int = 0
+    num_bev: int = 0
+    num_bev_additional: int = 0
+    num_icev: int = 0
+    tco_bev: float = 0.0
+    tco_icev: float = 0.0
+    energy_bev_daily_kwh: float = 0.0
+
+
+@dataclass
+class SystemResults:
+    pv_capacity_kwp: float = 0.0
+    pv_energy_yrl_kwh: float = 0.0
+    battery_capacity_kwh: float = 0.0
+    grid_capacity_kw: float = 0.0
+    num_dc_chargers: int = 0
+    energy_daily_bevs_kwh: float = 0.0
+
+
+@dataclass
+class Results:
+    subfleets: dict[str, SubFleetResults]
+    system: SystemResults
+
 
