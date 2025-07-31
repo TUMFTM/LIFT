@@ -5,8 +5,7 @@ import numpy as np
 from lift.interfaces import (
     LocationSettings,
     SubFleetSettings,
-    ChargingInfrastructureSettings,
-    ElectrificationPhasesSettings,
+    ChargerSettings,
     EconomicSettings,
     Settings,
     SubFleetResults,
@@ -47,7 +46,7 @@ def calc_tco(subfleet_settings: SubFleetSettings,
 
 
 def calc_subfleet_results(subfleet_settings: SubFleetSettings,
-                          ci_settings: ChargingInfrastructureSettings,
+                          ci_settings: ChargerSettings,
                           location_settings: LocationSettings,
                           economic_settings: EconomicSettings) -> SubFleetResults:
 

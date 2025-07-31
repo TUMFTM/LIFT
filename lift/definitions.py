@@ -7,6 +7,7 @@ class SliderSettings:
     max_value: float
     value: float
     step: float
+    format: str = "%d"
 
     @property
     def dict(self):
@@ -29,6 +30,20 @@ class SubFleetDefinition:
     settings_load: SliderSettings
     settings_capex_bev: SliderSettings
     settings_capex_icev: SliderSettings
+
+
+@dataclass
+class ExpansionDefinition:
+    id: str
+    icon: str
+    settings_preexisting: SliderSettings
+    settings_expansion: SliderSettings
+    settings_cost_per_unit_eur: SliderSettings
+
+
+@dataclass
+class ChargerDefinition(ExpansionDefinition):
+    pwr_max_kw: float
 
 
 
@@ -189,4 +204,38 @@ SUBFLEETS = dict(
                                                               max_value=100000.0,
                                                               value=50000.0,
                                                               step=1000.0)),
+)
+
+
+CHARGERS = dict(
+    ac=ChargerDefinition(id="AC",
+                         icon="🔌",
+                         pwr_max_kw=22.0,
+                         settings_preexisting=SliderSettings(min_value=0,
+                                                             max_value=100,
+                                                             value=10,
+                                                             step=1),
+                         settings_expansion=SliderSettings(min_value=0,
+                                                           max_value=100,
+                                                           value=10,
+                                                           step=1),
+                         settings_cost_per_unit_eur=SliderSettings(min_value=0.0,
+                                                                   max_value=5000.0,
+                                                                   value=800.0,
+                                                                   step=50.0)),
+    dc=ChargerDefinition(id="DC",
+                         icon="⚡️",
+                         pwr_max_kw=150.0,
+                         settings_preexisting=SliderSettings(min_value=0,
+                                                             max_value=100,
+                                                             value=10,
+                                                             step=1),
+                         settings_expansion=SliderSettings(min_value=0,
+                                                           max_value=100,
+                                                           value=10,
+                                                           step=1),
+                         settings_cost_per_unit_eur=SliderSettings(min_value=0.0,
+                                                                   max_value=200000.0,
+                                                                   value=100000.0,
+                                                                   step=500.0)),
 )
