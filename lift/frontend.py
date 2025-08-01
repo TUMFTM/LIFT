@@ -100,6 +100,9 @@ def _show_and_get_location() -> LocationSettings:
                                            step=10,
                                            )
 
+    # ToDo: choose corresponding load profile from a dropdown menu
+
+
     # define grid capacity
     # ToDo: add numeric field for preexisting size
     # ToDo: distinguish static and dynamic load management
