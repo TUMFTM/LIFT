@@ -305,13 +305,13 @@ def get_log_pv(index: pd.DatetimeIndex,
 
     data, *_ = pvlib.iotools.get_pvgis_hourly(
         latitude=latitude,
-        longitude=11.5756,  # Example longitude
+        longitude=longitude,
         start=2023,
         end=2023,
         raddatabase='PVGIS-SARAH3',
         outputformat='json',
         pvcalculation=True,
-        peakpower=1,
+        peakpower=1,  # convert kWp to Wp
         pvtechchoice='crystSi',
         mountingplace='free',
         loss=0,
@@ -324,7 +324,7 @@ def get_log_pv(index: pd.DatetimeIndex,
     data = data['P']
     data.index = data.index.round('h')
     data = data.tz_convert('Europe/Berlin').reindex(index).ffill().bfill()
-    return data.values
+    return data.values / 1000
 
 
 def get_log_demand(index: pd.DatetimeIndex,
@@ -341,15 +341,15 @@ def get_log_subfleet(index: pd.DatetimeIndex,
     return pd.read_csv(Path().cwd() / 'data' / 'log_subfleet.csv',
                        header=[0,1],
                        index_col=0,
-                       parse_dates=True)
+                       parse_dates=True).loc[index, :]
 
 
 if __name__ == "__main__":
     # start time tracking
-    dti = pd.date_range(start='2023-01-01', end='2024-01-01 00:00', freq='h', tz='Europe/Berlin')
+    dti = pd.date_range(start='2023-01-01', end='2024-01-01 00:00', freq='h', tz='Europe/Berlin', inclusive='left')
     log_pv = get_log_pv(index=dti,
-                        latitude=48.1372,  # Example latitude
-                        longitude=11.5756,  # Example longitude
+                        latitude=48.1372,
+                        longitude=11.5756,
                         )
     log_demand = get_log_demand(index=dti,
                                 slp='h0',
