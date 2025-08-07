@@ -85,7 +85,7 @@ def _get_params_location() -> LocationSettings:
     """
     col_share = [3, 7]
 
-    with st.sidebar.expander(label="**Verfügbare Optionen**", icon="⚙️"):
+    with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
         st.markdown("**Position**")
         col1, col2 = st.columns(2)
         with col1:
@@ -196,6 +196,25 @@ def _get_params_location() -> LocationSettings:
                             pv_capacity_wp=pv_capacity_wp,
                             ess_capacity_wh=ess_capacity_wh,
                             )
+
+
+def _get_params_economic() -> EconomicSettings:
+    with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
+                             icon="💶"):
+        return EconomicSettings(
+            electricity_price_eur_wh=st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3,  # convert to EUR/Wh
+            fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
+            toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
+            toll_bev_eur_km=0.0,
+            driver_wage_eur_h=st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1),
+            mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01),
+            mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01),
+            insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1),
+            salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, 25, 1),
+            salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, 27, 1),
+            working_days_yrl=st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
+        )
+
 
 def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
     with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
@@ -311,18 +330,23 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                              icon=charger.icon,
                              expanded=False):
 
-        pwr_max_w = st.slider(label="Maximale Ladeleistung in kW",
+        col1, col2 = st.columns([3, 7])
+        with col1:
+            num_preexisting = st.number_input(label="Vorhandene",
+                                              key=f'chg_{charger.id.lower()}_preexisting',
+                                              **charger.settings_preexisting.dict
+                                              )
+        with col2:
+            num_expansion = st.slider(label="Zusätzliche",
+                                              key=f'chg_{charger.id.lower()}_expansion',
+                                              **charger.settings_expansion.dict,
+                                              )
+
+        pwr_max_w = st.slider(label="Maximale Ladeleistung (kW)",
                                     key=f'chg_{charger.id.lower()}_pwr',
                                     **charger.settings_pwr_max.dict
                                     ) * 1E3
-        num_preexisting = st.slider(label="aktuell verfügbare Ladepunkte",
-                                            key=f'chg_{charger.id.lower()}_preexisting',
-                                            **charger.settings_preexisting.dict
-                                            )
-        num_expansion = st.slider(label="zusätzliche Ladepunkte",
-                                          key=f'chg_{charger.id.lower()}_expansion',
-                                          **charger.settings_expansion.dict,
-                                          )
+
         cost_per_charger_eur = st.slider(label="Kosten pro Ladepunkt in €",
                                          key=f'chg_{charger.id.lower()}_cost',
                                          **charger.settings_cost_per_unit_eur.dict
@@ -332,24 +356,6 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                num_expansion=num_expansion,
                                pwr_max_kw=pwr_max_w,
                                cost_per_charger_eur=cost_per_charger_eur)
-
-
-def _get_params_economic() -> EconomicSettings:
-    with st.sidebar.expander(label="Erweiterte Einstellungen für Wirtschaftlichkeitsberechnung",
-                             icon="⚙️"):
-        return EconomicSettings(
-            electricity_price_eur_wh=st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3,  # convert to EUR/Wh
-            fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
-            toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
-            toll_bev_eur_km=0.0,
-            driver_wage_eur_h=st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1),
-            mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01),
-            mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01),
-            insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1),
-            salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, 25, 1),
-            salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, 27, 1),
-            working_days_yrl=st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
-        )
 
 
 def create_frontend():
@@ -367,39 +373,36 @@ def create_frontend():
         st.session_state["run_backend"] = False
 
     # region define input in sidebar elements
-    auto_refresh = st.sidebar.toggle("**Ergebnisse automatisch aktualisieren**",
-                             value=False)
-
-    # ToDo: hide button to trigger backend run, if auto_refresh is True
-    if auto_refresh:
-        st.session_state["run_backend"] = True
-    else:
-        button_calc_results = st.sidebar.button("**Ergebnisse berechnen**", icon="🚀")
-        if button_calc_results:
+    col1, col2 = st.sidebar.columns([6, 4])
+    with col1:
+        auto_refresh = st.toggle("**Automatisch aktualisieren**",
+                                 value=False)
+    with col2:
+        if auto_refresh:
             st.session_state["run_backend"] = True
+        else:
+            button_calc_results = st.button("**Berechnen**", icon="🚀")
+            if button_calc_results:
+                st.session_state["run_backend"] = True
 
     # get depot parameters
-    st.sidebar.subheader("Standort")
+    st.sidebar.subheader("Allgemeine Parameter")
     location_settings = _get_params_location()
+
+    # get economic parameters
+    economic_settings = _get_params_economic()
 
     # get fleet parameters
     st.sidebar.subheader("Flotte")
     fleet_settings = {}
-
     for subfleet in SUBFLEETS.values():
         fleet_settings[subfleet.id] = _get_params_subfleet(subfleet)
 
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
     charger_settings = {}
-
     for charger in CHARGERS.values():
         charger_settings[charger.id] = _get_params_charger(charger)
-
-    # D) Parameter zur Wirtschaftlichkeitsberechnung
-    st.sidebar.write("**Wirtschaftlichkeitsberechnung**")
-    economic_settings = _get_params_economic()
-
 
     settings = Settings(location=location_settings,
                         subfleets=fleet_settings,
