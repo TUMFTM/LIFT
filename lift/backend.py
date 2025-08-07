@@ -11,9 +11,7 @@ import numpy as np
 from definitions import (DTI,
                          CO2_SPEC_KG_PER_WH,
                          OPEX_SPEC_CO2_PER_KG,
-                         OPEX_SPEC_GRID_BUY_EUR_PER_WH,
-                         OPEX_SPEC_GRID_SELL_EUR_PER_WH,
-                         OPEX_SPEC_GRID_PWR_EUR_WP)
+                         )
 
 from energy_system import (FixedDemand,
                            Fleet,
@@ -26,10 +24,10 @@ from interfaces import (Coordinates,
                         Logs,
                         Capacities,
                         Settings,
+                        EconomicSettings,
                         SimulationResults,
                         PhaseResults,
                         BackendResults)
-
 
 if TYPE_CHECKING:
     pass
@@ -134,6 +132,7 @@ def simulate(logs: Logs,
 @st.cache_data
 def calc_phase_results(logs: Logs,
                        capacities: Capacities,
+                       economics: EconomicSettings,
                        ) -> PhaseResults:
 
     result_sim = simulate(logs=logs,
@@ -151,10 +150,10 @@ def calc_phase_results(logs: Logs,
     co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
     co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
 
-    opex_grid_energy = (result_sim.energy_grid_buy_wh * OPEX_SPEC_GRID_BUY_EUR_PER_WH +
-                        result_sim.energy_grid_sell_wh * OPEX_SPEC_GRID_SELL_EUR_PER_WH)
+    opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh +
+                        result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
 
-    opex_grid_power = result_sim.pwr_grid_peak_w * OPEX_SPEC_GRID_PWR_EUR_WP
+    opex_grid_power = result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
 
     opex_grid = opex_grid_energy + opex_grid_power
 
@@ -187,10 +186,12 @@ def run_backend(settings: Settings) -> BackendResults:
 
     results_baseline = calc_phase_results(logs=logs,
                                           capacities=settings.location.get_capacities('baseline'),
+                                          economics=settings.economic,
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
                                            capacities=settings.location.get_capacities('expansion'),
+                                           economics=settings.economic,
                                            )
 
 

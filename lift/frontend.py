@@ -202,7 +202,9 @@ def _get_params_economic() -> EconomicSettings:
     with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                              icon="💶"):
         return EconomicSettings(
-            electricity_price_eur_wh=st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3,  # convert to EUR/Wh
+            opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00, 0.20, 0.01) * 1E-3,
+            opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00, 0.20, 0.01) * 1E-3,
+            opex_spec_grid_peak_eur_per_wp=st.slider("Leistungspreis (EUR/kWp)", 0, 300, 50, 1) * 1E-3,
             fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
             toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
             toll_bev_eur_km=0.0,
@@ -428,13 +430,19 @@ def create_frontend():
             results = backend.run_backend(settings=settings)
             # region results
             st.success(f"Berechnung erfolgreich!")
-            st.write(f"**Baseline**")
-            st.write(f"Autarkiegrad: {results.baseline.self_sufficiency_pct:.2f}%")
-            st.write(f"Eigenverbrauchsquote: {results.baseline.self_consumption_pct:.2f}%")
+            for col, label, attr_name in zip(st.columns(2),
+                                             ['Baseline', 'Erweiterung'],
+                                             ['baseline', 'expansion']):
+                with col:
+                    st.write(f"**{label}**")
+                    res = getattr(results, attr_name)
+                    st.write(f"Autarkiegrad: {res.self_sufficiency_pct:.2f}%")
+                    st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:.2f}%")
+                    st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
+                    st.write(f"OPEX: {res.opex_eur:.2f} EUR")
+                    st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
+                    st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
 
-            st.write(f"**Erweiterung**")
-            st.write(f"Autarkiegrad: {results.expansion.self_sufficiency_pct:.2f}%")
-            st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
             st.markdown("---")  # Trennlinie
             # endregion
         except GridPowerExceededError as e:

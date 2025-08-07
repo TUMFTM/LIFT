@@ -100,7 +100,9 @@ class ChargerSettings:
 
 @dataclass
 class EconomicSettings:
-    electricity_price_eur_wh: float = 30E5
+    opex_spec_grid_buy_eur_per_wh: float = 30E-5
+    opex_spec_grid_sell_eur_per_wh: float = -6E-5
+    opex_spec_grid_peak_eur_per_wp: float = 150E-3
     fuel_price_eur_liter: float = 1.7
     toll_icev_eur_km: float = 0.1
     toll_bev_eur_km: float = 0.0
@@ -148,7 +150,7 @@ class PhaseResults:
     # ToDo: think about using a DataFrame or Matrix for cashflows and replace all capex/opex variables by this
 
     @property
-    def opex(self) -> float:
+    def opex_eur(self) -> float:
         return self.opex_fuel_eur + self.opex_grid_eur + self.opex_toll_eur
 
 

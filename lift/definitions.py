@@ -253,10 +253,6 @@ TIME_PRJ_YRS = 18
 LIFESPAN_VEHICLES_YRS = 6
 LIFESPAN_STORAGE_YRS = 9
 CO2_SPEC_KG_PER_WH = 0.0004  # ToDo: add correct value
-OPEX_SPEC_GRID_BUY_EUR_PER_WH = 30E-5# ToDo: use value from economic settings
-OPEX_SPEC_GRID_SELL_EUR_PER_WH = -6E-5  # ToDo: use value from economic settings
-OPEX_SPEC_GRID_PWR_EUR_WP = 150E-3  # ToDo: use value from economic settings
-OPEX_SPEC_FUEL_EUR_PER_L = 1.5  # ToDo: use value from economic settings
 OPEX_SPEC_CO2_PER_KG = 45E-3  # ToDo: add correct value
 TOLL_EUR_PER_KM = 0.001  # ToDo: is this dependent on the vehicle class?
 
