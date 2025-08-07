@@ -140,7 +140,7 @@ class GridConnection(SupplyBlock):
 
     def satisfy_demand(self, demand_w: float):
         # Apply power to the grid connection, updating peak power and costs/revenue.
-        if demand_w > (self.pwr_max_w + EPS):
+        if demand_w > self.pwr_max_w + EPS:
             raise ValueError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {DTI[self.idx]}.")
 
         if demand_w > 0:
@@ -246,7 +246,7 @@ class FleetUnit(DemandBlock):
 
     def charge(self, pwr_available_w: float):
         # calculate the charging power based on available power and current SOC
-        pwr_chg = min(self.demand_w, pwr_available_w)
+        pwr_chg = max(min(self.demand_w, pwr_available_w), 0)
         self._pwr_chg_w += pwr_chg
         # update SOC based on charging power
         self.soc += (pwr_chg - self.consumption_w[self.idx]) * FREQ_HOURS / self.capacity_wh
