@@ -239,3 +239,13 @@ CHARGERS = dict(
                                                                    value=100000.0,
                                                                    step=500.0)),
 )
+
+
+TIME_PRJ_YRS = 18
+LIFESPAN_VEHICLES_YRS = 6
+LIFESPAN_STORAGE_YRS = 9
+OPEX_SPEC_GRID_BUY_EUR_PER_WH = 30E-5
+OPEX_SPEC_GRID_SELL_EUR_PER_WH = -6E-5
+OPEX_SPEC_FUEL_EUR_PER_L = 1.5
+OPEX_SPEC_CO2_PER_KG = 45E-3
+TOLL_EUR_PER_KM = 0.001  # ToDo: is this dependent on the vehicle class?
