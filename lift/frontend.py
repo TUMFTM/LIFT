@@ -272,6 +272,9 @@ def create_frontend():
         st.session_state["run_backend"] = False
 
     # region define input in sidebar elements
+    auto_refresh = st.sidebar.toggle("**Ergebnisse automatisch aktualisieren**",
+                             value=False)
+
     col1, col2 = st.sidebar.columns(2)
     # Place buttons in each column
     with col1:
@@ -357,12 +360,9 @@ def create_frontend():
 
     st.subheader("Ergebnisse")
 
-    if st.session_state["run_backend"] is True:
-        results = backend.run_backend(settings=settings)
-        st.success(f"Berechnung erfolgreich!")
-        st.session_state["run_backend"] = False
-
+    def show_results(results):
         # region results
+        st.success(f"Berechnung erfolgreich!")
         st.write(f"**Baseline**")
         st.write(f"Autarkiegrad: {results.baseline.self_sufficiency_pct:.2f}%")
         st.write(f"Eigenverbrauchsquote: {results.baseline.self_consumption_pct:.2f}%")
@@ -370,14 +370,20 @@ def create_frontend():
         st.write(f"**Erweiterung**")
         st.write(f"Autarkiegrad: {results.expansion.self_sufficiency_pct:.2f}%")
         st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
+        st.markdown("---")  # Trennlinie
         # endregion
 
-
-        st.markdown("---")  # Trennlinie
-
+    if auto_refresh:
+        results = backend.run_backend(settings=settings)
+        show_results(results)
     else:
-        st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
-                   "**🚀 Ergebnisse berechnen**.")
+        if st.session_state["run_backend"] is True:
+            results = backend.run_backend(settings=settings)
+            show_results(results)
+            st.session_state["run_backend"] = False
+        else:
+            st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
+                       "**🚀 Ergebnisse berechnen**.")
 
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
