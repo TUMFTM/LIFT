@@ -255,7 +255,7 @@ class Simulation:
     blocks_demand: dict[str, DemandBlock | Fleet | FixedDemand] = field(init=False)
     blocks_supply: dict[str, SupplyBlock] = field(init=False)
 
-    log_fleet: pd.DataFrame = None
+    fleet_log: pd.DataFrame = None
     pv_log: np.typing.NDArray[np.float64] = None
     dem_log: np.typing.NDArray[np.float64] = None
 
@@ -266,7 +266,7 @@ class Simulation:
                                                  ),
                               'fleet': Fleet(dti=self.dti,
                                              fleet_units=None,
-                                             log=self.log_fleet,
+                                             log=self.fleet_log,
                                              pwr_lim_w=np.inf),
                               }
 
@@ -381,13 +381,14 @@ if __name__ == "__main__":
                           consumption_yrl_wh=50E6
                           )
 
-    log_fleet = get_log_subfleet(index=dti)
+    fleet_log = get_log_subfleet(index=dti)
 
     start_time = time()
     sim = Simulation(dti=dti,
-                     log_fleet=log_fleet,
+                     fleet_log=fleet_log,
                      pv_log=pv_log_spec,
-                     dem_log=dem_log)
+                     dem_log=dem_log
+                     )
     results = sim.simulate()
     print(results)
 
