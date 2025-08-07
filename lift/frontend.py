@@ -105,16 +105,16 @@ def _show_and_get_location() -> LocationSettings:
         # ToDo: numeric field for preexisting size
         # ToDo: distinguish static and dynamic load management
         grid_capacity_w=Size(preexisting=st.slider(label="Bestehende Netzanschlussleistung (kW)",
-                                                   min_value=100,
+                                                   min_value=0,
                                                    max_value=10000,
                                                    value=1000,
-                                                   step=100,
+                                                   step=10,
                                                    ) * 1E3,  # convert to W
                              expansion=st.slider(label="Zusätzliche Netzanschlussleistung (kW)",
                                                  min_value=0,
                                                  max_value=10000,
                                                  value=1000,
-                                                 step=50,
+                                                 step=10,
                                                  ) * 1E3  # convert to W
                              ),
         # ToDo: numeric field for preexisting size
@@ -275,6 +275,7 @@ def create_frontend():
     auto_refresh = st.sidebar.toggle("**Ergebnisse automatisch aktualisieren**",
                              value=False)
 
+    # ToDo: hide button to trigger backend run, if auto_refresh is True
     col1, col2 = st.sidebar.columns(2)
     # Place buttons in each column
     with col1:
@@ -360,26 +361,29 @@ def create_frontend():
 
     st.subheader("Ergebnisse")
 
-    def show_results(results):
-        # region results
-        st.success(f"Berechnung erfolgreich!")
-        st.write(f"**Baseline**")
-        st.write(f"Autarkiegrad: {results.baseline.self_sufficiency_pct:.2f}%")
-        st.write(f"Eigenverbrauchsquote: {results.baseline.self_consumption_pct:.2f}%")
+    def calc_and_show_results(settings):
+        try:
+            results = backend.run_backend(settings=settings)
+            # region results
+            st.success(f"Berechnung erfolgreich!")
+            st.write(f"**Baseline**")
+            st.write(f"Autarkiegrad: {results.baseline.self_sufficiency_pct:.2f}%")
+            st.write(f"Eigenverbrauchsquote: {results.baseline.self_consumption_pct:.2f}%")
 
-        st.write(f"**Erweiterung**")
-        st.write(f"Autarkiegrad: {results.expansion.self_sufficiency_pct:.2f}%")
-        st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
-        st.markdown("---")  # Trennlinie
-        # endregion
+            st.write(f"**Erweiterung**")
+            st.write(f"Autarkiegrad: {results.expansion.self_sufficiency_pct:.2f}%")
+            st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
+            st.markdown("---")  # Trennlinie
+            # endregion
+        except Exception as e:
+            st.error(f"Fehler bei der Berechnung: {e}")
+            results = None
 
     if auto_refresh:
-        results = backend.run_backend(settings=settings)
-        show_results(results)
+        calc_and_show_results(settings=settings)
     else:
         if st.session_state["run_backend"] is True:
-            results = backend.run_backend(settings=settings)
-            show_results(results)
+            calc_and_show_results(settings=settings)
             st.session_state["run_backend"] = False
         else:
             st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "

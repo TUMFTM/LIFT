@@ -178,8 +178,8 @@ def run_backend(settings: Settings) -> BackendResults:
     # get log data for the simulation
     logs = Logs(pv_spec=get_log_pv(coordinates=settings.location.coordinates),
                 dem=get_log_dem(slp=settings.location.slp,
-                          consumption_yrl_wh=settings.location.consumption_yrl_wh,
-                          ),
+                                consumption_yrl_wh=settings.location.consumption_yrl_wh,
+                                ),
                 # ToDo: get input parameters from settings
                 fleet=get_log_subfleet(),
                 )
