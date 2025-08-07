@@ -8,6 +8,8 @@ import backend
 from definitions import SubFleetDefinition, ChargerDefinition, SUBFLEETS, CHARGERS
 
 from interfaces import (
+    GridPowerExceededError,
+    SOCError,
     LocationSettings,
     SubFleetSettings,
     ChargerSettings,
@@ -411,6 +413,17 @@ def create_frontend():
             st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
             st.markdown("---")  # Trennlinie
             # endregion
+        except GridPowerExceededError as e:
+            st.error(f"""\
+            **Fehler in der Simulation**  
+            **Der Netzanschluss kann die benötigte Leistung nicht bereitstellen**  
+            -> Auftretende Lastspitzen können durch einen größeren Netzanschluss oder 
+            mittels PV-Anlage und stationärem Speicher abgedeckt werden.  
+              
+            Interne Fehlermeldung: {e}
+            """)
+        except SOCError as e:
+            st.error(f"Fehler beim Ladezustand: {e}")
         except Exception as e:
             st.error(f"Fehler bei der Berechnung: {e}")
             st.text(traceback.format_exc())

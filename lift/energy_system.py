@@ -7,7 +7,7 @@ import pandas as pd
 
 
 from definitions import DTI, FREQ_HOURS
-
+from interfaces import GridPowerExceededError, SOCError
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
@@ -141,7 +141,7 @@ class GridConnection(SupplyBlock):
     def satisfy_demand(self, demand_w: float):
         # Apply power to the grid connection, updating peak power and costs/revenue.
         if demand_w > self.pwr_max_w + EPS:
-            raise ValueError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {DTI[self.idx]}.")
+            raise GridPowerExceededError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {DTI[self.idx]}.")
 
         if demand_w > 0:
             self.pwr_peak_w = max(self.pwr_peak_w, demand_w)

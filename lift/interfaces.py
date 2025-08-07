@@ -5,6 +5,12 @@ import pandas as pd
 from definitions import TIME_PRJ_YRS
 
 
+class GridPowerExceededError(Exception):
+    pass
+
+class SOCError(Exception):
+    pass
+
 @dataclass
 class Coordinates:
     latitude: float = 48.148
