@@ -45,18 +45,21 @@ footer_css = """
 sidebar_style = """
         <style>
             [data-testid="stSidebar"] {
-                min-width: 360px;
+                min-width: 390px;
                 max-width: 500px;
                 width: 400px;
             }
             [data-testid="stSidebarContent"] {
                 padding-right: 20px;
             }
+            div[data-testid="stSidebar"] button {
+                width: 100% !important;
+            }
         </style>
         """
 
 
-def _show_and_get_location() -> LocationSettings:
+def _get_params_location() -> LocationSettings:
 
     # define coordinates of the location
     # ToDo: use geopy (copilot suggestion) to get coordinates from address or use map picker
@@ -75,100 +78,109 @@ def _show_and_get_location() -> LocationSettings:
         lon = click_info["last_clicked"]["lng"]
         st.success(f"Ausgewählter Standort: {lat:.5f}, {lon:.5f}")
     """
-    return LocationSettings(
-        coordinates=Coordinates(
-            latitude=st.number_input(label="Breitengrad",
-                                     min_value=-90.0,
-                                     max_value=90.0,
-                                     value=48.137,
-                                     step=0.001,
-                                     format="%0.3f",
-                                     ),
-            longitude=st.number_input(label="Längengrad",
-                                      min_value=-180.0,
-                                      max_value=180.0,
-                                      value=11.575,
-                                      step=0.001,
-                                      format="%0.3f",
-                                      )
-        ),
-        slp=st.selectbox(label="Lastprofil",
-                         options=['H0', 'H0_dyn',
-                                  'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
-                                  'L0', 'L1', 'L2']).lower(),
-        consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
-                                     min_value=10,
-                                     max_value=1000,
-                                     value=500,
-                                     step=10,
-                                     ) * 1E6,  # convert to Wh
-        # ToDo: numeric field for preexisting size
-        # ToDo: distinguish static and dynamic load management
-        grid_capacity_w=Size(preexisting=st.slider(label="Bestehende Netzanschlussleistung (kW)",
-                                                   min_value=0,
-                                                   max_value=10000,
-                                                   value=1000,
-                                                   step=10,
-                                                   ) * 1E3,  # convert to W
-                             expansion=st.slider(label="Zusätzliche Netzanschlussleistung (kW)",
-                                                 min_value=0,
-                                                 max_value=10000,
-                                                 value=1000,
-                                                 step=10,
-                                                 ) * 1E3  # convert to W
-                             ),
-        # ToDo: numeric field for preexisting size
-        pv_capacity_wp=Size(preexisting=st.slider(label="Bestehende PV-Leistung (kWp)",
-                                                  min_value=0,
-                                                  max_value=1000,
-                                                  value=0,
-                                                  step=5,
-                                                  ) * 1E3,  # convert to Wp
+    with st.sidebar.expander(label="Verfügbare Optionen", icon="⚙️"):
+        return LocationSettings(
+            coordinates=Coordinates(
+                latitude=st.number_input(label="Breitengrad",
+                                         min_value=-90.0,
+                                         max_value=90.0,
+                                         value=48.137,
+                                         step=0.001,
+                                         format="%0.3f",
+                                         ),
+                longitude=st.number_input(label="Längengrad",
+                                          min_value=-180.0,
+                                          max_value=180.0,
+                                          value=11.575,
+                                          step=0.001,
+                                          format="%0.3f",
+                                          )
+            ),
+            slp=st.selectbox(label="Lastprofil",
+                             options=['H0', 'H0_dyn',
+                                      'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
+                                      'L0', 'L1', 'L2']).lower(),
+            consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
+                                         min_value=10,
+                                         max_value=1000,
+                                         value=500,
+                                         step=10,
+                                         ) * 1E6,  # convert to Wh
+            # ToDo: numeric field for preexisting size
+            # ToDo: distinguish static and dynamic load management
+            grid_capacity_w=Size(preexisting=st.slider(label="Bestehende Netzanschlussleistung (kW)",
+                                                       min_value=0,
+                                                       max_value=10000,
+                                                       value=1000,
+                                                       step=10,
+                                                       ) * 1E3,  # convert to W
+                                 expansion=st.slider(label="Zusätzliche Netzanschlussleistung (kW)",
+                                                     min_value=0,
+                                                     max_value=10000,
+                                                     value=1000,
+                                                     step=10,
+                                                     ) * 1E3  # convert to W
+                                 ),
+            # ToDo: numeric field for preexisting size
+            pv_capacity_wp=Size(preexisting=st.slider(label="Bestehende PV-Leistung (kWp)",
+                                                      min_value=0,
+                                                      max_value=1000,
+                                                      value=0,
+                                                      step=5,
+                                                      ) * 1E3,  # convert to Wp
 
-                            expansion=st.slider(label="Zusätzliche PV-Leistung (kWp)",
-                                                min_value=0,
-                                                max_value=1000,
-                                                value=0,
-                                                step=5,
-                                                ) * 1E3  # convert to Wp
-                            ),
-        # ToDo: numeric field for preexisting size
-        ess_capacity_wh=Size(preexisting=st.slider(label="Bestehende Batteriespeicher-Kapazität (kWh)",
-                                                   min_value=0,
-                                                   max_value=1000,
-                                                   value=0,
-                                                   step=5,
-                                                   ) * 1E3,  # convert to Wh
+                                expansion=st.slider(label="Zusätzliche PV-Leistung (kWp)",
+                                                    min_value=0,
+                                                    max_value=1000,
+                                                    value=0,
+                                                    step=5,
+                                                    ) * 1E3  # convert to Wp
+                                ),
+            # ToDo: numeric field for preexisting size
+            ess_capacity_wh=Size(preexisting=st.slider(label="Bestehende Batteriespeicher-Kapazität (kWh)",
+                                                       min_value=0,
+                                                       max_value=1000,
+                                                       value=0,
+                                                       step=5,
+                                                       ) * 1E3,  # convert to Wh
 
-                             expansion=st.slider(label="Zusätzliche Batteriespeicher-Kapazität (kWh)",
-                                                 min_value=0,
-                                                 max_value=1000,
-                                                 value=0,
-                                                 step=5,
-                                                 ) * 1E3  # convert to Wh
-                             ),
-    )
+                                 expansion=st.slider(label="Zusätzliche Batteriespeicher-Kapazität (kWh)",
+                                                     min_value=0,
+                                                     max_value=1000,
+                                                     value=0,
+                                                     step=5,
+                                                     ) * 1E3  # convert to Wh
+                                 ),
+        )
 
-def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
+def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
     with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
                              icon=subfleet.icon,
                              expanded=False):
-        num_total = st.number_input(label="Anzahl Fahrzeuge gesamt",
+        num_total = st.number_input(label="Fahrzeuge gesamt",
                               key=f'num_{subfleet.id}',
                               min_value=0,
                               value=10,
                               step=1,
                               )
 
-        # ToDo: add input for preexisting BEVs
-        num_bev_preexisting = 0
-        num_bev_expansion = st.number_input("Anzahl Fahrzeuge elektrisch",
-                                              key=f'num_bev_{subfleet.id}',
-                                              min_value=0,
-                                              max_value=num_total,
-                                              value=0,
-                                              step=1,
-                                              )
+        col1, col2 = st.columns(2)
+        with col1:
+            num_bev_preexisting = st.number_input("Bestehende E-Fahrzeuge",
+                                                  key=f'num_bev_preexisting_{subfleet.id}',
+                                                  min_value=0,
+                                                  max_value=num_total,
+                                                  value=0,
+                                                  step=1,
+                                                  )
+        with col2:
+            num_bev_expansion = st.number_input("Zusätzliche E-Fahrzeuge",
+                                                  key=f'num_bev_expansion_{subfleet.id}',
+                                                  min_value=0,
+                                                  max_value=num_total - num_bev_preexisting,
+                                                  value=0,
+                                                  step=1,
+                                                  )
 
         battery_capacity_kwh = st.slider(label="Batteriekapazität (kWh)",
                                          key=f'battery_capacity_kwh_{subfleet.id}',
@@ -214,7 +226,7 @@ def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         #                        **subfleet.settings_load.dict,
         #                        )
 
-    settings = SubFleetSettings(
+    return SubFleetSettings(
         vehicle_type=subfleet.id,
         num_total=num_total,
         num_bev_preexisting=num_bev_preexisting,
@@ -230,10 +242,10 @@ def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         # weight_empty_bev_kg=subfleet.weight_empty_bev,
         # weight_empty_icev_kg=subfleet.weight_empty_icev,
     )
-    return settings
 
 
-def _show_and_get_charger(charger: ChargerDefinition) -> ChargerSettings:
+
+def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
     with st.sidebar.expander(label=f'**{charger.id}-Ladepunkte**  \nmax. {charger.pwr_max_kw:.1f} kW',
                              icon=charger.icon,
                              expanded=False):
@@ -257,6 +269,24 @@ def _show_and_get_charger(charger: ChargerDefinition) -> ChargerSettings:
                                cost_per_charger_eur=cost_per_charger_eur)
 
 
+def _get_params_economic() -> EconomicSettings:
+    with st.sidebar.expander(label="Erweiterte Einstellungen für Wirtschaftlichkeitsberechnung",
+                             icon="⚙️"):
+        return EconomicSettings(
+            electricity_price_eur_wh=st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3,  # convert to EUR/Wh
+            fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
+            toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
+            toll_bev_eur_km=0.0,
+            driver_wage_eur_h=st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1),
+            mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01),
+            mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01),
+            insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1),
+            salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, 25, 1),
+            salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, 27, 1),
+            working_days_yrl=st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
+        )
+
+
 def create_frontend():
     # define page settings
     st.set_page_config(
@@ -276,70 +306,35 @@ def create_frontend():
                              value=False)
 
     # ToDo: hide button to trigger backend run, if auto_refresh is True
-    col1, col2 = st.sidebar.columns(2)
-    # Place buttons in each column
-    with col1:
-        button_calc_results = st.button("**Ergebnisse berechnen**", icon="🚀")
-
-    with col2:
-        button_reset = st.button("**Eingaben zurücksetzen**", icon="🔄")
-
-    if button_calc_results:
+    if auto_refresh:
         st.session_state["run_backend"] = True
-
-    if button_reset:
-        # ToDo: fix this; experimental_rerun() is deprecated
-        # st.session_state.clear()
-        # st.experimental_rerun()
-        pass
+    else:
+        button_calc_results = st.sidebar.button("**Ergebnisse berechnen**", icon="🚀")
+        if button_calc_results:
+            st.session_state["run_backend"] = True
 
     # get depot parameters
     st.sidebar.subheader("Standort")
-    with st.sidebar.expander(label="Verfügbare Optionen", icon="⚙️"):
-        location_settings = _show_and_get_location()
+    location_settings = _get_params_location()
 
     # get fleet parameters
     st.sidebar.subheader("Flotte")
     fleet_settings = {}
 
     for subfleet in SUBFLEETS.values():
-        fleet_settings[subfleet.id] = _show_and_get_subfleet(subfleet)
+        fleet_settings[subfleet.id] = _get_params_subfleet(subfleet)
 
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
     charger_settings = {}
 
     for charger in CHARGERS.values():
-        charger_settings[charger.id] = _show_and_get_charger(charger)
+        charger_settings[charger.id] = _get_params_charger(charger)
 
     # D) Parameter zur Wirtschaftlichkeitsberechnung
     st.sidebar.write("**Wirtschaftlichkeitsberechnung**")
-    with st.sidebar.expander(label="Erweiterte Einstellungen für Wirtschaftlichkeitsberechnung",
-                             icon="⚙️"):
-        electricity_cost = st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3  # convert to EUR/Wh
-        diesel_cost = st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05)
-        road_tax = st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01)
-        driver_cost = st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1)
-        maintenance_BET = st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01)
-        maintenance_ICET = st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01)
-        insurance = st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1)
-        residual_value_BET = st.slider("Restwert BET (%)", 10, 80, 25, 1)
-        residual_value_ICET = st.slider("Restwert ICET (%)", 10, 80, 27, 1)
-        workingdays_year = st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
+    economic_settings = _get_params_economic()
 
-    economic_settings = EconomicSettings(
-        electricity_price_eur_wh=electricity_cost,
-        fuel_price_eur_liter=diesel_cost,
-        toll_icev_eur_km=road_tax,
-        toll_bev_eur_km=0.0,
-        driver_wage_eur_h=driver_cost,
-        mntex_bev_eur_km=maintenance_BET,
-        mntex_icev_eur_km=maintenance_ICET,
-        insurance_pct=insurance,
-        salvage_bev_pct=residual_value_BET,
-        salvage_icev_pct=residual_value_ICET,
-        working_days_yrl=workingdays_year
-    )
 
     settings = Settings(location=location_settings,
                         subfleets=fleet_settings,
@@ -348,7 +343,6 @@ def create_frontend():
     )
 
     # endregion
-
 
     st.title("LIFT - Logistics Infrastructure & Fleet Transformation")
     st.markdown("""
@@ -361,7 +355,7 @@ def create_frontend():
 
     st.subheader("Ergebnisse")
 
-    def calc_and_show_results(settings):
+    if st.session_state["run_backend"] is True:
         try:
             results = backend.run_backend(settings=settings)
             # region results
@@ -377,17 +371,11 @@ def create_frontend():
             # endregion
         except Exception as e:
             st.error(f"Fehler bei der Berechnung: {e}")
-            results = None
 
-    if auto_refresh:
-        calc_and_show_results(settings=settings)
+        st.session_state["run_backend"] = False
     else:
-        if st.session_state["run_backend"] is True:
-            calc_and_show_results(settings=settings)
-            st.session_state["run_backend"] = False
-        else:
-            st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
-                       "**🚀 Ergebnisse berechnen**.")
+        st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
+                   "**🚀 Ergebnisse berechnen**.")
 
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
