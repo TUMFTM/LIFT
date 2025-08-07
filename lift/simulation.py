@@ -249,77 +249,69 @@ class FleetUnit(DemandBlock):
         return pwr_chg
 
 
-@dataclass
-class Simulation:
-    dti: pd.DatetimeIndex
-    blocks_demand: dict[str, DemandBlock | Fleet | FixedDemand] = field(init=False)
-    blocks_supply: dict[str, SupplyBlock] = field(init=False)
 
-    fleet_log: pd.DataFrame = None
-    pv_log: np.typing.NDArray[np.float64] = None
-    dem_log: np.typing.NDArray[np.float64] = None
 
-    def __post_init__(self):
+def simulate(dti: pd.DatetimeIndex,
+             fleet_log: pd.DataFrame,
+             pv_log: np.typing.NDArray[np.float64],
+             dem_log: np.typing.NDArray[np.float64],
+             ) -> SimulationResults:
 
-        self.blocks_demand = {'dem': FixedDemand(dti=self.dti,
-                                                 log=self.dem_log,
-                                                 ),
-                              'fleet': Fleet(dti=self.dti,
-                                             fleet_units=None,
-                                             log=self.fleet_log,
-                                             pwr_lim_w=np.inf),
-                              }
+    blocks_demand = {'dem': FixedDemand(dti=dti,
+                                        log=dem_log,
+                                        ),
+                     'fleet': Fleet(dti=dti,
+                                    fleet_units=None,
+                                    log=fleet_log,
+                                    pwr_lim_w=np.inf),
+                     }
 
-        self.blocks_supply = {'grid': GridConnection(dti=self.dti,
-                                                     pwr_max_w=100000.0,
-                                                     ),
-                              'pv': PVSource(dti=self.dti,
-                                             pwr_wp=100E3,
-                                             log_spec=self.pv_log,
-                                             ),
-                              'ess': StationaryStorage(dti=self.dti,
-                                                       capacity_wh=50E3,
-                                                       ),
-                              }
+    blocks_supply = {'grid': GridConnection(dti=dti,
+                                            pwr_max_w=100000.0,
+                                            ),
+                     'pv': PVSource(dti=dti,
+                                    pwr_wp=100E3,
+                                    log_spec=pv_log,
+                                    ),
+                     'ess': StationaryStorage(dti=dti,
+                                              capacity_wh=50E3,
+                                              ),
+                     }
 
-        self.blocks = {**self.blocks_demand, **self.blocks_supply, **self.blocks_demand['fleet'].fleet_units}
+    blocks = {**blocks_demand, **blocks_supply, **blocks_demand['fleet'].fleet_units}
 
-    def simulate(self) -> SimulationResults:
+    # Improve speed by using the following shortcuts to avoid repeated lookups
+    blocks_supply = tuple(blocks_supply[k] for k in ('pv', 'ess', 'grid'))
+    fleet = blocks_demand['fleet']
+    dem = blocks_demand['dem']
 
-        # Improve speed by using the following shortcuts to avoid repeated lookups
-        blocks = self.blocks.values()
-        blocks_supply = tuple(self.blocks_supply[k] for k in ('pv', 'ess', 'grid'))
-        blocks_demand = self.blocks_demand
-        fleet = blocks_demand['fleet']
-        dem = blocks_demand['dem']
+    # Simulate the vehicle fleet over the given datetime index.
+    for idx in range(len(dti)):
+        # pass time of current timestep to all blocks
+        for block in blocks.values():
+            block.idx = idx
 
-        # Simulate the vehicle fleet over the given datetime index.
-        for idx in range(len(self.dti)):
-            # pass time of current timestep to all blocks
-            for block in blocks:
-                block.idx = idx
+        # calculate maximum power supply
+        pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
+        # get the total demand from the fixed demand block
+        pwr_demand_w = dem.demand_w
 
-            # calculate maximum power supply
-            pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
-            # get the total demand from the fixed demand block
-            pwr_demand_w = dem.demand_w
+        # define Fleet charging power limit for dynamic load management
+        fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
 
-            # define Fleet charging power limit for dynamic load management
-            fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
+        # add fleet demand to the total demand
+        pwr_demand_w += fleet.demand_w
 
-            # add fleet demand to the total demand
-            pwr_demand_w += fleet.demand_w
+        # satisfy demand with supply blocks (order represents priority)
+        for block in blocks_supply:
+            pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
 
-            # satisfy demand with supply blocks (order represents priority)
-            for block in blocks_supply:
-                pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
-
-        return SimulationResults(energy_pv_pot_wh=self.blocks['pv'].energy_pot_wh,
-                                 energy_pv_curt_wh=self.blocks['grid'].energy_curt_wh,
-                                 energy_grid_buy_wh=self.blocks['grid'].energy_buy_wh,
-                                 energy_grid_sell_wh=self.blocks['grid'].energy_sell_wh,
-                                 pwr_grid_peak_w=self.blocks['grid'].pwr_peak_w,
-                                 )
+    return SimulationResults(energy_pv_pot_wh=blocks['pv'].energy_pot_wh,
+                             energy_pv_curt_wh=blocks['grid'].energy_curt_wh,
+                             energy_grid_buy_wh=blocks['grid'].energy_buy_wh,
+                             energy_grid_sell_wh=blocks['grid'].energy_sell_wh,
+                             pwr_grid_peak_w=blocks['grid'].pwr_peak_w,
+                             )
 
 
 def get_log_pv(index: pd.DatetimeIndex,
@@ -387,12 +379,12 @@ if __name__ == "__main__":
     results = []
 
     for _ in range(2):
-        sim = Simulation(dti=dti,
-                         fleet_log=fleet_log,
-                         pv_log=pv_log_spec,
-                         dem_log=dem_log
-                         )
-        results.append(sim.simulate())
+        results.append(simulate(dti=dti,
+                                pv_log=pv_log_spec,
+                                dem_log=dem_log,
+                                fleet_log=fleet_log,
+                                )
+                       )
 
     print(results)
 
