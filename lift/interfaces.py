@@ -80,6 +80,9 @@ class SubFleetSettings:
     capex_icev_eur: float = 80E3
     dist_avg_daily_km: float = 100.0
     toll_share_pct: float = 30.0
+    charger: str = 'ac'
+    pwr_max_w: float = 0.0
+
     # dist_max_daily_km: float
     # depot_time_h: float
     # load_avg_t: float

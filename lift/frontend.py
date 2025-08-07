@@ -85,7 +85,7 @@ def _get_params_location() -> LocationSettings:
     """
     col_share = [3, 7]
 
-    with st.sidebar.expander(label="Verfügbare Optionen", icon="⚙️"):
+    with st.sidebar.expander(label="**Verfügbare Optionen**", icon="⚙️"):
         st.markdown("**Position**")
         col1, col2 = st.columns(2)
         with col1:
@@ -226,6 +226,20 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                                   step=1,
                                                   )
 
+        col1, col2 = st.columns([3, 7])
+        with col1:
+            charger = st.selectbox(label="Ladepunkt",
+                                   key=f'charger_{subfleet.id}',
+                                   options=[x.id for x in CHARGERS.values()])
+        with col2:
+            max_value = CHARGERS[charger.lower()].settings_pwr_max.max_value
+            pwr_max_w = st.slider(label="max. Ladeleistung (kW)",
+                                  key=f'pwr_max_{subfleet.id}',
+                                  min_value=0,
+                                  max_value=max_value,
+                                  value=max_value,
+                                  ) * 1E3
+
         battery_capacity_kwh = st.slider(label="Batteriekapazität (kWh)",
                                          key=f'battery_capacity_kwh_{subfleet.id}',
                                          **subfleet.settings_battery.dict,
@@ -280,6 +294,9 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         capex_icev_eur=capex_icev_eur,
         dist_avg_daily_km=dist_avg_daily_km,
         toll_share_pct=toll_share_pct,
+        charger=charger,
+        pwr_max_w=pwr_max_w,
+
         # dist_max_daily_km=dist_max_km,
         # depot_time_h=depot_avg_h,
         # load_avg_t=load_avg_t,
@@ -290,15 +307,19 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
 
 
 def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
-    with st.sidebar.expander(label=f'**{charger.id}-Ladepunkte**  \nmax. {charger.pwr_max_kw:.1f} kW',
+    with st.sidebar.expander(label=f'**{charger.id}-Ladepunkte**',
                              icon=charger.icon,
                              expanded=False):
 
-        num_charger_preexisting = st.slider(label="aktuell verfügbare Ladepunkte",
+        pwr_max_w = st.slider(label="Maximale Ladeleistung in kW",
+                                    key=f'chg_{charger.id.lower()}_pwr',
+                                    **charger.settings_pwr_max.dict
+                                    ) * 1E3
+        num_preexisting = st.slider(label="aktuell verfügbare Ladepunkte",
                                             key=f'chg_{charger.id.lower()}_preexisting',
                                             **charger.settings_preexisting.dict
                                             )
-        num_charger_expansion = st.slider(label="zusätzliche Ladepunkte",
+        num_expansion = st.slider(label="zusätzliche Ladepunkte",
                                           key=f'chg_{charger.id.lower()}_expansion',
                                           **charger.settings_expansion.dict,
                                           )
@@ -307,9 +328,9 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                          **charger.settings_cost_per_unit_eur.dict
                                          )
 
-        return ChargerSettings(num_preexisting=num_charger_preexisting,
-                               num_expansion=num_charger_expansion,
-                               pwr_max_kw=charger.pwr_max_kw,
+        return ChargerSettings(num_preexisting=num_preexisting,
+                               num_expansion=num_expansion,
+                               pwr_max_kw=pwr_max_w,
                                cost_per_charger_eur=cost_per_charger_eur)
 
 

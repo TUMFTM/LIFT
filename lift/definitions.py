@@ -44,8 +44,7 @@ class ExpansionDefinition:
 
 @dataclass
 class ChargerDefinition(ExpansionDefinition):
-    pwr_max_kw: float
-
+    settings_pwr_max: SliderSettings
 
 
 SUBFLEETS = dict(
@@ -211,7 +210,10 @@ SUBFLEETS = dict(
 CHARGERS = dict(
     ac=ChargerDefinition(id="AC",
                          icon="🔌",
-                         pwr_max_kw=22.0,
+                         settings_pwr_max=SliderSettings(min_value=0,
+                                                         max_value=43,
+                                                         value=11,
+                                                         step=1),
                          settings_preexisting=SliderSettings(min_value=0,
                                                              max_value=100,
                                                              value=10,
@@ -226,7 +228,10 @@ CHARGERS = dict(
                                                                    step=50.0)),
     dc=ChargerDefinition(id="DC",
                          icon="⚡️",
-                         pwr_max_kw=150.0,
+                         settings_pwr_max=SliderSettings(min_value=0,
+                                                         max_value=1000,
+                                                         value=100,
+                                                         step=10),
                          settings_preexisting=SliderSettings(min_value=0,
                                                              max_value=100,
                                                              value=10,
