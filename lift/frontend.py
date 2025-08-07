@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
+import traceback
 
 import backend
 
@@ -45,9 +46,9 @@ footer_css = """
 sidebar_style = """
         <style>
             [data-testid="stSidebar"] {
-                min-width: 390px;
+                min-width: 450px;
                 max-width: 500px;
-                width: 400px;
+                width: 450px;
             }
             [data-testid="stSidebarContent"] {
                 padding-right: 20px;
@@ -57,6 +58,8 @@ sidebar_style = """
             }
         </style>
         """
+
+horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
 
 def _get_params_location() -> LocationSettings:
@@ -78,80 +81,119 @@ def _get_params_location() -> LocationSettings:
         lon = click_info["last_clicked"]["lng"]
         st.success(f"Ausgewählter Standort: {lat:.5f}, {lon:.5f}")
     """
+    col_share = [3, 7]
+
     with st.sidebar.expander(label="Verfügbare Optionen", icon="⚙️"):
-        return LocationSettings(
-            coordinates=Coordinates(
-                latitude=st.number_input(label="Breitengrad",
-                                         min_value=-90.0,
-                                         max_value=90.0,
-                                         value=48.137,
-                                         step=0.001,
-                                         format="%0.3f",
-                                         ),
-                longitude=st.number_input(label="Längengrad",
-                                          min_value=-180.0,
-                                          max_value=180.0,
-                                          value=11.575,
-                                          step=0.001,
-                                          format="%0.3f",
-                                          )
-            ),
+        st.markdown("**Position**")
+        col1, col2 = st.columns(2)
+        with col1:
+            latitude = st.number_input(label="Breitengrad",
+                                       key="latitude",
+                                       min_value=-90.0,
+                                       max_value=90.0,
+                                       value=48.137,
+                                       step=0.001,
+                                       format="%0.3f",
+                                       ),
+        with col2:
+            longitude = st.number_input(label="Längengrad",
+                                        key="longitude",
+                                        min_value=-180.0,
+                                        max_value=180.0,
+                                        value=11.575,
+                                        step=0.001,
+                                        format="%0.3f",
+                                        )
+        coordinates=Coordinates(latitude=latitude, longitude=longitude)
+        st.markdown(horizontal_line_style, unsafe_allow_html=True)
+        st.markdown("**Stromverbrauch Standort**")
+        col1, col2 = st.columns(col_share)
+        with col1:
             slp=st.selectbox(label="Lastprofil",
+                             key="slp",
                              options=['H0', 'H0_dyn',
                                       'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
-                                      'L0', 'L1', 'L2']).lower(),
+                                      'L0', 'L1', 'L2']).lower()
+        with col2:
             consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
+                                         key="consumption_yrl_wh",
                                          min_value=10,
                                          max_value=1000,
                                          value=500,
                                          step=10,
-                                         ) * 1E6,  # convert to Wh
-            # ToDo: numeric field for preexisting size
-            # ToDo: distinguish static and dynamic load management
-            grid_capacity_w=Size(preexisting=st.slider(label="Bestehende Netzanschlussleistung (kW)",
-                                                       min_value=0,
-                                                       max_value=10000,
-                                                       value=1000,
-                                                       step=10,
-                                                       ) * 1E3,  # convert to W
-                                 expansion=st.slider(label="Zusätzliche Netzanschlussleistung (kW)",
-                                                     min_value=0,
-                                                     max_value=10000,
-                                                     value=1000,
-                                                     step=10,
-                                                     ) * 1E3  # convert to W
-                                 ),
-            # ToDo: numeric field for preexisting size
-            pv_capacity_wp=Size(preexisting=st.slider(label="Bestehende PV-Leistung (kWp)",
-                                                      min_value=0,
-                                                      max_value=1000,
-                                                      value=0,
-                                                      step=5,
-                                                      ) * 1E3,  # convert to Wp
+                                         ) * 1E6  # convert to Wh
 
-                                expansion=st.slider(label="Zusätzliche PV-Leistung (kWp)",
-                                                    min_value=0,
-                                                    max_value=1000,
-                                                    value=0,
-                                                    step=5,
-                                                    ) * 1E3  # convert to Wp
-                                ),
-            # ToDo: numeric field for preexisting size
-            ess_capacity_wh=Size(preexisting=st.slider(label="Bestehende Batteriespeicher-Kapazität (kWh)",
-                                                       min_value=0,
-                                                       max_value=1000,
-                                                       value=0,
-                                                       step=5,
-                                                       ) * 1E3,  # convert to Wh
+        st.markdown(horizontal_line_style, unsafe_allow_html=True)
+        st.markdown("**Netzanschluss**")
+        # ToDo: distinguish static and dynamic load management
+        col1, col2 = st.columns(col_share)
+        with col1:
+            preexisting = st.number_input(label="Bestehend (kW)",
+                                          key="grid_preexisting",
+                                          min_value=0,
+                                          max_value=10000,
+                                          value=1000,
+                                          )
+        with col2:
+            expansion = st.slider(label="Zusätzlich (kW)",
+                                  key="grid_expansion",
+                                  min_value=0,
+                                  max_value=10000,
+                                  value=0,
+                                  step=10,
+                                  )
+        grid_capacity_w = Size(preexisting=preexisting * 1E3,
+                                 expansion=expansion * 1E3)
+        st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
-                                 expansion=st.slider(label="Zusätzliche Batteriespeicher-Kapazität (kWh)",
-                                                     min_value=0,
-                                                     max_value=1000,
-                                                     value=0,
-                                                     step=5,
-                                                     ) * 1E3  # convert to Wh
-                                 ),
-        )
+        st.markdown("**PV-Anlage**")
+        col1, col2 = st.columns(col_share)
+        with col1:
+            preexisting = st.number_input(label="Bestehend (kWp)",
+                                          key="pv_preexisting",
+                                          min_value=0,
+                                          max_value=1000,
+                                          value=0,
+                                          )
+        with col2:
+            expansion = st.slider(label="Zusätzlich (kWp)",
+                                  key="pv_expansion",
+                                  min_value=0,
+                                  max_value=1000,
+                                  value=0,
+                                  step=5,
+                                  )
+        pv_capacity_wp = Size(preexisting=preexisting * 1E3,
+                              expansion=expansion * 1E3)
+        st.markdown(horizontal_line_style, unsafe_allow_html=True)
+
+        st.markdown("**Stationärspeicher**")
+        col1, col2 = st.columns(col_share)
+        with col1:
+            preexisting = st.number_input(label="Bestehend (kWh)",
+                                          key="ess_preexisting",
+                                          min_value=0,
+                                          max_value=1000,
+                                          value=0,
+                                          )
+        with col2:
+            expansion = st.slider(label="Zusätzlich (kWh)",
+                                  key="ess_expansion",
+                                  min_value=0,
+                                  max_value=1000,
+                                  value=0,
+                                  step=5,
+                                  )
+        ess_capacity_wh = Size(preexisting=preexisting * 1E3,
+                               expansion=expansion * 1E3)
+
+    return LocationSettings(coordinates=coordinates,
+                            slp=slp,
+                            consumption_yrl_wh=consumption_yrl_wh,
+                            grid_capacity_w=grid_capacity_w,
+                            pv_capacity_wp=pv_capacity_wp,
+                            ess_capacity_wh=ess_capacity_wh,
+                            )
 
 def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
     with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
@@ -351,7 +393,7 @@ def create_frontend():
     einzugeben und klicke anschließend auf den Button, um erste Berechnungen zu starten.
     """)
 
-    st.markdown("---")  # Trennlinie
+    st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
     st.subheader("Ergebnisse")
 
@@ -371,6 +413,7 @@ def create_frontend():
             # endregion
         except Exception as e:
             st.error(f"Fehler bei der Berechnung: {e}")
+            st.text(traceback.format_exc())
 
         st.session_state["run_backend"] = False
     else:
