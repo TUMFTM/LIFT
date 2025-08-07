@@ -1,4 +1,7 @@
-from dataclasses import dataclass
+import numpy as np
+from dataclasses import dataclass, field
+
+from definitions import TIME_PRJ_YRS
 
 
 @dataclass
@@ -65,29 +68,34 @@ class Settings:
 
 
 @dataclass
-class SubFleetResults:
-    num_total: int = 0
-    num_bev: int = 0
-    num_bev_additional: int = 0
-    num_icev: int = 0
-    tco_bev: float = 0.0
-    tco_icev: float = 0.0
-    energy_bev_daily_kwh: float = 0.0
+class PhaseResults:
+    pv_yrl_wh: float = 0.0  # energy produced by the on-site PV per year in Wh
+    feed_in_yrl_wh: float = 0.0  # energy fed into the grid per year in Wh
+    fleet_yrl_wh: float = 0.0  # energy charged to the Fleet at the site per year in Wh
+    self_sufficiency_pct: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
+    self_consumption_pct: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
+    co2_yrl_kg: float = 0.0  # emitted CO2 per year in kg
+    co2_yrl_eur: float = 0.0  # cost for emitted co2 per year in Euro
+    capex_eur: float = 0.0  # capex over project time in euro
+    opex_fuel_eur: float = 0.0  # fuel cost over project time in euro
+    opex_toll_eur: float = 0.0  # toll cost over project time in euro
+    opex_grid_eur: float = 0.0  # grid cost over project time in euro
+    cashflow: np.typing.NDArray[np.floating] = field(init=True,
+                                                     default_factory=lambda: np.zeros(TIME_PRJ_YRS))
+    # ToDo: think about using a DataFrame or Matrix for cashflows and replace all capex/opex variables by this
 
-
-@dataclass
-class SystemResults:
-    pv_capacity_kwp: float = 0.0
-    pv_energy_yrl_kwh: float = 0.0
-    battery_capacity_kwh: float = 0.0
-    grid_capacity_kw: float = 0.0
-    num_dc_chargers: int = 0
-    energy_daily_bevs_kwh: float = 0.0
+    @property
+    def opex(self) -> float:
+        return self.opex_fuel_eur + self.opex_grid_eur + self.opex_toll_eur
 
 
 @dataclass
 class Results:
-    subfleets: dict[str, SubFleetResults]
-    system: SystemResults
+    baseline: PhaseResults
+    expansion: PhaseResults
+
+    roi_rel: float
+    period_payback_rel: float
+    npc_delta: float
 
 
