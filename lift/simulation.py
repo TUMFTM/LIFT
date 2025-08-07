@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import Path
+import importlib.resources as resources
 from time import time
 
 import demandlib
@@ -10,7 +10,8 @@ import pandas as pd
 import pvlib
 
 
-import lift.data
+from interfaces import SimulationResults
+
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
@@ -23,7 +24,7 @@ class Block(ABC):
 
     @property
     def freq_hours(self) -> float:
-        return pd.Timedelta(self.dti.freq).total_seconds()/3600
+        return pd.Timedelta(self.dti.freq).total_seconds() / 3600
 
     @property
     def idx(self) -> int:
@@ -67,9 +68,16 @@ class PVSource(SupplyBlock):
     pwr_wp: float
     log_spec: np.typing.NDArray[np.float64]
 
+    def __post_init__(self):
+        self.log = self.log_spec * self.pwr_wp
+
     @property
     def generation_max_w(self) -> float:
-        return self.log_spec[self.idx] * self.pwr_wp
+        return self.log[self.idx]
+
+    @property
+    def energy_pot_wh(self) -> float:
+        return sum(self.log_spec * self.pwr_wp * self.freq_hours)
 
     def satisfy_demand(self, demand_w: float) -> float:
         # Return remaining power demand after PV generation (negative if excess generation)
@@ -119,16 +127,17 @@ class StationaryStorage(SupplyBlock):
 @dataclass
 class GridConnection(SupplyBlock):
     pwr_max_w: float
-    price_buy_eur_wh: float
-    price_sell_eur_wh: float
 
     pwr_peak_w: float = field(init=False,
                               default=0.0)
 
-    cost_eur: float = field(init=False,
-                            default=0.0)
+    _pwr_buy_w: float = field(init=False,
+                              default=0.0)
 
-    revenue_eur: float = field(init=False,
+    _pwr_sell_w: float = field(init=False,
+                               default=0.0)
+
+    _pwr_curt_w: float = field(init=False,
                                default=0.0)
 
     @property
@@ -138,14 +147,27 @@ class GridConnection(SupplyBlock):
 
     def satisfy_demand(self, demand_w: float):
         # Apply power to the grid connection, updating peak power and costs/revenue.
-        if abs(demand_w) > (self.pwr_max_w + EPS):
+        if demand_w > (self.pwr_max_w + EPS):
             raise ValueError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {self.dti[self.idx]}.")
 
         if demand_w > 0:
             self.pwr_peak_w = max(self.pwr_peak_w, demand_w)
-            self.cost_eur += demand_w * self.freq_hours * self.price_buy_eur_wh
+            self._pwr_buy_w += demand_w
         else:
-            self.revenue_eur += -demand_w * self.freq_hours * self.price_sell_eur_wh
+            self._pwr_sell_w += min(-demand_w, self.pwr_max_w)
+            self._pwr_curt_w += max(-demand_w - self.pwr_max_w, 0)
+
+    @property
+    def energy_buy_wh(self) -> float:
+        return self._pwr_buy_w * self.freq_hours
+
+    @property
+    def energy_sell_wh(self) -> float:
+        return self._pwr_sell_w * self.freq_hours
+
+    @property
+    def energy_curt_wh(self) -> float:
+        return self._pwr_curt_w * self.freq_hours
 
 
 @dataclass
@@ -234,13 +256,13 @@ class Simulation:
     blocks_supply: dict[str, SupplyBlock] = field(init=False)
 
     log_fleet: pd.DataFrame = None
-    log_pv: np.typing.NDArray[np.float64] = None
-    log_demand: np.typing.NDArray[np.float64] = None
+    pv_log: np.typing.NDArray[np.float64] = None
+    dem_log: np.typing.NDArray[np.float64] = None
 
     def __post_init__(self):
 
         self.blocks_demand = {'dem': FixedDemand(dti=self.dti,
-                                                 log=self.log_demand,
+                                                 log=self.dem_log,
                                                  ),
                               'fleet': Fleet(dti=self.dti,
                                              fleet_units=None,
@@ -250,12 +272,10 @@ class Simulation:
 
         self.blocks_supply = {'grid': GridConnection(dti=self.dti,
                                                      pwr_max_w=100000.0,
-                                                     price_buy_eur_wh=20E-5,
-                                                     price_sell_eur_wh=10E-5,
                                                      ),
                               'pv': PVSource(dti=self.dti,
-                                             pwr_wp=10E3,
-                                             log_spec=self.log_pv,
+                                             pwr_wp=100E3,
+                                             log_spec=self.pv_log,
                                              ),
                               'ess': StationaryStorage(dti=self.dti,
                                                        capacity_wh=50E3,
@@ -264,7 +284,7 @@ class Simulation:
 
         self.blocks = {**self.blocks_demand, **self.blocks_supply, **self.blocks_demand['fleet'].fleet_units}
 
-    def simulate(self):
+    def simulate(self) -> SimulationResults:
 
         # Improve speed by using the following shortcuts to avoid repeated lookups
         blocks = self.blocks.values()
@@ -294,9 +314,12 @@ class Simulation:
             for block in blocks_supply:
                 pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
 
-            pass
-
-        pass
+        return SimulationResults(energy_pv_pot_wh=self.blocks['pv'].energy_pot_wh,
+                                 energy_pv_curt_wh=self.blocks['grid'].energy_curt_wh,
+                                 energy_grid_buy_wh=self.blocks['grid'].energy_buy_wh,
+                                 energy_grid_sell_wh=self.blocks['grid'].energy_sell_wh,
+                                 pwr_grid_peak_w=self.blocks['grid'].pwr_peak_w,
+                                 )
 
 
 def get_log_pv(index: pd.DatetimeIndex,
@@ -327,9 +350,9 @@ def get_log_pv(index: pd.DatetimeIndex,
     return data.values / 1000
 
 
-def get_log_demand(index: pd.DatetimeIndex,
-                   slp: str,
-                   consumption_yrl_wh: float) -> np.typing.NDArray[np.float64]:
+def get_log_dem(index: pd.DatetimeIndex,
+                slp: str,
+                consumption_yrl_wh: float) -> np.typing.NDArray[np.float64]:
     # Example demand data, replace with actual demand data retrieval logic
     e_slp = demandlib.bdew.ElecSlp(year=2023)
     return (e_slp.get_scaled_profiles({slp: consumption_yrl_wh})  # returns energies
@@ -338,32 +361,35 @@ def get_log_demand(index: pd.DatetimeIndex,
 
 def get_log_subfleet(index: pd.DatetimeIndex,
                      ) -> pd.DataFrame:
-    return pd.read_csv(Path().cwd() / 'data' / 'log_subfleet.csv',
-                       header=[0,1],
-                       index_col=0,
-                       parse_dates=True).loc[index, :]
+    with resources.files('lift.data').joinpath('log_subfleet.csv').open('r') as logfile:
+        df = pd.read_csv(logfile,
+                         header=[0,1])
+        df = df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True)).drop(df.columns[0], axis=1).tz_convert('Europe/Berlin')
+    return df.loc[index, :]
 
 
 if __name__ == "__main__":
     # start time tracking
     dti = pd.date_range(start='2023-01-01', end='2024-01-01 00:00', freq='h', tz='Europe/Berlin', inclusive='left')
-    log_pv = get_log_pv(index=dti,
-                        latitude=48.1372,
-                        longitude=11.5756,
-                        )
-    log_demand = get_log_demand(index=dti,
-                                slp='h0',
-                                consumption_yrl_wh=50E6
-                                )
+    pv_log_spec = get_log_pv(index=dti,
+                             latitude=48.1372,
+                             longitude=11.5756,
+                             )
+
+    dem_log = get_log_dem(index=dti,
+                          slp='h0',
+                          consumption_yrl_wh=50E6
+                          )
 
     log_fleet = get_log_subfleet(index=dti)
 
     start_time = time()
     sim = Simulation(dti=dti,
                      log_fleet=log_fleet,
-                     log_pv=log_pv,
-                     log_demand=log_demand)
-    sim.simulate()
+                     pv_log=pv_log_spec,
+                     dem_log=dem_log)
+    results = sim.simulate()
+    print(results)
 
     # stop time tracking
     print(f'Simulation completed in {time() - start_time:.2f} seconds.')

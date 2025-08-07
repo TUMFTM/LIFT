@@ -68,9 +68,21 @@ class Settings:
 
 
 @dataclass
+class SimulationResults:
+    energy_pv_pot_wh: float
+    energy_pv_curt_wh: float
+    energy_grid_buy_wh: float
+    energy_grid_sell_wh: float
+    pwr_grid_peak_w: float
+
+
+@dataclass
 class PhaseResults:
-    pv_yrl_wh: float = 0.0  # energy produced by the on-site PV per year in Wh
-    feed_in_yrl_wh: float = 0.0  # energy fed into the grid per year in Wh
+    energy_pv_pot_yrl_wh: float = 0.0  # pv energy potential of the on-site PV per year in Wh
+    energy_pv_curt_yrl_wh: float = 0.0  # pv energy of the on-site PV curtailed per year in Wh
+    energy_grid_sell_yrl_wh: float = 0.0  # energy fed into the grid per year in Wh
+    energy_grid_buy_yrl_wh: float = 0.0  # energy bought from the grid per year in Wh
+    pwr_grid_peak_w: float = 0.0  # peak power of the grid (buying direction) in W
     fleet_yrl_wh: float = 0.0  # energy charged to the Fleet at the site per year in Wh
     self_sufficiency_pct: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     self_consumption_pct: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
