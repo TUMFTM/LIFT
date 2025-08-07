@@ -1,112 +1,217 @@
+import demandlib
+import importlib.resources as resources
+import pandas as pd
+import pvlib
+import streamlit as st
+from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lift.interfaces import (
-    LocationSettings,
-    SubFleetSettings,
-    ChargerSettings,
-    EconomicSettings,
-    Settings,
-    SubFleetResults,
-    SystemResults,
-    Results,
+from definitions import (DTI,
+                         CO2_SPEC_KG_PER_WH,
+                         OPEX_SPEC_CO2_PER_KG,
+                         OPEX_SPEC_GRID_BUY_EUR_PER_WH,
+                         OPEX_SPEC_GRID_SELL_EUR_PER_WH,
+                         OPEX_SPEC_GRID_PWR_EUR_WP)
 
-)
+from energy_system import (FixedDemand,
+                           Fleet,
+                           FleetUnit,
+                           GridConnection,
+                           PVSource,
+                           StationaryStorage)
+
+from interfaces import (Coordinates,
+                        Logs,
+                        Capacities,
+                        Settings,
+                        SimulationResults,
+                        PhaseResults,
+                        BackendResults)
+
 
 if TYPE_CHECKING:
     pass
 
 
-def calc_tco(subfleet_settings: SubFleetSettings,
-             economic_settings: EconomicSettings,
-             capex_vehicle: float,
-             capex_infrastructure: float,
-             salvage_value_pct: float,
-             mntex_eur_km: float,
-             toll_eur_km: float,
-             energy_cost: float,
-             consumption_km: float,
-             ):
 
-    time_total_yrs = economic_settings.period_holding_yrs
-    time_total_h = time_total_yrs * 8 * economic_settings.working_days_yrl  # assuming 8 hours per working day
-    dist_total = subfleet_settings.dist_avg_daily_km * economic_settings.working_days_yrl * time_total_yrs
+@st.cache_data
+def get_log_pv(coordinates: Coordinates) -> np.typing.NDArray[np.float64]:
 
-    capex = (capex_vehicle + capex_infrastructure) * (1 - (salvage_value_pct / 100))
+    data, *_ = pvlib.iotools.get_pvgis_hourly(
+        latitude=coordinates.latitude,
+        longitude=coordinates.longitude,
+        start=2023,
+        end=2023,
+        raddatabase='PVGIS-SARAH3',
+        outputformat='json',
+        pvcalculation=True,
+        peakpower=1,  # convert kWp to Wp
+        pvtechchoice='crystSi',
+        mountingplace='free',
+        loss=0,
+        trackingtype=0,  # fixed mount
+        optimalangles=True,
+        url='https://re.jrc.ec.europa.eu/api/v5_3/',
+        map_variables=True,
+        timeout=30,  # default value
+    )
+    data = data['P']
+    data.index = data.index.round('h')
+    data = data.tz_convert('Europe/Berlin').reindex(DTI).ffill().bfill()
+    return data.values / 1000
 
-    opex_dist = (subfleet_settings.toll_share_pct * toll_eur_km +
-                 mntex_eur_km +
-                 energy_cost * consumption_km) * dist_total
 
-    opex_time = (economic_settings.insurance_pct / 100 * capex_vehicle * time_total_yrs +
-                 economic_settings.driver_wage_eur_h * time_total_h)
+@st.cache_data
+def get_log_dem(slp: str,
+                consumption_yrl_wh: float) -> np.typing.NDArray[np.float64]:
+    # Example demand data, replace with actual demand data retrieval logic
+    e_slp = demandlib.bdew.ElecSlp(year=2023)
+    return (e_slp.get_scaled_profiles({slp: consumption_yrl_wh})  # returns energies
+            .resample('h').sum()  # sum() as df contains energies -> for hours energy is equal to power
+            .iloc[:, 0].values)  # get first (and only) column as numpy array
 
-    return (capex + opex_dist + opex_time) / dist_total
+
+@st.cache_data
+def get_log_subfleet() -> pd.DataFrame:
+    with resources.files('lift.data').joinpath('log_subfleet.csv').open('r') as logfile:
+        df = pd.read_csv(logfile,
+                         header=[0,1])
+        df = df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True)).drop(df.columns[0], axis=1).tz_convert('Europe/Berlin')
+    return df.loc[DTI, :]
 
 
-def calc_subfleet_results(subfleet_settings: SubFleetSettings,
-                          ci_settings: ChargerSettings,
-                          location_settings: LocationSettings,
-                          economic_settings: EconomicSettings) -> SubFleetResults:
+@st.cache_data
+def simulate(logs: Logs,
+             capacities: Capacities,
+             ) -> SimulationResults:
 
-    # calculate TCO
-    tco_bev = calc_tco(subfleet_settings=subfleet_settings,
-                       economic_settings=economic_settings,
-                       capex_vehicle=subfleet_settings.capex_bev,
-                       # ToDo: don't use total number of chargers but only chargers for subfleet
-                       capex_infrastructure=ci_settings.cost_per_charger_eur * ci_settings.num,
-                       salvage_value_pct=economic_settings.salvage_bev_pct,
-                       mntex_eur_km=economic_settings.mntex_bev_eur_km,
-                       toll_eur_km=economic_settings.toll_bev_eur_km,
-                       energy_cost=economic_settings.electricity_price_eur_kwh,
-                       consumption_km=(0.3814 * np.log(subfleet_settings.weight_empty_bev_kg +
-                                                       subfleet_settings.load_avg_t) - 2.6735),
-                       )
+    dem = FixedDemand(log=logs.dem)
+    fleet = Fleet(fleet_units=None,
+                  log=logs.fleet,
+                  pwr_lim_w=np.inf)
 
-    tco_icev = calc_tco(subfleet_settings=subfleet_settings,
-                        economic_settings=economic_settings,
-                        capex_vehicle=subfleet_settings.capex_icev,
-                        capex_infrastructure=0,
-                        salvage_value_pct=economic_settings.salvage_icev_pct,
-                        mntex_eur_km=economic_settings.mntex_icev_eur_km,
-                        toll_eur_km=economic_settings.toll_icev_eur_km,
-                        energy_cost=economic_settings.fuel_price_eur_liter,
-                        consumption_km=(0.0903 * np.log(subfleet_settings.weight_empty_icev_kg +
-                                                        subfleet_settings.load_avg_t) - 0.6404),
+    pv = PVSource(pwr_wp=capacities.pv_wp,
+                  log_spec=logs.pv_spec)
+    ess = StationaryStorage(capacity_wh=capacities.ess_wh,)
+    grid = GridConnection(pwr_max_w=capacities.grid_w)
+    blocks_supply = (pv, ess, grid)
+
+    blocks = [dem, fleet, *fleet.fleet_units.values(), *blocks_supply]
+
+    # Simulate the vehicle fleet over the given datetime index.
+    for idx in range(len(DTI)):
+        # pass time of current timestep to all blocks
+        for block in blocks:
+            block.idx = idx
+
+        # calculate maximum power supply
+        pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
+        # get the total demand from the fixed demand block
+        pwr_demand_w = dem.demand_w
+
+        # define Fleet charging power limit for dynamic load management
+        fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
+
+        # add fleet demand to the total demand
+        pwr_demand_w += fleet.demand_w
+
+        # satisfy demand with supply blocks (order represents priority)
+        for block in blocks_supply:
+            pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
+
+    return SimulationResults(energy_pv_pot_wh=pv.energy_pot_wh,
+                             energy_pv_curt_wh=grid.energy_curt_wh,
+                             energy_grid_buy_wh=grid.energy_buy_wh,
+                             energy_grid_sell_wh=grid.energy_sell_wh,
+                             pwr_grid_peak_w=grid.pwr_peak_w,
+                             energy_dem_wh=dem.energy_wh,
+                             energy_fleet_wh=fleet.energy_wh,
+                             )
+
+
+@st.cache_data
+def calc_phase_results(logs: Logs,
+                       capacities: Capacities,
+                       ) -> PhaseResults:
+
+    result_sim = simulate(logs=logs,
+                          capacities=capacities,)
+
+    # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
+    if capacities.pv_wp > 0:
+        self_sufficiency_pct = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh) * 100
+        # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
+        self_consumption_pct = 100 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh) * 100
+    else:
+        self_sufficiency_pct = 0.0
+        self_consumption_pct = 0.0
+
+    co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
+    co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
+
+    opex_grid_energy = (result_sim.energy_grid_buy_wh * OPEX_SPEC_GRID_BUY_EUR_PER_WH +
+                        result_sim.energy_grid_sell_wh * OPEX_SPEC_GRID_SELL_EUR_PER_WH)
+
+    opex_grid_power = result_sim.pwr_grid_peak_w * OPEX_SPEC_GRID_PWR_EUR_WP
+
+    opex_grid = opex_grid_energy + opex_grid_power
+
+    return PhaseResults(simulation=result_sim,
+                        self_sufficiency_pct=self_sufficiency_pct,
+                        self_consumption_pct=self_consumption_pct,
+                        co2_yrl_kg=co2_yrl_kg,
+                        co2_yrl_eur=co2_yrl_eur,
+                        capex_eur=0.0,  # ToDo: calculate CAPEX
+                        opex_fuel_eur=0.0,  # ToDo: calculate OPEX fuel
+                        opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
+                        opex_grid_eur=opex_grid,
+                        cashflow=np.zeros(len(DTI), dtype=np.float64),  # ToDo: calculate cashflow
                         )
 
 
-    return SubFleetResults(num_total=subfleet_settings.num_total,
-                           num_bev=subfleet_settings.num_bev,
-                           num_bev_additional=0,
-                           num_icev=subfleet_settings.num_total - subfleet_settings.num_bev,
-                           tco_bev=tco_bev,
-                           tco_icev=tco_icev,
-                           energy_bev_daily_kwh=0,  # ToDo
-                           )
+def run_backend(settings: Settings) -> BackendResults:
+    # start time tracking
+    start_time = time()
+
+    # get log data for the simulation
+    logs = Logs(pv_spec=get_log_pv(coordinates=settings.location.coordinates),
+                dem=get_log_dem(slp=settings.location.slp,
+                          consumption_yrl_wh=settings.location.consumption_yrl_wh,
+                          ),
+                # ToDo: get input parameters from settings
+                fleet=get_log_subfleet(),
+                )
+
+
+    results_baseline = calc_phase_results(logs=logs,
+                                          capacities=settings.location.get_capacities('baseline'),
+                                          )
+
+    results_expansion = calc_phase_results(logs=logs,
+                                           capacities=settings.location.get_capacities('expansion'),
+                                           )
 
 
 
-def run_backend(settings: Settings) -> Results:
-    print('run_backend')
+    roi_rel = 0.0  #ToDo: calculate!
+    period_payback_rel = 0.0  #ToDo: calculate!
+    npc_delta = 0.0  #ToDo: calculate!
 
-    subfleet_results = {subfleet_id: calc_subfleet_results(subfleet_settings=subfleet_settings,
-                                                           ci_settings=settings.charging_infrastructure,
-                                                           economic_settings=settings.economic,
-                                                           location_settings=settings.location)
-                        for subfleet_id, subfleet_settings in settings.subfleets.items()}
+    # stop time tracking
+    print(f'Backend calculation completed in {time() - start_time:.2f} seconds.')
 
-    system_results = SystemResults(
-        pv_capacity_kwp = settings.location.pv_capacity_kwp,
-        pv_energy_yrl_kwh = 0.0,  # ToDo
-        battery_capacity_kwh = settings.location.battery_capacity_kwh,
-        grid_capacity_kw = settings.location.grid_capacity_kw,
-        num_dc_chargers = settings.charging_infrastructure.num,
-        energy_daily_bevs_kwh = 0.0,  # ToDo
-    )
+    return BackendResults(baseline=results_baseline,
+                          expansion=results_expansion,
+                          roi_rel=roi_rel,
+                          period_payback_rel=period_payback_rel,
+                          npc_delta=npc_delta,
+                          )
 
-    return Results(subfleets=subfleet_results,
-                   system=system_results,
-                   )
 
+if __name__ == "__main__":
+    settings_default = Settings()
+    result = run_backend(settings=settings_default)
+    print(result.baseline.simulation)
+    print(result.expansion.simulation)

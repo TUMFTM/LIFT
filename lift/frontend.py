@@ -11,7 +11,7 @@ from interfaces import (
     SubFleetSettings,
     ChargerSettings,
     EconomicSettings,
-    Settings,
+    Settings, Coordinates, Size
 )
 
 
@@ -75,78 +75,77 @@ def _show_and_get_location() -> LocationSettings:
         lon = click_info["last_clicked"]["lng"]
         st.success(f"Ausgewählter Standort: {lat:.5f}, {lon:.5f}")
     """
+    return LocationSettings(
+        coordinates=Coordinates(
+            latitude=st.number_input(label="Breitengrad",
+                                     min_value=-90.0,
+                                     max_value=90.0,
+                                     value=48.137,
+                                     step=0.001,
+                                     format="%0.3f",
+                                     ),
+            longitude=st.number_input(label="Längengrad",
+                                      min_value=-180.0,
+                                      max_value=180.0,
+                                      value=11.575,
+                                      step=0.001,
+                                      format="%0.3f",
+                                      )
+        ),
+        slp=st.selectbox(label="Lastprofil",
+                         options=['h0', 'g0', 'g1', 'g2', 'g3']),
+        consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
+                                     min_value=10,
+                                     max_value=1000,
+                                     value=500,
+                                     step=10,
+                                     ) * 1E6,  # convert to Wh
+        # ToDo: numeric field for preexisting size
+        # ToDo: distinguish static and dynamic load management
+        grid_capacity_w=Size(preexisting=st.slider(label="Bestehende Netzanschlussleistung (kW)",
+                                                   min_value=100,
+                                                   max_value=10000,
+                                                   value=1000,
+                                                   step=100,
+                                                   ) * 1E3,  # convert to W
+                             expansion=st.slider(label="Zusätzliche Netzanschlussleistung (kW)",
+                                                 min_value=0,
+                                                 max_value=10000,
+                                                 value=1000,
+                                                 step=50,
+                                                 ) * 1E3  # convert to W
+                             ),
+        # ToDo: numeric field for preexisting size
+        pv_capacity_wp=Size(preexisting=st.slider(label="Bestehende PV-Leistung (kWp)",
+                                                  min_value=0,
+                                                  max_value=1000,
+                                                  value=0,
+                                                  step=5,
+                                                  ) * 1E3,  # convert to Wp
 
-    latitude = st.number_input(label="Breitengrad",
-                                       min_value=-90.0,
-                                       max_value=90.0,
-                                       value=48.137,
-                                       step=0.001,
-                                       format="%0.3f",
-                                       )
+                            expansion=st.slider(label="Zusätzliche PV-Leistung (kWp)",
+                                                min_value=0,
+                                                max_value=1000,
+                                                value=0,
+                                                step=5,
+                                                ) * 1E3  # convert to Wp
+                            ),
+        # ToDo: numeric field for preexisting size
+        ess_capacity_wh=Size(preexisting=st.slider(label="Bestehende Batteriespeicher-Kapazität (kWh)",
+                                                   min_value=0,
+                                                   max_value=1000,
+                                                   value=0,
+                                                   step=5,
+                                                   ) * 1E3,  # convert to Wh
 
-    longitude = st.number_input(label="Längengrad",
-                                        min_value=-180.0,
-                                        max_value=180.0,
-                                        value=11.575,
-                                        step=0.001,
-                                        format="%0.3f",
-                                        )
-
-    # define annual energy consumption
-    consumption_annual = st.slider(label="Jahresstromverbrauch (MWh)",
-                                           min_value=10,
-                                           max_value=1000,
-                                           value=500,
-                                           step=10,
-                                           )
-
-    # ToDo: choose corresponding load profile from a dropdown menu
-
-
-    # define grid capacity
-    # ToDo: add numeric field for preexisting size
-    # ToDo: distinguish static and dynamic load management
-    grid_capacity_preexisting_kw = 0
-    grid_capacity_expansion_kw = st.slider(label="Netzanschlussleistung (kW)",
-                                           min_value=100,
-                                           max_value=10000,
-                                           value=1000,
-                                           step=100,
-                                           )
-
-    # define existing pv capacity
-    # ToDo: add numeric field for preexisting size
-    pv_capacity_preexisting_kwp = 0
-    pv_capacity_expansion_kwp = st.slider(label="Bestehende PV-Leistung (kWp)",
-                                          min_value=0,
-                                          max_value=1000,
-                                          value=0,
-                                          step=5,
-                                          )
-
-    # define existing battery storage capacity
-    # ToDo: add numeric field for preexisting size
-    ess_capacity_preexisting_kwh = 0
-    ess_capacity_expansion_kwh = st.slider(label="Bestehende Batteriespeicher-Kapazität (kWh)",
-                                           min_value=0,
-                                           max_value=1000,
-                                           value=0,
-                                           step=5,
-                                           )
-
-    location = LocationSettings(
-        latitude=latitude,
-        longitude=longitude,
-        consumption_annual=consumption_annual,
-        grid_capacity_preexisting_kw=grid_capacity_preexisting_kw,
-        grid_capacity_expansion_kw=grid_capacity_expansion_kw,
-        pv_capacity_preexisting_kwp=pv_capacity_preexisting_kwp,
-        pv_capacity_expansion_kwp=pv_capacity_expansion_kwp,
-        ess_capacity_preexisting_kwh=ess_capacity_preexisting_kwh,
-        ess_capacity_expansion_kwh=ess_capacity_expansion_kwh,
+                             expansion=st.slider(label="Zusätzliche Batteriespeicher-Kapazität (kWh)",
+                                                 min_value=0,
+                                                 max_value=1000,
+                                                 value=0,
+                                                 step=5,
+                                                 ) * 1E3  # convert to Wh
+                             ),
     )
-
-    return location
 
 def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
     with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
@@ -174,12 +173,12 @@ def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                          **subfleet.settings_battery.dict,
                                          )
 
-        capex_bev = st.slider(label="Anschaffungspreis BEV (EUR)",
+        capex_bev_eur = st.slider(label="Anschaffungspreis BEV (EUR)",
                               key=f'capex_bev_{subfleet.id}',
                               **subfleet.settings_capex_bev.dict,
                               )
 
-        capex_icev = st.slider(label="Anschaffungspreis ICEV (EUR)",
+        capex_icev_eur = st.slider(label="Anschaffungspreis ICEV (EUR)",
                                key=f'capex_icev_{subfleet.id}',
                                **subfleet.settings_capex_icev.dict,
                                )
@@ -219,8 +218,8 @@ def _show_and_get_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         num_bev_preexisting=num_bev_preexisting,
         num_bev_expansion=num_bev_expansion,
         battery_capacity_kwh=battery_capacity_kwh,
-        capex_bev=capex_bev,
-        capex_icev=capex_icev,
+        capex_bev_eur=capex_bev_eur,
+        capex_icev_eur=capex_icev_eur,
         dist_avg_daily_km=dist_avg_daily_km,
         toll_share_pct=toll_share_pct,
         # dist_max_daily_km=dist_max_km,
@@ -309,10 +308,9 @@ def create_frontend():
 
     # D) Parameter zur Wirtschaftlichkeitsberechnung
     st.sidebar.write("**Wirtschaftlichkeitsberechnung**")
-    service_years = st.sidebar.slider("Haltedauer (Jahre)", 1, 12, 6, 1)
     with st.sidebar.expander(label="Erweiterte Einstellungen für Wirtschaftlichkeitsberechnung",
                              icon="⚙️"):
-        electricity_cost = st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05)
+        electricity_cost = st.slider("Stromkosten (EUR/kWh)", 0.05, 1.00, 0.20, 0.05) * 1E3  # convert to EUR/Wh
         diesel_cost = st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05)
         road_tax = st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01)
         driver_cost = st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1)
@@ -324,8 +322,7 @@ def create_frontend():
         workingdays_year = st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
 
     economic_settings = EconomicSettings(
-        period_holding_yrs=service_years,
-        electricity_price_eur_kwh=electricity_cost,
+        electricity_price_eur_wh=electricity_cost,
         fuel_price_eur_liter=diesel_cost,
         toll_icev_eur_km=road_tax,
         toll_bev_eur_km=0.0,
@@ -360,25 +357,17 @@ def create_frontend():
 
     if st.session_state["run_backend"] is True:
         results = backend.run_backend(settings=settings)
-        print(results)
         st.success(f"Berechnung erfolgreich!")
         st.session_state["run_backend"] = False
 
-        # region TCO
-        st.write(f"**TCO E-Fahrzeuge**")
-        for col, subfleet_id, subfleet_results in zip(st.columns(len(results.subfleets)),
-                                                      results.subfleets.keys(),
-                                                      results.subfleets.values()):
-            with col:
-                st.write(f"{SUBFLEETS[subfleet_id].label}: **{subfleet_results.tco_bev:.3f} EUR/km**")
+        # region results
+        st.write(f"**Baseline**")
+        st.write(f"Autarkiegrad: {results.baseline.self_sufficiency_pct:.2f}%")
+        st.write(f"Eigenverbrauchsquote: {results.baseline.self_consumption_pct:.2f}%")
 
-
-        st.write(f"**TCO Konventionelle Fahrzeuge**")
-        for col, subfleet_id, subfleet_results in zip(st.columns(len(results.subfleets)),
-                                                      results.subfleets.keys(),
-                                                      results.subfleets.values()):
-            with col:
-                st.write(f"{SUBFLEETS[subfleet_id].label}: **{subfleet_results.tco_icev:.3f} EUR/km**")
+        st.write(f"**Erweiterung**")
+        st.write(f"Autarkiegrad: {results.expansion.self_sufficiency_pct:.2f}%")
+        st.write(f"Eigenverbrauchsquote: {results.expansion.self_consumption_pct:.2f}%")
         # endregion
 
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass
@@ -241,11 +242,16 @@ CHARGERS = dict(
 )
 
 
+DTI = pd.date_range(start='2023-01-01', end='2024-01-01 00:00', freq='h', tz='Europe/Berlin', inclusive='left')
+FREQ_HOURS = pd.Timedelta(DTI.freq).total_seconds() / 3600
 TIME_PRJ_YRS = 18
 LIFESPAN_VEHICLES_YRS = 6
 LIFESPAN_STORAGE_YRS = 9
-OPEX_SPEC_GRID_BUY_EUR_PER_WH = 30E-5
-OPEX_SPEC_GRID_SELL_EUR_PER_WH = -6E-5
-OPEX_SPEC_FUEL_EUR_PER_L = 1.5
-OPEX_SPEC_CO2_PER_KG = 45E-3
+CO2_SPEC_KG_PER_WH = 0.0004  # ToDo: add correct value
+OPEX_SPEC_GRID_BUY_EUR_PER_WH = 30E-5# ToDo: use value from economic settings
+OPEX_SPEC_GRID_SELL_EUR_PER_WH = -6E-5  # ToDo: use value from economic settings
+OPEX_SPEC_GRID_PWR_EUR_WP = 150E-3  # ToDo: use value from economic settings
+OPEX_SPEC_FUEL_EUR_PER_L = 1.5  # ToDo: use value from economic settings
+OPEX_SPEC_CO2_PER_KG = 45E-3  # ToDo: add correct value
 TOLL_EUR_PER_KM = 0.001  # ToDo: is this dependent on the vehicle class?
+
