@@ -4,7 +4,7 @@
 
 
 ## Created by 
-Anna Paper, M.Sc.  
+Anna Paper, M.Sc. and Brian Dietermann, M.Sc.
 Institute of Automotive Technology  
 Department of Mobility Systems Engineering  
 TUM School of Engineering and Design  
@@ -12,8 +12,7 @@ Technical University of Munich
 anna.paper@tum.de  
 2025
 
-#### Contributors
-Brian Dietermann, M.Sc. - Research Associate 06/2022-  
+#### Contributors  
 Fabian Mayer, B.Sc. - Semester Thesis ongoing
 
 ## Installation
