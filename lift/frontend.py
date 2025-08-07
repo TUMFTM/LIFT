@@ -93,7 +93,9 @@ def _show_and_get_location() -> LocationSettings:
                                       )
         ),
         slp=st.selectbox(label="Lastprofil",
-                         options=['h0', 'g0', 'g1', 'g2', 'g3']),
+                         options=['H0', 'H0_dyn',
+                                  'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
+                                  'L0', 'L1', 'L2']).lower(),
         consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
                                      min_value=10,
                                      max_value=1000,
