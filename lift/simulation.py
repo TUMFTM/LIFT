@@ -384,12 +384,16 @@ if __name__ == "__main__":
     fleet_log = get_log_subfleet(index=dti)
 
     start_time = time()
-    sim = Simulation(dti=dti,
-                     fleet_log=fleet_log,
-                     pv_log=pv_log_spec,
-                     dem_log=dem_log
-                     )
-    results = sim.simulate()
+    results = []
+
+    for _ in range(2):
+        sim = Simulation(dti=dti,
+                         fleet_log=fleet_log,
+                         pv_log=pv_log_spec,
+                         dem_log=dem_log
+                         )
+        results.append(sim.simulate())
+
     print(results)
 
     # stop time tracking
