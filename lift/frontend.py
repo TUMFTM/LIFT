@@ -130,7 +130,7 @@ def _get_params_location() -> LocationSettings:
         # ToDo: distinguish static and dynamic load management
         col1, col2 = st.columns(col_share)
         with col1:
-            preexisting = st.number_input(label="Bestehend (kW)",
+            preexisting = st.number_input(label="Vorhanden (kW)",
                                           key="grid_preexisting",
                                           min_value=0,
                                           max_value=10000,
@@ -151,7 +151,7 @@ def _get_params_location() -> LocationSettings:
         st.markdown("**PV-Anlage**")
         col1, col2 = st.columns(col_share)
         with col1:
-            preexisting = st.number_input(label="Bestehend (kWp)",
+            preexisting = st.number_input(label="Vorhanden (kWp)",
                                           key="pv_preexisting",
                                           min_value=0,
                                           max_value=1000,
@@ -172,7 +172,7 @@ def _get_params_location() -> LocationSettings:
         st.markdown("**Stationärspeicher**")
         col1, col2 = st.columns(col_share)
         with col1:
-            preexisting = st.number_input(label="Bestehend (kWh)",
+            preexisting = st.number_input(label="Vorhanden (kWh)",
                                           key="ess_preexisting",
                                           min_value=0,
                                           max_value=1000,
@@ -210,7 +210,7 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
 
         col1, col2 = st.columns(2)
         with col1:
-            num_bev_preexisting = st.number_input("Bestehende E-Fahrzeuge",
+            num_bev_preexisting = st.number_input("Vorhandene E-Fahrzeuge",
                                                   key=f'num_bev_preexisting_{subfleet.id}',
                                                   min_value=0,
                                                   max_value=num_total,
