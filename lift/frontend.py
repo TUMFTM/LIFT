@@ -225,7 +225,8 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         num_total = st.number_input(label="Fahrzeuge gesamt",
                                     key=f'num_{subfleet.vehicle_type}',
                                     min_value=0,
-                                    value=10,
+                                    max_value=5,
+                                    value=0,
                                     step=1,
                                     )
 

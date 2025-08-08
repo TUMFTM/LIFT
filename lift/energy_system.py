@@ -195,7 +195,6 @@ class Fleet(DemandBlock):
             pwr_max_w=subfleet.pwr_chg_max_w,
         ) for subfleet in self.subfleets.values()
             for i in range(subfleet.num)}
-        print(self.chargers)
 
     @property
     def demand_w(self) -> float:
