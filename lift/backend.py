@@ -150,7 +150,7 @@ def calc_phase_results(logs: Logs,
     co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
     co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
 
-    opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh +
+    opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
                         result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
 
     opex_grid_power = result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
