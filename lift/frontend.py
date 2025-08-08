@@ -360,21 +360,7 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                cost_per_charger_eur=cost_per_charger_eur)
 
 
-def create_frontend():
-    # define page settings
-    st.set_page_config(
-        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
-        page_icon="🚚",
-        layout="wide"
-    )
-
-    # css styles for sidebar
-    st.markdown(sidebar_style, unsafe_allow_html=True)
-    st.markdown(footer_css, unsafe_allow_html=True)
-    if "run_backend" not in st.session_state:
-        st.session_state["run_backend"] = False
-
-    # region define input in sidebar elements
+def get_input_params() -> Settings:
     col1, col2 = st.sidebar.columns([6, 4])
     with col1:
         auto_refresh = st.toggle("**Automatisch aktualisieren**",
@@ -406,45 +392,66 @@ def create_frontend():
     for charger in CHARGERS.values():
         charger_settings[charger.id] = _get_params_charger(charger)
 
-    settings = Settings(location=location_settings,
-                        subfleets=fleet_settings,
-                        chargers=charger_settings,
-                        economic=economic_settings
-    )
+    return Settings(location=location_settings,
+                    subfleets=fleet_settings,
+                    chargers=charger_settings,
+                    economic=economic_settings
+                    )
 
-    # endregion
 
-    st.title("LIFT - Logistics Infrastructure & Fleet Transformation")
+def display_results(results):
+    st.subheader("Ergebnisse")
+    st.success(f"Berechnung erfolgreich!")
+    for col, label, attr_name in zip(st.columns(2),
+                                     ['Baseline', 'Erweiterung'],
+                                     ['baseline', 'expansion']):
+        with col:
+            st.write(f"**{label}**")
+            res = getattr(results, attr_name)
+            st.write(f"Autarkiegrad: {res.self_sufficiency_pct:.2f}%")
+            st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:.2f}%")
+            st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
+            st.write(f"OPEX: {res.opex_eur:.2f} EUR")
+            st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
+            st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
+
+
+def display_empty_results():
     st.markdown("""
     Willkommen zu deinem datengetriebenen Framework für die Elektrifizierung von Lkw-Flotten 
     und die Optimierung von Speditionsstandorten. Nutze die Seitenleiste, um Parameter 
     einzugeben und klicke anschließend auf den Button, um erste Berechnungen zu starten.
     """)
-
     st.markdown(horizontal_line_style, unsafe_allow_html=True)
+    st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
+               "**🚀 Ergebnisse berechnen**.")
 
-    st.subheader("Ergebnisse")
+
+def run_frontend():
+    # define page settings
+    st.set_page_config(
+        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
+        page_icon="🚚",
+        layout="wide"
+    )
+
+    # css styles for sidebar
+    st.markdown(sidebar_style, unsafe_allow_html=True)
+    st.markdown(footer_css, unsafe_allow_html=True)
+
+    # initialize session state for backend run
+    if "run_backend" not in st.session_state:
+        st.session_state["run_backend"] = False
+
+    # create sidebar and get input parameters from sidebar
+    settings = get_input_params()
+
+    st.title("LIFT - Logistics Infrastructure & Fleet Transformation")
 
     if st.session_state["run_backend"] is True:
         try:
             results = backend.run_backend(settings=settings)
-            # region results
-            st.success(f"Berechnung erfolgreich!")
-            for col, label, attr_name in zip(st.columns(2),
-                                             ['Baseline', 'Erweiterung'],
-                                             ['baseline', 'expansion']):
-                with col:
-                    st.write(f"**{label}**")
-                    res = getattr(results, attr_name)
-                    st.write(f"Autarkiegrad: {res.self_sufficiency_pct:.2f}%")
-                    st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:.2f}%")
-                    st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
-                    st.write(f"OPEX: {res.opex_eur:.2f} EUR")
-                    st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
-                    st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
-
-            st.markdown("---")  # Trennlinie
-            # endregion
+            display_results(results)
         except GridPowerExceededError as e:
             st.error(f"""\
             **Fehler in der Simulation**  
@@ -462,8 +469,7 @@ def create_frontend():
 
         st.session_state["run_backend"] = False
     else:
-        st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
-                   "**🚀 Ergebnisse berechnen**.")
+        display_empty_results()
 
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
@@ -477,4 +483,4 @@ def create_frontend():
 
 
 if __name__ == "__main__":
-    create_frontend()
+    run_frontend()
