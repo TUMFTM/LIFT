@@ -24,6 +24,7 @@ from interfaces import (Coordinates,
                         Logs,
                         Capacities,
                         Settings,
+                        SubfleetSimSettings,
                         EconomicSettings,
                         SimulationResults,
                         PhaseResults,
@@ -72,8 +73,8 @@ def get_log_dem(slp: str,
 
 
 @st.cache_data
-def get_log_subfleet() -> pd.DataFrame:
-    with resources.files('lift.data').joinpath('log_subfleet.csv').open('r') as logfile:
+def get_log_subfleet(vehicle_type: str) -> pd.DataFrame:
+    with resources.files('lift.data').joinpath(f'log_{vehicle_type}.csv').open('r') as logfile:
         df = pd.read_csv(logfile,
                          header=[0,1])
         df = df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True)).drop(df.columns[0], axis=1).tz_convert('Europe/Berlin')
@@ -83,12 +84,15 @@ def get_log_subfleet() -> pd.DataFrame:
 @st.cache_data
 def simulate(logs: Logs,
              capacities: Capacities,
+             subfleets: dict[str, SubfleetSimSettings],
+             chargers: dict[str, int],
              ) -> SimulationResults:
 
     dem = FixedDemand(log=logs.dem)
-    fleet = Fleet(fleet_units=None,
+    fleet = Fleet(pwr_lim_w=np.inf,
                   log=logs.fleet,
-                  pwr_lim_w=np.inf)
+                  subfleets=subfleets,
+                  chargers=chargers,)
 
     pv = PVSource(pwr_wp=capacities.pv_wp,
                   log_spec=logs.pv_spec)
@@ -133,10 +137,14 @@ def simulate(logs: Logs,
 def calc_phase_results(logs: Logs,
                        capacities: Capacities,
                        economics: EconomicSettings,
+                       subfleets: dict[str, SubfleetSimSettings],
+                       chargers: dict[str, int],
                        ) -> PhaseResults:
 
     result_sim = simulate(logs=logs,
-                          capacities=capacities,)
+                          capacities=capacities,
+                          subfleets=subfleets,
+                          chargers=chargers,)
 
     # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
     if capacities.pv_wp > 0:
@@ -180,18 +188,33 @@ def run_backend(settings: Settings) -> BackendResults:
                                 consumption_yrl_wh=settings.location.consumption_yrl_wh,
                                 ),
                 # ToDo: get input parameters from settings
-                fleet=get_log_subfleet(),
+                fleet={vehicle_type: get_log_subfleet(vehicle_type=vehicle_type)
+                       for vehicle_type, subfleet in settings.subfleets.items()},
                 )
+
+    subfleet_sim_settings_baseline = {subfleet.vehicle_type:
+                                          subfleet.get_subfleet_sim_settings_baseline(settings.chargers)
+                                      for subfleet in settings.subfleets.values()}
+
+    subfleet_sim_settings_expansion = {subfleet.vehicle_type:
+                                           subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
+                                       for subfleet in settings.subfleets.values()}
 
 
     results_baseline = calc_phase_results(logs=logs,
                                           capacities=settings.location.get_capacities('baseline'),
                                           economics=settings.economic,
+                                          subfleets=subfleet_sim_settings_baseline,
+                                          chargers={charger_type: charger.num_preexisting
+                                                    for charger_type, charger in settings.chargers.items()},
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
                                            capacities=settings.location.get_capacities('expansion'),
                                            economics=settings.economic,
+                                           subfleets=subfleet_sim_settings_expansion,
+                                           chargers={charger_type: charger.num_preexisting + charger.num_expansion
+                                                     for charger_type, charger in settings.chargers.items()},
                                            )
 
 

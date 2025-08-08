@@ -7,7 +7,7 @@ import pandas as pd
 
 
 from definitions import DTI, FREQ_HOURS
-from interfaces import GridPowerExceededError, SOCError
+from interfaces import GridPowerExceededError, SOCError, SubfleetSimSettings
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
@@ -180,27 +180,42 @@ class FixedDemand(DemandBlock):
 
 @dataclass
 class Fleet(DemandBlock):
-    fleet_units: dict[str, FleetUnit]
     pwr_lim_w: float
     log: pd.DataFrame
+    subfleets: dict[str, SubfleetSimSettings]
+    chargers: dict[str, int]
 
     def __post_init__(self):
-        self.fleet_units = {f"unit_{i}": FleetUnit(name=f"unit_{i}",
-                                                   atbase=self.log.loc[:, (f'icev{i}', 'atbase')].values,
-                                                   consumption_w=self.log.loc[:, (f'icev{i}', 'consumption')].values,
-                                                   capacity_wh=100E3,
-                                                   ) for i in range(5)}
+        self.fleet_units = {f"{subfleet.vehicle_type}_{i}": FleetUnit(
+            name=f"{subfleet.vehicle_type}_{i}",
+            atbase=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'atbase')].values,
+            consumption_w=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'consumption')].values,
+            capacity_wh=subfleet.capacity_wh,
+            charger=subfleet.charger,
+            pwr_max_w=subfleet.pwr_chg_max_w,
+        ) for subfleet in self.subfleets.values()
+            for i in range(subfleet.num)}
+        print(self.chargers)
 
     @property
     def demand_w(self) -> float:
+        chargers = self.chargers.copy()
         # get a list of all fleet units and their demand and sort that by priority level
         pwr_available_w = self.pwr_lim_w
         pwr_chg_fleet_w = 0.0
         for fleet_unit in sorted(self.fleet_units.values(), key=lambda x: x.priority_lvl):
-            pwr_chg = fleet_unit.charge(pwr_available_w)
+            # check for available charger
+            pwr_chg = fleet_unit.charge(pwr_available_w * min(chargers[fleet_unit.charger], 1))
             pwr_available_w -= pwr_chg
             pwr_chg_fleet_w += pwr_chg
+
+            # allocate charger
+            if pwr_chg > 0:
+                chargers[fleet_unit.charger] -= 1
+
             if pwr_available_w <= 0:
+                break
+            if sum(chargers.values()) <= 0:
                 break
         return pwr_chg_fleet_w
 
@@ -216,14 +231,13 @@ class FleetUnit(DemandBlock):
     atbase: np.typing.NDArray[np.float64]
     consumption_w: np.typing.NDArray[np.float64]
     capacity_wh: float
+    charger: str
+    pwr_max_w: float
 
     soc_track: np.typing.NDArray[np.float64] = field(init=False)
 
     soc: float = field(init=False,
                        default=0.0)
-
-    pwr_max_w: float = field(init=False,
-                             default=11000.0)
 
     _pwr_chg_w: float = field(init=False,
                               default=0.0)
@@ -250,6 +264,8 @@ class FleetUnit(DemandBlock):
         self._pwr_chg_w += pwr_chg
         # update SOC based on charging power
         self.soc += (pwr_chg - self.consumption_w[self.idx]) * FREQ_HOURS / self.capacity_wh
+        if self.soc < (0 - EPS) or self.soc > (1 + EPS):
+            raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg} W at {DTI[self.idx]}.")
         self.soc_track[self.idx] = self.soc
         # return the charging power applied to this unit
         return pwr_chg

@@ -223,16 +223,16 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                              icon=subfleet.icon,
                              expanded=False):
         num_total = st.number_input(label="Fahrzeuge gesamt",
-                              key=f'num_{subfleet.id}',
-                              min_value=0,
-                              value=10,
-                              step=1,
-                              )
+                                    key=f'num_{subfleet.vehicle_type}',
+                                    min_value=0,
+                                    value=10,
+                                    step=1,
+                                    )
 
         col1, col2 = st.columns(2)
         with col1:
             num_bev_preexisting = st.number_input("Vorhandene E-Fahrzeuge",
-                                                  key=f'num_bev_preexisting_{subfleet.id}',
+                                                  key=f'num_bev_preexisting_{subfleet.vehicle_type}',
                                                   min_value=0,
                                                   max_value=num_total,
                                                   value=0,
@@ -240,56 +240,56 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                                   )
         with col2:
             num_bev_expansion = st.number_input("Zusätzliche E-Fahrzeuge",
-                                                  key=f'num_bev_expansion_{subfleet.id}',
-                                                  min_value=0,
-                                                  max_value=num_total - num_bev_preexisting,
-                                                  value=0,
-                                                  step=1,
-                                                  )
+                                                key=f'num_bev_expansion_{subfleet.vehicle_type}',
+                                                min_value=0,
+                                                max_value=num_total - num_bev_preexisting,
+                                                value=0,
+                                                step=1,
+                                                )
 
         col1, col2 = st.columns([3, 7])
         with col1:
             charger = st.selectbox(label="Ladepunkt",
-                                   key=f'charger_{subfleet.id}',
-                                   options=[x.id for x in CHARGERS.values()])
+                                   key=f'charger_{subfleet.vehicle_type}',
+                                   options=[x.name for x in CHARGERS.values()])
         with col2:
             max_value = CHARGERS[charger.lower()].settings_pwr_max.max_value
             pwr_max_w = st.slider(label="max. Ladeleistung (kW)",
-                                  key=f'pwr_max_{subfleet.id}',
+                                  key=f'pwr_max_{subfleet.vehicle_type}',
                                   min_value=0,
                                   max_value=max_value,
                                   value=max_value,
                                   ) * 1E3
 
-        battery_capacity_kwh = st.slider(label="Batteriekapazität (kWh)",
-                                         key=f'battery_capacity_kwh_{subfleet.id}',
-                                         **subfleet.settings_battery.dict,
-                                         )
+        battery_capacity_wh = st.slider(label="Batteriekapazität (kWh)",
+                                        key=f'battery_capacity_wh_{subfleet.vehicle_type}',
+                                        **subfleet.settings_battery.dict,
+                                        ) * 1E3
 
         capex_bev_eur = st.slider(label="Anschaffungspreis BEV (EUR)",
-                              key=f'capex_bev_{subfleet.id}',
-                              **subfleet.settings_capex_bev.dict,
-                              )
+                                  key=f'capex_bev_{subfleet.vehicle_type}',
+                                  **subfleet.settings_capex_bev.dict,
+                                  )
 
         capex_icev_eur = st.slider(label="Anschaffungspreis ICEV (EUR)",
-                               key=f'capex_icev_{subfleet.id}',
-                               **subfleet.settings_capex_icev.dict,
-                               )
+                                   key=f'capex_icev_{subfleet.vehicle_type}',
+                                   **subfleet.settings_capex_icev.dict,
+                                   )
 
         # ToDo: yearly distance instead of daily distance?
         dist_avg_daily_km = st.slider(label="Tägliche Distanz/Fahrzeug (km)",
-                                      key=f'dist_avg_km_{subfleet.id}',
+                                      key=f'dist_avg_km_{subfleet.vehicle_type}',
                                       **subfleet.settings_dist_avg.dict,
                                       )
 
         toll_share_pct = st.slider(label="Anteil mautplichtiger Strecken (%)",
-                                   key=f'toll_share_pct_{subfleet.id}',
+                                   key=f'toll_share_pct_{subfleet.vehicle_type}',
                                    **subfleet.settings_toll_share.dict,
                                    )
 
         # ToDo: check whether this is required
         dist_max_km = st.slider(label="Max. Distanz pro Fahrzeug (km)",
-                                key=f'dist_max_km_{subfleet.id}',
+                                key=f'dist_max_km_{subfleet.vehicle_type}',
                                 **subfleet.settings_dist_max.dict,
                                 )
 
@@ -306,11 +306,11 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
         #                        )
 
     return SubFleetSettings(
-        vehicle_type=subfleet.id,
+        vehicle_type=subfleet.vehicle_type,
         num_total=num_total,
         num_bev_preexisting=num_bev_preexisting,
         num_bev_expansion=num_bev_expansion,
-        battery_capacity_kwh=battery_capacity_kwh,
+        battery_capacity_wh=battery_capacity_wh,
         capex_bev_eur=capex_bev_eur,
         capex_icev_eur=capex_icev_eur,
         dist_avg_daily_km=dist_avg_daily_km,
@@ -328,35 +328,35 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
 
 
 def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
-    with st.sidebar.expander(label=f'**{charger.id}-Ladepunkte**',
+    with st.sidebar.expander(label=f'**{charger.name}-Ladepunkte**',
                              icon=charger.icon,
                              expanded=False):
 
         col1, col2 = st.columns([3, 7])
         with col1:
             num_preexisting = st.number_input(label="Vorhandene",
-                                              key=f'chg_{charger.id.lower()}_preexisting',
+                                              key=f'chg_{charger.name.lower()}_preexisting',
                                               **charger.settings_preexisting.dict
                                               )
         with col2:
             num_expansion = st.slider(label="Zusätzliche",
-                                              key=f'chg_{charger.id.lower()}_expansion',
-                                              **charger.settings_expansion.dict,
-                                              )
+                                      key=f'chg_{charger.name.lower()}_expansion',
+                                      **charger.settings_expansion.dict,
+                                      )
 
         pwr_max_w = st.slider(label="Maximale Ladeleistung (kW)",
-                                    key=f'chg_{charger.id.lower()}_pwr',
-                                    **charger.settings_pwr_max.dict
-                                    ) * 1E3
+                              key=f'chg_{charger.name.lower()}_pwr',
+                              **charger.settings_pwr_max.dict
+                              ) * 1E3
 
         cost_per_charger_eur = st.slider(label="Kosten (EUR pro Ladepunkt)",
-                                         key=f'chg_{charger.id.lower()}_cost',
+                                         key=f'chg_{charger.name.lower()}_cost',
                                          **charger.settings_cost_per_unit_eur.dict
                                          )
 
         return ChargerSettings(num_preexisting=num_preexisting,
                                num_expansion=num_expansion,
-                               pwr_max_kw=pwr_max_w,
+                               pwr_max_w=pwr_max_w,
                                cost_per_charger_eur=cost_per_charger_eur)
 
 
@@ -384,13 +384,13 @@ def get_input_params() -> Settings:
     st.sidebar.subheader("Flotte")
     fleet_settings = {}
     for subfleet in SUBFLEETS.values():
-        fleet_settings[subfleet.id] = _get_params_subfleet(subfleet)
+        fleet_settings[subfleet.vehicle_type] = _get_params_subfleet(subfleet)
 
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
     charger_settings = {}
     for charger in CHARGERS.values():
-        charger_settings[charger.id] = _get_params_charger(charger)
+        charger_settings[charger.name] = _get_params_charger(charger)
 
     return Settings(location=location_settings,
                     subfleets=fleet_settings,

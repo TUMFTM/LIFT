@@ -19,7 +19,7 @@ class SliderSettings:
 class SubFleetDefinition:
     label: str
     icon: str
-    id: str
+    vehicle_type: str
     weight_max_str: str
     weight_empty_bev: float
     weight_empty_icev: float
@@ -35,7 +35,7 @@ class SubFleetDefinition:
 
 @dataclass
 class ExpansionDefinition:
-    id: str
+    name: str
     icon: str
     settings_preexisting: SliderSettings
     settings_expansion: SliderSettings
@@ -51,7 +51,7 @@ SUBFLEETS = dict(
     # Leergewicht BET: 18t, Zuladung: 24t
     hlt=SubFleetDefinition(label="Schwere Lkw",
                            icon="🚛",
-                           id="hlt",
+                           vehicle_type="hlt",
                            weight_max_str="42 t zulässiges Zuggesamtgewicht",
                            weight_empty_bev=18000,
                            weight_empty_icev=16600,
@@ -90,7 +90,7 @@ SUBFLEETS = dict(
     # Leergewicht: 10.4t, Zuladung: 16.6t
     hst=SubFleetDefinition(label="Schwerer Verteilerverkehr",
                            icon="🚚",
-                           id="hst",
+                           vehicle_type="hst",
                            weight_max_str="28 t zulässiges Gesamtgewicht",
                            weight_empty_bev=10400,
                            weight_empty_icev=9000,
@@ -129,7 +129,7 @@ SUBFLEETS = dict(
     # Leergewicht: 5.4t, Zuladung: 6.6t
     ust=SubFleetDefinition(label="Urbaner Verteilerverkehr",
                            icon="🚚",
-                           id="ust",
+                           vehicle_type="ust",
                            weight_max_str="12 t zulässiges Gesamtgewicht",
                            weight_empty_bev=5400,
                            weight_empty_icev=5400,
@@ -168,7 +168,7 @@ SUBFLEETS = dict(
     # Leergewicht: 2.5t, Zuladung: 1.0t
     usv=SubFleetDefinition(label="Lieferwagen",
                            icon="🚐",
-                           id="usv",
+                           vehicle_type="usv",
                            weight_max_str="3.5 t zulässiges Gesamtgewicht",
                            weight_empty_bev=2500,
                            weight_empty_icev=2300,
@@ -208,7 +208,7 @@ SUBFLEETS = dict(
 
 
 CHARGERS = dict(
-    ac=ChargerDefinition(id="AC",
+    ac=ChargerDefinition(name="AC",
                          icon="🔌",
                          settings_pwr_max=SliderSettings(min_value=0,
                                                          max_value=43,
@@ -226,7 +226,7 @@ CHARGERS = dict(
                                                                    max_value=5000.0,
                                                                    value=800.0,
                                                                    step=50.0)),
-    dc=ChargerDefinition(id="DC",
+    dc=ChargerDefinition(name="DC",
                          icon="⚡️",
                          settings_pwr_max=SliderSettings(min_value=0,
                                                          max_value=1000,

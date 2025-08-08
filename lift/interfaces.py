@@ -11,6 +11,16 @@ class GridPowerExceededError(Exception):
 class SOCError(Exception):
     pass
 
+
+@dataclass
+class SubfleetSimSettings:
+    vehicle_type: str = 'hlt'
+    num: int = 1
+    pwr_chg_max_w: float = 11E3
+    charger: str = 'ac'
+    capacity_wh: float = 80E3
+
+
 @dataclass
 class Coordinates:
     latitude: float = 48.148
@@ -30,7 +40,7 @@ class Size:
 class Logs:
     pv_spec: np.typing.NDArray[np.floating]
     dem: np.typing.NDArray[np.floating]
-    fleet: pd.DataFrame
+    fleet: dict[str, pd.DataFrame]
 
 
 @dataclass
@@ -71,17 +81,17 @@ class LocationSettings:
 
 @dataclass
 class SubFleetSettings:
-    vehicle_type: str = 'default'
+    vehicle_type: str = 'hlt'
     num_total: int = 5
-    num_bev_preexisting: int = 0
+    num_bev_preexisting: int = 1
     num_bev_expansion: int = 4
-    battery_capacity_kwh: float = 80E3
+    battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
     dist_avg_daily_km: float = 100.0
     toll_share_pct: float = 30.0
     charger: str = 'ac'
-    pwr_max_w: float = 0.0
+    pwr_max_w: float = 11E3
 
     # dist_max_daily_km: float
     # depot_time_h: float
@@ -89,12 +99,29 @@ class SubFleetSettings:
     # weight_empty_bev_kg: float
     # weight_empty_icev_kg: float
 
+    def get_subfleet_sim_settings_baseline(self,
+                                  charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
+        return SubfleetSimSettings(vehicle_type=self.vehicle_type,
+                                   num=self.num_bev_preexisting,
+                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
+                                   charger=self.charger,
+                                   capacity_wh=self.battery_capacity_wh)
+
+    def get_subfleet_sim_settings_expansion(self,
+                                            charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
+        return SubfleetSimSettings(vehicle_type=self.vehicle_type,
+                                   num=self.num_bev_preexisting + self.num_bev_expansion,
+                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
+                                   charger=self.charger,
+                                   capacity_wh=self.battery_capacity_wh)
+
+
 
 @dataclass
 class ChargerSettings:
     num_preexisting: int = 0
     num_expansion: int = 4
-    pwr_max_kw: float = 11.0
+    pwr_max_w: float = 11E3
     cost_per_charger_eur: float = 3000.0
 
 
@@ -118,8 +145,10 @@ class EconomicSettings:
 @dataclass
 class Settings:
     location: LocationSettings = field(default_factory=LocationSettings)
-    subfleets: dict[str, SubFleetSettings] = field(default_factory=lambda: dict(bev=SubFleetSettings(),))
-    chargers: dict[str, ChargerSettings] = field(default_factory=lambda: dict(bev=ChargerSettings(),))
+    subfleets: dict[str, SubFleetSettings] = field(default_factory=lambda: dict(hlt=SubFleetSettings(vehicle_type='hlt'),
+                                                                                hst=SubFleetSettings(vehicle_type='hst'),))
+    chargers: dict[str, ChargerSettings] = field(default_factory=lambda: dict(ac=ChargerSettings(),
+                                                                              dc=ChargerSettings(),))
     economic: EconomicSettings = field(default_factory=EconomicSettings)
 
 
