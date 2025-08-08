@@ -349,7 +349,7 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                     **charger.settings_pwr_max.dict
                                     ) * 1E3
 
-        cost_per_charger_eur = st.slider(label="Kosten pro Ladepunkt in €",
+        cost_per_charger_eur = st.slider(label="Kosten (EUR pro Ladepunkt)",
                                          key=f'chg_{charger.id.lower()}_cost',
                                          **charger.settings_cost_per_unit_eur.dict
                                          )
@@ -424,7 +424,7 @@ def display_empty_results():
     """)
     st.markdown(horizontal_line_style, unsafe_allow_html=True)
     st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf "
-               "**🚀 Ergebnisse berechnen**.")
+               "**🚀 Berechnen**.")
 
 
 def run_frontend():
