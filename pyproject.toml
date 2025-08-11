@@ -19,15 +19,15 @@ dependencies = [
     "numpy",
     "matplotlib",
     "pandas",
-    "pvlib",
+    "pvlib>=0.13.0",
     "streamlit",
 ]
 
 [tool.setuptools]
 packages = ["lift"]
 
- [tool.setuptools.package-data]
- lift = ["data/*"]
+[tool.setuptools.package-data]
+lift = ["data/*"]
 
 [project.scripts]
-lift = "lift.main:main"
+lift = "lift.__main__:main"

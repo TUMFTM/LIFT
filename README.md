@@ -57,5 +57,5 @@ Use the editable mode if you plan to modify the code during development.
 
 ## Basic Usage
 LIFT can be run using one of two terminal commands, given the correct virtual environment is activated:
-1. Call to the main module: ```python -m lift.main``` (best for local execution on host machine, e.g. through a run configuration in PyCharm)
+1. Call to the main module: ```python -m lift``` (best for local execution on host machine, e.g. through a run configuration in PyCharm)
 2. Call to the entry point: ```lift``` (best for remote execution on a server as it works irrespective of the current working directory as long as the correct environment is active)
