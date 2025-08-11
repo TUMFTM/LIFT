@@ -4,7 +4,7 @@
 
 
 ## Created by 
-Anna Paper, M.Sc. and Brian Dietermann, M.Sc.
+Anna Paper, M.Sc. and Brian Dietermann, M.Sc.  
 Institute of Automotive Technology  
 Department of Mobility Systems Engineering  
 TUM School of Engineering and Design  
