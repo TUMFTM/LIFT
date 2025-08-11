@@ -11,6 +11,7 @@ import numpy as np
 from definitions import (DTI,
                          CO2_SPEC_KG_PER_WH,
                          OPEX_SPEC_CO2_PER_KG,
+                         TIME_PRJ_YRS,
                          )
 
 from energy_system import (FixedDemand,
@@ -174,7 +175,7 @@ def calc_phase_results(logs: Logs,
                         opex_fuel_eur=0.0,  # ToDo: calculate OPEX fuel
                         opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
                         opex_grid_eur=opex_grid,
-                        cashflow=np.zeros(len(DTI), dtype=np.float64),  # ToDo: calculate cashflow
+                        cashflow=np.zeros(TIME_PRJ_YRS, dtype=np.float64),  # ToDo: calculate cashflow
                         )
 
 

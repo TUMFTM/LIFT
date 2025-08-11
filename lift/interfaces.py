@@ -26,6 +26,7 @@ class Coordinates:
     latitude: float = 48.148
     longitude: float = 11.507
 
+
 @dataclass
 class Size:
     preexisting: float
