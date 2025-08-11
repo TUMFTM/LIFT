@@ -190,6 +190,7 @@ class Fleet(DemandBlock):
             name=f"{subfleet.vehicle_type}_{i}",
             atbase=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'atbase')].values,
             consumption_w=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'consumption')].values,
+            dsoc=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'dsoc')].values,
             capacity_wh=subfleet.capacity_wh,
             charger=subfleet.charger,
             pwr_max_w=subfleet.pwr_chg_max_w,
@@ -229,6 +230,7 @@ class FleetUnit(DemandBlock):
     name: str
     atbase: np.typing.NDArray[np.float64]
     consumption_w: np.typing.NDArray[np.float64]
+    dsoc: np.typing.NDArray[np.float64]
     capacity_wh: float
     charger: str
     pwr_max_w: float
