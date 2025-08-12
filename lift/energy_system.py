@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
+import streamlit as st
 
 
 from definitions import DTI, FREQ_HOURS
@@ -63,7 +64,7 @@ class PVSource(SupplyBlock):
 
     @property
     def generation_max_w(self) -> float:
-        return self.log[self.idx]
+        return float(self.log[self.idx])
 
     @property
     def energy_pot_wh(self) -> float:
@@ -170,7 +171,7 @@ class FixedDemand(DemandBlock):
     @property
     def demand_w(self) -> float:
         # Return the demand in W for the current dt.
-        return self.log[self.idx]
+        return float(self.log[self.idx])
 
     @property
     def energy_wh(self) -> float:
@@ -190,7 +191,6 @@ class Fleet(DemandBlock):
             name=f"{subfleet.vehicle_type}_{i}",
             atbase=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'atbase')].values,
             consumption_w=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'consumption')].values,
-            dsoc=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'dsoc')].values,
             capacity_wh=subfleet.capacity_wh,
             charger=subfleet.charger,
             pwr_max_w=subfleet.pwr_chg_max_w,
@@ -203,7 +203,7 @@ class Fleet(DemandBlock):
         # get a list of all fleet units and their demand and sort that by priority level
         pwr_available_w = self.pwr_lim_w
         pwr_chg_fleet_w = 0.0
-        for fleet_unit in sorted(self.fleet_units.values(), key=lambda x: x.priority_lvl):
+        for fleet_unit in sorted(self.fleet_units.values(), key=lambda x: x.time_flexibility):
             # check for available charger
             pwr_chg = fleet_unit.charge(pwr_available_w * min(chargers[fleet_unit.charger], 1))
             pwr_available_w -= pwr_chg
@@ -225,12 +225,35 @@ class Fleet(DemandBlock):
         return sum(unit.energy_wh for unit in self.fleet_units.values())
 
 
+@st.cache_data
+def get_soc_min(max_charge_rate,
+                dsoc,
+                atbase):
+    # cumulative sums of consumption and possible charging
+    cum_dsoc = np.concatenate(([0.0], np.cumsum(dsoc)))
+    cum_charge = np.concatenate(([0.0], np.cumsum(max_charge_rate * atbase)))
+
+    # transform space: subtract available charging from required SOC
+    T = cum_dsoc - cum_charge
+
+    # reverse max accumulate and reverse back
+    M = np.maximum.accumulate(T[::-1])[::-1]
+
+    # translate back to SOC requirement at each timestep
+    soc_min = M[1:] - T[:-1]
+
+    # must be at least trip consumption
+    soc_min = np.maximum(soc_min, dsoc)
+
+    # no negative SOC
+    return np.clip(soc_min, 0.0, None)
+
+
 @dataclass
 class FleetUnit(DemandBlock):
     name: str
     atbase: np.typing.NDArray[np.float64]
     consumption_w: np.typing.NDArray[np.float64]
-    dsoc: np.typing.NDArray[np.float64]
     capacity_wh: float
     charger: str
     pwr_max_w: float
@@ -246,14 +269,17 @@ class FleetUnit(DemandBlock):
     def __post_init__(self):
         self.soc_track = np.zeros(len(DTI), dtype=np.float64)
 
-    @property
-    def priority_lvl(self) -> float:
-        # ToDo: Implement logic to calculate priority based required energy for next trip and available charging power and time.
-        return np.random.uniform(0, 1)
+        self.soc_min = get_soc_min(max_charge_rate=self.pwr_max_w * FREQ_HOURS / self.capacity_wh,
+                                   dsoc=self.consumption_w * FREQ_HOURS / self.capacity_wh,
+                                   atbase=self.atbase)
 
     @property
-    def availability(self) -> float:
-        return self.atbase[self.idx]
+    def time_flexibility(self) -> float:
+        return float(self.soc - self.soc_min[self.idx]) * self.capacity_wh / self.pwr_max_w
+
+    @property
+    def availability(self) -> int:
+        return int(self.atbase[self.idx])
 
     @property
     def demand_w(self) -> float:
