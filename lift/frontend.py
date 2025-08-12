@@ -354,7 +354,7 @@ def get_input_params() -> Settings:
     col1, col2 = st.sidebar.columns([6, 4])
     with col1:
         auto_refresh = st.toggle("**Automatisch aktualisieren**",
-                                 value=False)
+                                 value=True)
     with col2:
         if auto_refresh:
             st.session_state["run_backend"] = True
