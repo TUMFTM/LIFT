@@ -1,6 +1,6 @@
 import streamlit as st
-# from streamlit_folium import st_folium
-# import folium
+from streamlit_folium import st_folium
+import folium
 import traceback
 
 import backend
@@ -66,48 +66,38 @@ horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>
 
 def _get_params_location() -> LocationSettings:
 
-    # define coordinates of the location
-    # ToDo: use geopy (copilot suggestion) to get coordinates from address or use map picker
-    # ToDo: This is what ChatGPT suggests: Figure out how to integrate this nicely
-    """
-    # Initial map center
-    start_coords = [51.1657, 10.4515]  # Germany center
-    map_obj = folium.Map(location=start_coords, zoom_start=6)
-
-    # Let user click on map
-    st.write("📍 Klicken Sie auf die Karte, um einen Standort auszuwählen.")
-    click_info = st_folium(map_obj, height=500, returned_objects=["last_clicked"])
-
-    if click_info["last_clicked"]:
-        lat = click_info["last_clicked"]["lat"]
-        lon = click_info["last_clicked"]["lng"]
-        st.success(f"Ausgewählter Standort: {lat:.5f}, {lon:.5f}")
-    """
     col_share = [3, 7]
 
-    with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
-        st.markdown("**Position**")
-        col1, col2 = st.columns(2)
-        with col1:
-            latitude = st.number_input(label="Breitengrad",
-                                       key="latitude",
-                                       min_value=-90.0,
-                                       max_value=90.0,
-                                       value=48.137,
-                                       step=0.001,
-                                       format="%0.3f",
-                                       ),
-        with col2:
-            longitude = st.number_input(label="Längengrad",
-                                        key="longitude",
-                                        min_value=-180.0,
-                                        max_value=180.0,
-                                        value=11.575,
-                                        step=0.001,
-                                        format="%0.3f",
-                                        )
-        coordinates=Coordinates(latitude=latitude, longitude=longitude)
+    with st.sidebar.expander(label="**Position**", icon="🗺️"):
+
+        st.toast('update')
+
+        if "location" not in st.session_state:
+            st.session_state["location"] = Coordinates(latitude=48.1351, longitude=11.5820)
+
+        try:
+            location_start = list(st.session_state['map']['center'].values())
+            zoom_start = st.session_state['map']['zoom']
+        except KeyError:
+            location_start = [48.1351, 11.5820]
+            zoom_start = 5
+
+        m = folium.Map(location=location_start, zoom_start=zoom_start)
+
+        folium.Marker(
+            st.session_state['location'].as_tuple,
+        ).add_to(m)
+
+        def callback():
+            if st.session_state['map']['last_clicked']:
+                st.session_state['location'] = Coordinates(latitude=st.session_state['map']['last_clicked']['lat'],
+                                                           longitude=st.session_state['map']['last_clicked']['lng'])
+
+        st_folium(m, height=350, width='5%', key="map", on_change=callback)
+        st.markdown(f"Position: {st.session_state['location'].as_dms_str}")
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
+
+    with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
         st.markdown("**Stromverbrauch Standort**")
         col1, col2 = st.columns(col_share)
         with col1:
@@ -189,7 +179,7 @@ def _get_params_location() -> LocationSettings:
         ess_capacity_wh = Size(preexisting=preexisting * 1E3,
                                expansion=expansion * 1E3)
 
-    return LocationSettings(coordinates=coordinates,
+    return LocationSettings(coordinates=st.session_state['location'],
                             slp=slp,
                             consumption_yrl_wh=consumption_yrl_wh,
                             grid_capacity_w=grid_capacity_w,
