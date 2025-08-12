@@ -70,8 +70,6 @@ def _get_params_location() -> LocationSettings:
 
     with st.sidebar.expander(label="**Position**", icon="🗺️"):
 
-        st.toast('update')
-
         if "location" not in st.session_state:
             st.session_state["location"] = Coordinates(latitude=48.1351, longitude=11.5820)
 
