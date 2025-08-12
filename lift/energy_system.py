@@ -187,10 +187,10 @@ class Fleet(DemandBlock):
     chargers: dict[str, int]
 
     def __post_init__(self):
-        self.fleet_units = {f"{subfleet.vehicle_type}_{i}": FleetUnit(
-            name=f"{subfleet.vehicle_type}_{i}",
-            atbase=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'atbase')].values,
-            consumption_w=self.log[subfleet.vehicle_type].loc[:, (f'{subfleet.vehicle_type}{i}', 'consumption')].values,
+        self.fleet_units = {f"{subfleet.name}_{i}": FleetUnit(
+            name=f"{subfleet.name}_{i}",
+            atbase=self.log[subfleet.name].loc[:, (f'{subfleet.name}{i}', 'atbase')].values,
+            consumption_w=self.log[subfleet.name].loc[:, (f'{subfleet.name}{i}', 'consumption')].values,
             capacity_wh=subfleet.capacity_wh,
             charger=subfleet.charger,
             pwr_max_w=subfleet.pwr_chg_max_w,

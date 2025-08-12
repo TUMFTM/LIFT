@@ -19,7 +19,7 @@ class SliderSettings:
 class SubFleetDefinition:
     label: str
     icon: str
-    vehicle_type: str
+    name: str
     weight_max_str: str
     weight_empty_bev: float
     weight_empty_icev: float
@@ -51,7 +51,7 @@ SUBFLEETS = dict(
     # Leergewicht BET: 18t, Zuladung: 24t
     hlt=SubFleetDefinition(label="Schwere Lkw",
                            icon="🚛",
-                           vehicle_type="hlt",
+                           name="hlt",
                            weight_max_str="42 t zulässiges Zuggesamtgewicht",
                            weight_empty_bev=18000,
                            weight_empty_icev=16600,
@@ -90,7 +90,7 @@ SUBFLEETS = dict(
     # Leergewicht: 10.4t, Zuladung: 16.6t
     hst=SubFleetDefinition(label="Schwerer Verteilerverkehr",
                            icon="🚚",
-                           vehicle_type="hst",
+                           name="hst",
                            weight_max_str="28 t zulässiges Gesamtgewicht",
                            weight_empty_bev=10400,
                            weight_empty_icev=9000,
@@ -129,7 +129,7 @@ SUBFLEETS = dict(
     # Leergewicht: 5.4t, Zuladung: 6.6t
     ust=SubFleetDefinition(label="Urbaner Verteilerverkehr",
                            icon="🚚",
-                           vehicle_type="ust",
+                           name="ust",
                            weight_max_str="12 t zulässiges Gesamtgewicht",
                            weight_empty_bev=5400,
                            weight_empty_icev=5400,
@@ -168,7 +168,7 @@ SUBFLEETS = dict(
     # Leergewicht: 2.5t, Zuladung: 1.0t
     usv=SubFleetDefinition(label="Lieferwagen",
                            icon="🚐",
-                           vehicle_type="usv",
+                           name="usv",
                            weight_max_str="3.5 t zulässiges Gesamtgewicht",
                            weight_empty_bev=2500,
                            weight_empty_icev=2300,

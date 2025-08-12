@@ -193,11 +193,11 @@ def run_backend(settings: Settings) -> BackendResults:
                        for vehicle_type, subfleet in settings.subfleets.items()},
                 )
 
-    subfleet_sim_settings_baseline = {subfleet.vehicle_type:
+    subfleet_sim_settings_baseline = {subfleet.name:
                                           subfleet.get_subfleet_sim_settings_baseline(settings.chargers)
                                       for subfleet in settings.subfleets.values()}
 
-    subfleet_sim_settings_expansion = {subfleet.vehicle_type:
+    subfleet_sim_settings_expansion = {subfleet.name:
                                            subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
                                        for subfleet in settings.subfleets.values()}
 

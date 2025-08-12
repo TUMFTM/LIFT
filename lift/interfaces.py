@@ -14,7 +14,7 @@ class SOCError(Exception):
 
 @dataclass
 class SubfleetSimSettings:
-    vehicle_type: str = 'hlt'
+    name: str = 'hlt'
     num: int = 1
     pwr_chg_max_w: float = 11E3
     charger: str = 'ac'
@@ -82,7 +82,7 @@ class LocationSettings:
 
 @dataclass
 class SubFleetSettings:
-    vehicle_type: str = 'hlt'
+    name: str = 'hlt'
     num_total: int = 5
     num_bev_preexisting: int = 1
     num_bev_expansion: int = 4
@@ -102,7 +102,7 @@ class SubFleetSettings:
 
     def get_subfleet_sim_settings_baseline(self,
                                   charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
-        return SubfleetSimSettings(vehicle_type=self.vehicle_type,
+        return SubfleetSimSettings(name=self.name,
                                    num=self.num_bev_preexisting,
                                    pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
                                    charger=self.charger,
@@ -110,7 +110,7 @@ class SubFleetSettings:
 
     def get_subfleet_sim_settings_expansion(self,
                                             charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
-        return SubfleetSimSettings(vehicle_type=self.vehicle_type,
+        return SubfleetSimSettings(name=self.name,
                                    num=self.num_bev_preexisting + self.num_bev_expansion,
                                    pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
                                    charger=self.charger,
@@ -120,6 +120,7 @@ class SubFleetSettings:
 
 @dataclass
 class ChargerSettings:
+    name: str = 'ac'
     num_preexisting: int = 0
     num_expansion: int = 4
     pwr_max_w: float = 11E3
@@ -146,10 +147,10 @@ class EconomicSettings:
 @dataclass
 class Settings:
     location: LocationSettings = field(default_factory=LocationSettings)
-    subfleets: dict[str, SubFleetSettings] = field(default_factory=lambda: dict(hlt=SubFleetSettings(vehicle_type='hlt'),
-                                                                                hst=SubFleetSettings(vehicle_type='hst'),))
-    chargers: dict[str, ChargerSettings] = field(default_factory=lambda: dict(ac=ChargerSettings(),
-                                                                              dc=ChargerSettings(),))
+    subfleets: dict[str, SubFleetSettings] = field(default_factory=lambda: dict(hlt=SubFleetSettings(name='hlt'),
+                                                                                hst=SubFleetSettings(name='hst'), ))
+    chargers: dict[str, ChargerSettings] = field(default_factory=lambda: dict(ac=ChargerSettings(name='ac'),
+                                                                              dc=ChargerSettings(name='dc'),))
     economic: EconomicSettings = field(default_factory=EconomicSettings)
 
 
