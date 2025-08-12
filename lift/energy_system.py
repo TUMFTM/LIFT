@@ -234,13 +234,13 @@ def get_soc_min(max_charge_rate,
     cum_charge = np.concatenate(([0.0], np.cumsum(max_charge_rate * atbase)))
 
     # transform space: subtract available charging from required SOC
-    T = cum_dsoc - cum_charge
+    t = cum_dsoc - cum_charge
 
     # reverse max accumulate and reverse back
-    M = np.maximum.accumulate(T[::-1])[::-1]
+    m = np.maximum.accumulate(t[::-1])[::-1]
 
     # translate back to SOC requirement at each timestep
-    soc_min = M[1:] - T[:-1]
+    soc_min = m[1:] - t[:-1]
 
     # must be at least trip consumption
     soc_min = np.maximum(soc_min, dsoc)
