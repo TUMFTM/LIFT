@@ -29,7 +29,11 @@ from interfaces import (Coordinates,
                         EconomicSettings,
                         SimulationResults,
                         PhaseResults,
-                        BackendResults)
+                        BackendResults,
+                        LocationSettings,
+                        ChargerSettings,
+                        SubFleetSettings
+                        )
 
 if TYPE_CHECKING:
     pass
@@ -140,6 +144,11 @@ def calc_phase_results(logs: Logs,
                        economics: EconomicSettings,
                        subfleets: dict[str, SubfleetSimSettings],
                        chargers: dict[str, int],
+                       *,
+                       phase: str,
+                       location: LocationSettings,
+                       charger_settings: dict[str, ChargerSettings],
+                       subfleet_settings: dict[str, SubFleetSettings],
                        ) -> PhaseResults:
 
     result_sim = simulate(logs=logs,
@@ -159,6 +168,38 @@ def calc_phase_results(logs: Logs,
     co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
     co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
 
+    if phase == "baseline":
+        capex_infra_eur = 0.0
+    else:
+        rate_grid = getattr(economics, "capex_spec_grid_eur_per_w", 150)  # ToDo: check value
+        rate_pv = getattr(economics, "capex_spec_pv_eur_per_wp", 900)  # ToDo: check value
+        rate_ess = getattr(economics, "capex_spec_ess_eur_per_wh", 400)  # ToDo: check value
+
+        grid_exp_kw = float(location.grid_capacity_w.expansion or 0.0)
+        pv_exp_kwp = float(location.pv_capacity_wp.expansion or 0.0)
+        ess_exp_kwh = float(location.ess_capacity_wh.expansion or 0.0)
+
+        capex_grid = grid_exp_kw * rate_grid
+        capex_pv = pv_exp_kwp * rate_pv
+        capex_ess = ess_exp_kwh * rate_ess
+
+        capex_chargers = float(sum(
+            getattr(cs, "num_expansion", 0) * getattr(cs, "cost_per_charger_eur", 0.0)
+            for cs in charger_settings.values()
+        ))
+
+        capex_infra_eur = float(capex_grid + capex_pv + capex_ess + capex_chargers)
+
+    if phase.lower() == "expansion":
+        capex_trucks_eur = float(sum(
+            sf.num_bev_expansion * sf.capex_bev_eur
+            for sf in subfleet_settings.values()
+        ))
+    else:
+        capex_trucks_eur = 0.0
+
+    capex_total_eur = capex_infra_eur + capex_trucks_eur
+
     opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
                         result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
 
@@ -171,7 +212,7 @@ def calc_phase_results(logs: Logs,
                         self_consumption_pct=self_consumption_pct,
                         co2_yrl_kg=co2_yrl_kg,
                         co2_yrl_eur=co2_yrl_eur,
-                        capex_eur=0.0,  # ToDo: calculate CAPEX
+                        capex_eur=capex_total_eur,
                         opex_fuel_eur=0.0,  # ToDo: calculate OPEX fuel
                         opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
                         opex_grid_eur=opex_grid,
@@ -201,21 +242,29 @@ def run_backend(settings: Settings) -> BackendResults:
                                            subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
                                        for subfleet in settings.subfleets.values()}
 
+    chargers_baseline = {t: c.num_preexisting for t, c in settings.chargers.items()}
+    chargers_expansion = {t: c.num_preexisting + c.num_expansion for t, c in settings.chargers.items()}
 
     results_baseline = calc_phase_results(logs=logs,
                                           capacities=settings.location.get_capacities('baseline'),
                                           economics=settings.economic,
                                           subfleets=subfleet_sim_settings_baseline,
-                                          chargers={charger_type: charger.num_preexisting
-                                                    for charger_type, charger in settings.chargers.items()},
+                                          chargers=chargers_baseline,
+                                          phase="baseline",
+                                          location=settings.location,
+                                          charger_settings=settings.chargers,
+                                          subfleet_settings=settings.subfleets,
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
                                            capacities=settings.location.get_capacities('expansion'),
                                            economics=settings.economic,
                                            subfleets=subfleet_sim_settings_expansion,
-                                           chargers={charger_type: charger.num_preexisting + charger.num_expansion
-                                                     for charger_type, charger in settings.chargers.items()},
+                                           chargers=chargers_expansion,
+                                           phase="expansion",
+                                           location=settings.location,
+                                           charger_settings=settings.chargers,
+                                           subfleet_settings=settings.subfleets,
                                            )
 
 
