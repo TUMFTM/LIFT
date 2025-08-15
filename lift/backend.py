@@ -4,7 +4,8 @@ import pandas as pd
 import pvlib
 import streamlit as st
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Tuple, Dict
+from definitions import FREQ_HOURS
 
 import numpy as np
 
@@ -137,6 +138,121 @@ def simulate(logs: Logs,
                              energy_fleet_wh=fleet.energy_wh,
                              )
 
+@st.cache_data
+def _sum_bev_usage_from_logs(
+    logs: Logs,
+    subfleet_settings: dict[str, SubFleetSettings],
+    phase: str,
+) -> tuple[float, float]:
+    """
+    Returns (total_driving_hours, total_distance_km) for BEVs in the given phase.
+    - Driving time is derived from 'atbase': driving = 1 - atbase
+    - Distance: Prefer 'distance_km' log column; otherwise convert from energy consumption and kWh/km.
+    """
+    total_driving_hours = 0.0
+    total_distance_km = 0.0
+
+    for vt, sf in subfleet_settings.items():
+        # Determine how many BEVs to consider for this phase
+        num_bev = sf.num_bev_preexisting if phase.lower() == "baseline" else (sf.num_bev_preexisting + sf.num_bev_expansion)
+        df = logs.fleet.get(vt)
+        if df is None:
+            continue
+
+        for i in range(num_bev):
+            veh = f"{vt}{i}"
+
+            # 1) Driving time from 'atbase'
+            if (veh, "atbase") in df.columns:
+                atbase = df.loc[:, (veh, "atbase")].to_numpy(dtype=float)
+                total_driving_hours += float(np.sum((1.0 - atbase) * FREQ_HOURS))
+
+            # 2) Distance
+            if (veh, "distance_km") in df.columns:
+                # If available, sum directly
+                total_distance_km += float(df.loc[:, (veh, "distance_km")].to_numpy(dtype=float).sum())
+            else:
+                # Fallback: Convert from energy consumption to km (only if consumption and efficiency are available)
+                if (veh, "consumption") in df.columns:
+                    energy_kwh = float(np.sum(df.loc[:, (veh, "consumption")].to_numpy(dtype=float) * FREQ_HOURS) / 1000.0)
+                    kwh_per_km = getattr(sf, "kwh_per_km_bev", None)
+                    if kwh_per_km and kwh_per_km > 0:
+                        total_distance_km += energy_kwh / kwh_per_km
+                    # Otherwise, skip km calculation — without efficiency, we cannot convert
+
+    return total_driving_hours, total_distance_km
+
+def _estimate_icev_usage_from_settings(
+    subfleet_settings: dict[str, SubFleetSettings],
+    phase: str,
+) -> tuple[float, float]:
+    """
+    Returns (driving_hours_total, distance_km_total) for ICEV,
+    estimated from avg daily distance and an assumed average speed.
+    """
+    driving_hours_total = 0.0
+    distance_km_total = 0.0
+    avg_speed_kmh = 50.0  # Annahme, falls du keine Fahrzeiten hast
+
+    for vt, sf in subfleet_settings.items():
+        bev_phase = sf.num_bev_preexisting if phase.lower()=="baseline" else (sf.num_bev_preexisting + sf.num_bev_expansion)
+        icev_phase = max(int(sf.num_total) - int(bev_phase), 0)
+        dist_yrl_km = float(sf.dist_avg_daily_km) * float(sf.working_days_yrl if hasattr(sf, "working_days_yrl") else 250)
+        distance_km_total += icev_phase * dist_yrl_km
+        driving_hours_total += icev_phase * (dist_yrl_km / avg_speed_kmh)
+
+    return driving_hours_total, distance_km_total
+
+
+def calc_vehicle_capex_split(
+    subfleet_settings: dict[str, "SubFleetSettings"],
+    phase: Literal["baseline", "expansion"],
+) -> Tuple[float, float, Dict[str, float], Dict[str, float]]:
+    """
+    Compute vehicle CAPEX split by powertrain (BEV vs ICEV) for a given phase.
+
+    Phase semantics:
+      - baseline:
+          BEV count = num_bev_preexisting
+          ICEV count = num_total - BEV count
+      - expansion:
+          BEV count = num_bev_preexisting + num_bev_expansion
+          ICEV count = num_total - BEV count
+        (Assumption: total fleet size stays constant; adjust if your fleet grows.)
+
+    Returns:
+      (bev_total_capex, icev_total_capex, bev_breakdown_by_subfleet, icev_breakdown_by_subfleet)
+    """
+    bev_total = 0.0
+    icev_total = 0.0
+    bd_bev: Dict[str, float] = {}
+    bd_icev: Dict[str, float] = {}
+
+    for vt, sf in subfleet_settings.items():
+        # Determine BEV count in this phase (preexisting in baseline; preexisting+new in expansion)
+        bev_phase = (
+            int(sf.num_bev_preexisting)
+            if phase == "baseline"
+            else int(sf.num_bev_preexisting + sf.num_bev_expansion)
+        )
+
+        # Derive ICEV count in this phase as residual to total
+        # (Clamp at 0 to avoid negative values if inputs are inconsistent)
+        icev_phase = max(int(sf.num_total) - bev_phase, 0)
+
+        # Subfleet CAPEX contributions
+        capex_bev_sf  = float(bev_phase)  * float(getattr(sf, "capex_bev_eur",  0.0))
+        capex_icev_sf = float(icev_phase) * float(getattr(sf, "capex_icev_eur", 0.0))
+
+        # Store breakdown per subfleet key (vt)
+        bd_bev[vt]  = capex_bev_sf
+        bd_icev[vt] = capex_icev_sf
+
+        # Accumulate totals
+        bev_total  += capex_bev_sf
+        icev_total += capex_icev_sf
+
+    return float(bev_total), float(icev_total), bd_bev, bd_icev
 
 @st.cache_data
 def calc_phase_results(logs: Logs,
@@ -190,15 +306,15 @@ def calc_phase_results(logs: Logs,
 
         capex_infra_eur = float(capex_grid + capex_pv + capex_ess + capex_chargers)
 
-    if phase.lower() == "expansion":
-        capex_trucks_eur = float(sum(
-            sf.num_bev_expansion * sf.capex_bev_eur
-            for sf in subfleet_settings.values()
-        ))
-    else:
-        capex_trucks_eur = 0.0
+    # --- Fahrzeug-CAPEX getrennt nach BEV/ICEV für die Phase ---
+    capex_bev_eur, capex_icev_eur, _, _ = calc_vehicle_capex_split(
+        subfleet_settings=subfleet_settings,
+        phase=phase.lower()
+    )
+    capex_vehicles_eur = capex_bev_eur + capex_icev_eur
 
-    capex_total_eur = capex_infra_eur + capex_trucks_eur
+    # --- Gesamt-CAPEX ---
+    capex_total_eur = capex_infra_eur + capex_vehicles_eur
 
     opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
                         result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
@@ -207,15 +323,72 @@ def calc_phase_results(logs: Logs,
 
     opex_grid = opex_grid_energy + opex_grid_power
 
+    # Anzahl BEVs je Subfleet (für Versicherung)
+    if phase.lower() == "baseline":
+        num_bev_by_type = {vt: sf.num_bev_preexisting for vt, sf in subfleet_settings.items()}
+    else:
+        num_bev_by_type = {vt: (sf.num_bev_preexisting + sf.num_bev_expansion) for vt, sf in subfleet_settings.items()}
+
+    # --- Fahrzeit & Distanz nur für BEV in dieser Phase ---
+    driving_hours_total, distance_km_total = _sum_bev_usage_from_logs(
+        logs=logs,
+        subfleet_settings=subfleet_settings,
+        phase=phase,
+    )
+
+    # --- Lohnkosten (nur BEV) ---
+    driver_wage = float(economics.driver_wage_eur_h)
+    opex_driver_eur = driver_wage * driving_hours_total
+
+    # --- Wartung (nur BEV) ---
+    mntex_per_km = float(economics.mntex_bev_eur_km)
+    opex_maint_eur = mntex_per_km * distance_km_total
+
+    # --- Versicherung (nur BEV in dieser Phase) ---
+    insurance_rate = float(economics.insurance_pct) / 100.0
+    num_bev_by_type = (
+        {vt: sf.num_bev_preexisting for vt, sf in subfleet_settings.items()}
+        if phase.lower() == "baseline"
+        else {vt: (sf.num_bev_preexisting + sf.num_bev_expansion) for vt, sf in subfleet_settings.items()}
+    )
+    opex_insurance_eur = sum(
+        num_bev_by_type.get(vt, 0) * float(sf.capex_bev_eur) * insurance_rate
+        for vt, sf in subfleet_settings.items()
+    )
+
+    opex_vehicle_electric_secondary = float(opex_driver_eur + opex_maint_eur + opex_insurance_eur)
+
+    # ICEV (Baseline und/oder Expansion – je nachdem, was du willst)
+    icev_hours, icev_km = _estimate_icev_usage_from_settings(subfleet_settings, phase)
+
+    opex_driver_icev = float(economics.driver_wage_eur_h) * icev_hours
+    opex_maint_icev = float(economics.mntex_icev_eur_km) * icev_km
+    insurance_rate = float(economics.insurance_pct) / 100.0
+    # Versicherung für ICEV:
+    opex_ins_icev = sum(
+        max(int(sf.num_total) - (
+            sf.num_bev_preexisting if phase.lower() == "baseline" else sf.num_bev_preexisting + sf.num_bev_expansion),
+            0)
+        * float(getattr(sf, "capex_icev_eur", 0.0))
+        * insurance_rate
+        for sf in subfleet_settings.values()
+    )
+
+    opex_vehicle_diesel_secondary = opex_driver_icev + opex_maint_icev + opex_ins_icev
+
     return PhaseResults(simulation=result_sim,
                         self_sufficiency_pct=self_sufficiency_pct,
                         self_consumption_pct=self_consumption_pct,
                         co2_yrl_kg=co2_yrl_kg,
                         co2_yrl_eur=co2_yrl_eur,
                         capex_eur=capex_total_eur,
+                        capex_vehicles_eur=capex_vehicles_eur,
+                        capex_vehicles_bev_eur=capex_bev_eur,
+                        capex_vehicles_icev_eur=capex_icev_eur,
                         opex_fuel_eur=0.0,  # ToDo: calculate OPEX fuel
                         opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
                         opex_grid_eur=opex_grid,
+                        opex_vehicle_electric_secondary=opex_vehicle_electric_secondary,
                         cashflow=np.zeros(TIME_PRJ_YRS, dtype=np.float64),  # ToDo: calculate cashflow
                         )
 
@@ -266,8 +439,6 @@ def run_backend(settings: Settings) -> BackendResults:
                                            charger_settings=settings.chargers,
                                            subfleet_settings=settings.subfleets,
                                            )
-
-
 
     roi_rel = 0.0  #ToDo: calculate!
     period_payback_rel = 0.0  #ToDo: calculate!

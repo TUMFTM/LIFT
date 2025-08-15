@@ -401,7 +401,9 @@ def display_results(results):
             st.write(f"Autarkiegrad: {res.self_sufficiency_pct:.2f}%")
             st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:.2f}%")
             st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
+            st.write(f"CAPEX Fahrzeuge: {res.capex_vehicles_eur:.2f} EUR")
             st.write(f"OPEX: {res.opex_eur:.2f} EUR")
+            st.write(f"OPEX Fahrzeuge (Wartung+Vers.+Fahrer): {res.opex_vehicle_electric_secondary:,.2f} EUR/Jahr")
             st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
             st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
 
