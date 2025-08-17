@@ -352,23 +352,27 @@ def calc_infrastructure_capex(
         return 0.0, {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
 
     # Cost rates (same defaults as in your current implementation)
-    rate_grid = float(getattr(economics, "capex_spec_grid_eur_per_w", 150))
-    rate_pv   = float(getattr(economics, "capex_spec_pv_eur_per_wp", 900))
-    rate_ess  = float(getattr(economics, "capex_spec_ess_eur_per_wh", 400))
+    rate_grid = 900
+    rate_pv   = 1000
+    rate_ess  = 300
 
     # Expansion capacities (already in W, Wp, Wh in your data model)
     grid_exp_w  = float(location.grid_capacity_w.expansion or 0.0)
     pv_exp_wp   = float(location.pv_capacity_wp.expansion or 0.0)
     ess_exp_wh  = float(location.ess_capacity_wh.expansion or 0.0)
 
-    # Infrastructure CAPEX components
-    capex_grid = grid_exp_w * rate_grid
-    capex_pv   = pv_exp_wp * rate_pv
-    capex_ess  = ess_exp_wh * rate_ess
+    # convert sizes to kW/kWp/kWh
+    grid_exp_kW = grid_exp_w / 1000.0
+    pv_exp_kWp = pv_exp_wp / 1000.0
+    ess_exp_kWh = ess_exp_wh / 1000.0
+
+    capex_grid = grid_exp_kW * rate_grid
+    capex_pv = pv_exp_kWp * rate_pv
+    capex_ess = ess_exp_kWh * rate_ess
 
     # Charger CAPEX: expansion number * cost per charger
     capex_chargers = float(sum(
-        getattr(cs, "num_expansion", 0) * getattr(cs, "cost_per_charger_eur", 0.0)
+        float(cs.num_expansion) * float(cs.cost_per_charger_eur)
         for cs in charger_settings.values()
     ))
 
@@ -481,14 +485,14 @@ def calc_phase_results(logs: Logs,
             phase=phase,
         )
 
-    # --- Fahrzeug-CAPEX getrennt nach BEV/ICEV für die Phase ---
+    # --- vehicle CAPEX split for each phase---
     capex_bev_eur, capex_icev_eur, _, _ = calc_vehicle_capex_split(
         subfleet_settings=subfleet_settings,
         phase=phase.lower()
     )
     capex_vehicles_eur = capex_bev_eur + capex_icev_eur
 
-    # --- Gesamt-CAPEX ---
+    # --- total-CAPEX ---
     capex_total_eur = capex_infra_eur + capex_vehicles_eur
 
     opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
@@ -497,6 +501,34 @@ def calc_phase_results(logs: Logs,
     opex_grid_power = result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
 
     opex_grid = opex_grid_energy + opex_grid_power
+
+    # === CASHFLOW (18 years) according to your rules ===
+    cashflow = np.zeros(TIME_PRJ_YRS, dtype=np.float64)
+
+    # Annual OPEX in every year (including grid + vehicle)
+    annual_opex = opex_grid + opex_vehicle_total
+    for y in range(TIME_PRJ_YRS):
+        cashflow[y] += annual_opex
+
+    # Vehicles: full replacement costs in year 1, 6, and 12 (indices 0, 5, 11)
+    veh_years_idx = [0, 5, 11]
+    for idx in veh_years_idx:
+        if idx < TIME_PRJ_YRS:
+            cashflow[idx] += capex_vehicles_eur
+
+    # Infrastructure only in expansion scenario
+    if phase == "expansion":
+        # Grid, PV, and chargers entirely in year 1
+        infra_year0 = capex_infra_bd.get("grid", 0.0) \
+                      + capex_infra_bd.get("pv", 0.0) \
+                      + capex_infra_bd.get("chargers", 0.0)
+        cashflow[0] += infra_year0
+
+        # ESS in year 1 and year 9 (full cost each time)
+        ess_total = capex_infra_bd.get("ess", 0.0)
+        cashflow[0] += ess_total
+        if 8 < TIME_PRJ_YRS:
+            cashflow[8] += ess_total
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency_pct=self_sufficiency_pct,
@@ -511,7 +543,7 @@ def calc_phase_results(logs: Logs,
                         opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
                         opex_grid_eur=opex_grid,
                         opex_vehicle_electric_secondary=opex_vehicle_total,
-                        cashflow=np.zeros(TIME_PRJ_YRS, dtype=np.float64),  # ToDo: calculate cashflow
+                        cashflow=cashflow,  # ToDo: calculate cashflow
                         )
 
 

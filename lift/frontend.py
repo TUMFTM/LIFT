@@ -2,6 +2,9 @@ import streamlit as st
 from streamlit_folium import st_folium
 import folium
 import traceback
+import numpy as np
+import pandas as pd
+import altair as alt
 
 import backend
 
@@ -419,6 +422,78 @@ def display_empty_results():
                "**🚀 Berechnen**.")
 
 
+def plot_cashflow(results, show_table=False):
+    # 1) Extract cashflow arrays from PhaseResults
+    cf_base = np.asarray(getattr(results.baseline, "cashflow", np.array([])), dtype=float)
+    cf_exp  = np.asarray(getattr(results.expansion, "cashflow", np.array([])), dtype=float)
+
+    # 2) Basic checks: if no arrays exist, exit early
+    if cf_base.size == 0 and cf_exp.size == 0:
+        st.warning("No cashflow arrays found on results.baseline / results.expansion.")
+        return
+
+    # 3) Ensure both arrays have the same length (pad with zeros if necessary)
+    n_years = int(max(len(cf_base), len(cf_exp)))
+    def pad(arr, n):
+        return np.pad(arr, (0, n - len(arr)), mode="constant") if len(arr) < n else arr
+    cf_base = pad(cf_base, n_years)
+    cf_exp  = pad(cf_exp, n_years)
+
+    years = np.arange(1, n_years + 1)
+
+    # 4) Convert annual cashflows into cumulative sums
+    cum_base = np.cumsum(cf_base)
+    cum_exp  = np.cumsum(cf_exp)
+
+    # 5) Build dataframe for plotting
+    df = pd.DataFrame({
+        "Year": years,
+        "Baseline (cumulative)": cum_base,
+        "Expansion (cumulative)": cum_exp,
+    })
+    df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Cumulative_Cost_EUR")
+
+    # 6) Axis scaling / diagnostic fallback
+    y_max = float(max(np.nanmax(cum_base), np.nanmax(cum_exp), 0.0))
+    if y_max == 0.0:
+        # If everything is 0, still show an axis so that chart is not empty
+        y_scale = alt.Scale(domain=[0, 1])
+        add_points = True
+    else:
+        y_scale = alt.Scale(domain=[0, y_max * 1.05])
+        add_points = False
+
+    # 7) Build line chart (two curves: baseline & expansion)
+    chart = (
+        alt.Chart(df_long)
+        .mark_line(point=add_points)
+        .encode(
+            x=alt.X("Year:O", axis=alt.Axis(title="Year")),
+            y=alt.Y("Cumulative_Cost_EUR:Q",
+                    axis=alt.Axis(title="Cumulative cash outflow [EUR]"),
+                    scale=y_scale),
+            color=alt.Color("Scenario:N", legend=alt.Legend(title="Scenario")),
+            tooltip=[
+                alt.Tooltip("Year:O", title="Year"),
+                alt.Tooltip("Scenario:N", title="Scenario"),
+                alt.Tooltip("Cumulative_Cost_EUR:Q", title="Cumulative cost [EUR]", format=",.0f"),
+            ],
+        )
+        .properties(height=360)
+    )
+
+    # 8) Show in Streamlit
+    st.subheader("Cumulative cashflow over time")
+    st.altair_chart(chart, use_container_width=True)
+
+    # 9) Optionally display the raw data tables
+    if show_table:
+        st.caption("Cumulative cashflow data (wide & long):")
+        st.dataframe(df)
+        st.dataframe(df_long)
+
+
+
 def run_frontend():
     # define page settings
     st.set_page_config(
@@ -444,6 +519,7 @@ def run_frontend():
         try:
             results = backend.run_backend(settings=settings)
             display_results(results)
+            plot_cashflow(results)
         except GridPowerExceededError as e:
             st.error(f"""\
             **Fehler in der Simulation**  
