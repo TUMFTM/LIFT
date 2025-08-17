@@ -138,7 +138,7 @@ def simulate(logs: Logs,
                              energy_fleet_wh=fleet.energy_wh,
                              )
 
-# ---- Helpers: flexible Spaltenerkennung ----
+# ---- Helpers: flexible column detection ----
 DIST_ALIASES = {
     "distance_km", "distance", "dist_km", "km", "driven_km", "route_km", "mileage_km",
     "distance_m", "dist_m", "meters", "meter", "m",
@@ -146,13 +146,13 @@ DIST_ALIASES = {
 
 def _find_distance_km(df: pd.DataFrame, veh_id: str) -> Optional[float]:
     """
-    Sucht in df (MultiIndex: (veh_id, metric)) eine Distanzspalte und summiert über das Jahr.
-    Unterstützt km- und m-Spalten. Gibt km zurück oder None, wenn nichts gefunden.
+    Searches in df (MultiIndex: (veh_id, metric)) for a distance column and sums it up over the year.
+    Supports both km and m columns. Returns distance in km or None if not found.
     """
     if df is None or not isinstance(df.columns, pd.MultiIndex):
         return None
 
-    # Kandidaten dieses Fahrzeugs
+    # Candidate columns for this vehicle
     candidates = [c for c in df.columns if c[0] == veh_id]
     if not candidates:
         return None
@@ -183,19 +183,19 @@ def _find_distance_km(df: pd.DataFrame, veh_id: str) -> Optional[float]:
     s = df.loc[:, best].astype(float)
     metric = best[1].lower()
     if metric.endswith("_m") or metric in {"distance_m", "dist_m", "m", "meter", "meters"}:
-        return float(s.sum() / 1000.0)   # m → km
-    return float(s.sum())                # km
+        return float(s.sum() / 1000.0)   # convert meters → km
+    return float(s.sum())                # already in km
 
 def _find_driving_hours(df: pd.DataFrame, veh_id: str) -> Optional[float]:
     """
-    Nutzt (veh_id, 'atbase') → Fahrzeit = sum((1 - atbase) * Δt).
-    Gibt Stunden zurück oder None, wenn 'atbase' fehlt.
+    Uses (veh_id, 'atbase') → driving time = sum((1 - atbase) * Δt).
+    Returns driving hours or None if 'atbase' column is missing.
     """
     if df is None or not isinstance(df.columns, pd.MultiIndex):
         return None
     col = (veh_id, "atbase")
     if col not in df.columns:
-        # häufige Aliasse versuchen
+        # Try common aliases
         aliases = [(veh_id, a) for a in ("at_base", "atDepot", "at_depot", "available", "is_at_base")]
         for c in aliases:
             if c in df.columns:
@@ -205,46 +205,6 @@ def _find_driving_hours(df: pd.DataFrame, veh_id: str) -> Optional[float]:
             return None
     atbase = df.loc[:, col].to_numpy(dtype=float)
     return float(((1.0 - atbase) * FREQ_HOURS).sum())
-
-def build_vehicle_charger_map_from_settings(
-    subfleet_settings: Dict[str, "SubFleetSettings"],
-    phase: Literal["baseline", "expansion"],
-) -> Dict[str, Dict[str, Optional[str]]]:
-    """
-    Erzeugt {vt: {veh_id: charger|None}} aus den Einstellungen:
-      - baseline: BEV = num_bev_preexisting
-      - expansion: BEV = num_bev_preexisting + num_bev_expansion
-      - BEV → 'charger' (z.B. 'ac'/'dc'); ICEV → None
-    """
-    vehicle_charger: Dict[str, Dict[str, Optional[str]]] = {}
-    for vt, sf in subfleet_settings.items():
-        total = int(sf.num_total)
-        bev_count = int(sf.num_bev_preexisting + (sf.num_bev_expansion if phase == "expansion" else 0))
-        vt_map: Dict[str, Optional[str]] = {}
-        for i in range(total):
-            veh_id = f"{vt}{i}"
-            vt_map[veh_id] = (sf.charger.lower() if i < bev_count else None)
-        vehicle_charger[vt] = vt_map
-    return vehicle_charger
-
-def get_vehicle_usage_from_logs(
-    df: Optional[pd.DataFrame],
-    veh_id: str,
-    avg_speed_kmh: float,
-) -> Tuple[Optional[float], Optional[float]]:
-    """
-    Liefert (distance_km, driving_h) für ein Fahrzeug aus dem Log:
-      - distance_km: direkt aus Distanzspalte (inkl. Aliasse), sonst None
-      - driving_h:   aus 'atbase' berechnet, sonst (wenn distance vorhanden) via distance/avg_speed_kmh,
-                     sonst None
-    """
-    dist_km = _find_distance_km(df, veh_id) if df is not None else None
-    drive_h = _find_driving_hours(df, veh_id) if df is not None else None
-
-    if drive_h is None and dist_km is not None and avg_speed_kmh > 0:
-        drive_h = dist_km / avg_speed_kmh
-
-    return dist_km, drive_h
 
 
 def calc_opex_vehicle(
@@ -256,15 +216,15 @@ def calc_opex_vehicle(
     vehicle_charger: Dict[str, Dict[str, Optional[str]]] = None,
 ) -> Tuple[float, Dict[str, float]]:
     """
-    OPEX-Berechnung auf Basis der Ladeplan-Logs.
-    Erwartete Spalten je Fahrzeug (MultiIndex: (veh_id, metric)):
-      - dist         : Distanz je Zeitschritt [km]
-      - atbase       : True/False (oder 1/0, oder "True"/"False")
-      - consumption  : (optional) Leistung [W] für BEV-Fallback -> Distanz via kWh/km
-    ICEV benötigen eine Distanz (dist oder distance_km).
-    Fahrzeit primär aus atbase, sonst aus Distanz/Ø-Geschwindigkeit.
+    OPEX calculation based on charging schedule logs.
+    Expected columns per vehicle (MultiIndex: (veh_id, metric)):
+      - dist         : distance per timestep [km]
+      - atbase       : True/False (or 1/0, or "True"/"False")
+      - consumption  : (optional) power [W] for BEV fallback -> distance via kWh/km
+    ICEVs require a distance column (dist or distance_km).
+    Driving time is primarily derived from 'atbase', otherwise from distance/avg speed.
     """
-    # BEV/ICEV-Zuordnung aus Settings ableiten, falls nicht übergeben
+    # Derive BEV/ICEV assignment from settings if not provided
     if vehicle_charger is None:
         vehicle_charger = {}
         for vt, sf in subfleet_settings.items():
@@ -276,13 +236,14 @@ def calc_opex_vehicle(
                 vt_map[veh_id] = (sf.charger.lower() if i < bev_count else None)  # None -> ICEV
             vehicle_charger[vt] = vt_map
 
+    fuel_consumption = 25.0 # 25 l/100km
     driver_wage     = float(economics.driver_wage_eur_h)
     mntex_bev       = float(economics.mntex_bev_eur_km)
     mntex_icev      = float(economics.mntex_icev_eur_km)
     toll_bev        = float(getattr(economics, "toll_bev_eur_km", 0.0))
     toll_icev       = float(economics.toll_icev_eur_km)
     insurance_rate  = float(economics.insurance_pct) / 100.0
-    fuel_eur_per_km = float(getattr(economics, "fuel_eur_per_km", 0.0))  # ICEV only
+    fuel_eur_per_km = float(economics.fuel_price_eur_liter) * fuel_consumption / 100
 
     total_eur = 0.0
     breakdown: Dict[str, float] = {}
@@ -304,16 +265,16 @@ def calc_opex_vehicle(
                 raise ValueError(f"vehicle_charger['{vt}'] missing vehicle '{veh_id}'.")
 
             chg = vehicle_charger[vt][veh_id]
-            is_bev = not (chg is None or str(chg).lower() == "none")  # None/"none" -> ICEV
+            is_bev = not (chg is None or str(chg).lower() == "none")  # None/"none" → ICEV
 
-            # ---------- Distanz (km) ----------
+            # ---------- Distance (km) ----------
             distance_km = 0.0
             if (veh_id, "dist") in df.columns:
                 distance_km = float(df.loc[:, (veh_id, "dist")].astype(float).sum())
             elif (veh_id, "distance_km") in df.columns:
                 distance_km = float(df.loc[:, (veh_id, "distance_km")].astype(float).sum())
             else:
-                # optionaler BEV-Fallback via consumption + kWh/km
+                # optional BEV fallback: consumption + kWh/km
                 if is_bev and (veh_id, "consumption") in df.columns:
                     energy_kwh = float(
                         (df.loc[:, (veh_id, "consumption")].to_numpy(dtype=float) * FREQ_HOURS).sum() / 1000.0
@@ -324,11 +285,11 @@ def calc_opex_vehicle(
 
             if not is_bev and distance_km <= 0.0:
                 raise ValueError(
-                    f"ICEV '{veh_id}' hat keine Distanzspalte. "
-                    f"Erwarte (veh_id,'dist') oder (veh_id,'distance_km')."
+                    f"ICEV '{veh_id}' has no distance column. "
+                    f"Expected (veh_id,'dist') or (veh_id,'distance_km')."
                 )
 
-            # ---------- Fahrzeit (h) ----------
+            # ---------- Driving time (h) ----------
             if (veh_id, "atbase") in df.columns:
                 atb = df.loc[:, (veh_id, "atbase")]
                 # robust cast: bool → float; strings "True"/"False" → 1/0
@@ -341,13 +302,9 @@ def calc_opex_vehicle(
                         atbase = atb.astype(str).str.lower().map({"true": 1.0, "false": 0.0}).fillna(0.0).to_numpy()
                 driving_h = float(((1.0 - atbase) * FREQ_HOURS).sum())
             else:
-                # Schätzung aus Distanz
-                if distance_km > 0.0 and avg_speed_kmh > 0.0:
-                    driving_h = distance_km / avg_speed_kmh
-                else:
-                    raise ValueError(
-                        f"{veh_id}: Fahrzeit nicht bestimmbar (keine 'atbase' und keine Distanz)."
-                    )
+                raise ValueError(
+                    f"{veh_id}: driving time not computable (no 'atbase' and no distance)."
+                )
 
             # ---------- OPEX ----------
             if is_bev:
@@ -370,6 +327,60 @@ def calc_opex_vehicle(
 
     return float(total_eur), breakdown
 
+
+
+def calc_infrastructure_capex(
+    location: "LocationSettings",
+    charger_settings: Dict[str, "ChargerSettings"],
+    economics: "EconomicSettings",
+    phase: Literal["baseline", "expansion"],
+) -> Tuple[float, Dict[str, float]]:
+    """
+    Calculate infrastructure CAPEX for the given phase.
+    - 'baseline'  -> 0 EUR
+    - 'expansion' -> Costs for additional grid/PV/ESS capacity + new chargers
+
+    Uses cost rates from 'economics' (with defaults if not set):
+      - capex_spec_grid_eur_per_w
+      - capex_spec_pv_eur_per_wp
+      - capex_spec_ess_eur_per_wh
+
+    Returns:
+      (capex_total, {"grid": ..., "pv": ..., "ess": ..., "chargers": ...})
+    """
+    if phase == "baseline":
+        return 0.0, {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
+
+    # Cost rates (same defaults as in your current implementation)
+    rate_grid = float(getattr(economics, "capex_spec_grid_eur_per_w", 150))
+    rate_pv   = float(getattr(economics, "capex_spec_pv_eur_per_wp", 900))
+    rate_ess  = float(getattr(economics, "capex_spec_ess_eur_per_wh", 400))
+
+    # Expansion capacities (already in W, Wp, Wh in your data model)
+    grid_exp_w  = float(location.grid_capacity_w.expansion or 0.0)
+    pv_exp_wp   = float(location.pv_capacity_wp.expansion or 0.0)
+    ess_exp_wh  = float(location.ess_capacity_wh.expansion or 0.0)
+
+    # Infrastructure CAPEX components
+    capex_grid = grid_exp_w * rate_grid
+    capex_pv   = pv_exp_wp * rate_pv
+    capex_ess  = ess_exp_wh * rate_ess
+
+    # Charger CAPEX: expansion number * cost per charger
+    capex_chargers = float(sum(
+        getattr(cs, "num_expansion", 0) * getattr(cs, "cost_per_charger_eur", 0.0)
+        for cs in charger_settings.values()
+    ))
+
+    # Detailed breakdown
+    breakdown = {
+        "grid": capex_grid,
+        "pv": capex_pv,
+        "ess": capex_ess,
+        "chargers": capex_chargers,
+    }
+    total = capex_grid + capex_pv + capex_ess + capex_chargers
+    return float(total), breakdown
 
 
 def calc_vehicle_capex_split(
@@ -461,26 +472,14 @@ def calc_phase_results(logs: Logs,
     co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
 
     if phase == "baseline":
-        capex_infra_eur = 0.0
+        capex_infra_eur, capex_infra_bd = 0.0, {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
     else:
-        rate_grid = getattr(economics, "capex_spec_grid_eur_per_w", 150)  # ToDo: check value
-        rate_pv = getattr(economics, "capex_spec_pv_eur_per_wp", 900)  # ToDo: check value
-        rate_ess = getattr(economics, "capex_spec_ess_eur_per_wh", 400)  # ToDo: check value
-
-        grid_exp_kw = float(location.grid_capacity_w.expansion or 0.0)
-        pv_exp_kwp = float(location.pv_capacity_wp.expansion or 0.0)
-        ess_exp_kwh = float(location.ess_capacity_wh.expansion or 0.0)
-
-        capex_grid = grid_exp_kw * rate_grid
-        capex_pv = pv_exp_kwp * rate_pv
-        capex_ess = ess_exp_kwh * rate_ess
-
-        capex_chargers = float(sum(
-            getattr(cs, "num_expansion", 0) * getattr(cs, "cost_per_charger_eur", 0.0)
-            for cs in charger_settings.values()
-        ))
-
-        capex_infra_eur = float(capex_grid + capex_pv + capex_ess + capex_chargers)
+        capex_infra_eur, capex_infra_bd = calc_infrastructure_capex(
+            location=location,
+            charger_settings=charger_settings,
+            economics=economics,
+            phase=phase,
+        )
 
     # --- Fahrzeug-CAPEX getrennt nach BEV/ICEV für die Phase ---
     capex_bev_eur, capex_icev_eur, _, _ = calc_vehicle_capex_split(
