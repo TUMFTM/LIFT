@@ -5,6 +5,7 @@ import traceback
 import numpy as np
 import pandas as pd
 import altair as alt
+from typing import Dict, Tuple, List, Literal
 
 import backend
 
@@ -280,10 +281,10 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                    )
 
         # ToDo: check whether this is required
-        dist_max_km = st.slider(label="Max. Distanz pro Fahrzeug (km)",
-                                key=f'dist_max_km_{subfleet.name}',
-                                **subfleet.settings_dist_max.dict,
-                                )
+        #dist_max_km = st.slider(label="Max. Distanz pro Fahrzeug (km)",
+         #                       key=f'dist_max_km_{subfleet.name}',
+         #                       **subfleet.settings_dist_max.dict,
+          #                      )
 
         # ToDo: check whether this is required
         # depot_avg_h = st.slider(label="Standzeit am Depot (Std.)",
@@ -409,6 +410,10 @@ def display_results(results):
             st.write(f"OPEX Fahrzeuge (Wartung+Vers.+Fahrer): {res.opex_vehicle_electric_secondary:,.2f} EUR/Jahr")
             st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
             st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
+            st.write(f"Infrastruktur-CO₂ (embodied): {res.infra_co2_total_kg:,.0f} kg")
+            with st.expander("Details Infrastruktur-CAPEX / CO₂"):
+                st.write("CAPEX Breakdown:", res.infra_capex_breakdown)
+                st.write("CO₂ Breakdown (kg):", res.infra_co2_breakdown)
 
 
 def display_empty_results():

@@ -5,7 +5,7 @@ import pvlib
 import streamlit as st
 from time import time
 from typing import TYPE_CHECKING, Literal, Tuple, Dict, Optional
-from definitions import FREQ_HOURS
+from definitions import FREQ_HOURS, CHARGERS
 
 import numpy as np
 
@@ -212,19 +212,24 @@ def calc_opex_vehicle(
     subfleet_settings: Dict[str, "SubFleetSettings"],
     economics: "EconomicSettings",
     phase: Literal["baseline", "expansion"],
-    avg_speed_kmh: float = 50.0,
     vehicle_charger: Dict[str, Dict[str, Optional[str]]] = None,
-) -> Tuple[float, Dict[str, float]]:
+) -> Tuple[float, Dict[str, float], float, Dict[str, float]]:
     """
-    OPEX calculation based on charging schedule logs.
+    Calculates vehicle OPEX *and* tailpipe CO₂ emissions based on charging schedule logs.
     Expected columns per vehicle (MultiIndex: (veh_id, metric)):
       - dist         : distance per timestep [km]
       - atbase       : True/False (or 1/0, or "True"/"False")
       - consumption  : (optional) power [W] for BEV fallback -> distance via kWh/km
     ICEVs require a distance column (dist or distance_km).
     Driving time is primarily derived from 'atbase', otherwise from distance/avg speed.
+
+    Returns:
+      (opex_total_eur,
+       opex_by_subfleet_eur,
+       co2_tailpipe_total_kg,
+       co2_tailpipe_by_subfleet_kg)
     """
-    # Derive BEV/ICEV assignment from settings if not provided
+    # Build BEV/ICEV assignment if not provided
     if vehicle_charger is None:
         vehicle_charger = {}
         for vt, sf in subfleet_settings.items():
@@ -236,17 +241,26 @@ def calc_opex_vehicle(
                 vt_map[veh_id] = (sf.charger.lower() if i < bev_count else None)  # None -> ICEV
             vehicle_charger[vt] = vt_map
 
-    fuel_consumption = 25.0 # 25 l/100km
+    # Parameters
+    fuel_consumption_l_per_100km = 25.0  # default ICEV consumption
+    CO2_PER_LITER_DIESEL_KG = 3.08       # kg CO2 per liter diesel
+
     driver_wage     = float(economics.driver_wage_eur_h)
     mntex_bev       = float(economics.mntex_bev_eur_km)
     mntex_icev      = float(economics.mntex_icev_eur_km)
     toll_bev        = float(getattr(economics, "toll_bev_eur_km", 0.0))
     toll_icev       = float(economics.toll_icev_eur_km)
     insurance_rate  = float(economics.insurance_pct) / 100.0
-    fuel_eur_per_km = float(economics.fuel_price_eur_liter) * fuel_consumption / 100
+    fuel_price_eur_l = float(economics.fuel_price_eur_liter)
 
-    total_eur = 0.0
-    breakdown: Dict[str, float] = {}
+    # Derived rates
+    fuel_eur_per_km = fuel_price_eur_l * (fuel_consumption_l_per_100km / 100.0)
+    co2_kg_per_km   = CO2_PER_LITER_DIESEL_KG * (fuel_consumption_l_per_100km / 100.0)
+
+    opex_total_eur = 0.0
+    opex_by_sf: Dict[str, float] = {}
+    co2_total_kg = 0.0
+    co2_by_sf: Dict[str, float] = {}
 
     for vt, sf in subfleet_settings.items():
         if vt not in vehicle_charger:
@@ -258,6 +272,8 @@ def calc_opex_vehicle(
 
         n_total = int(sf.num_total)
         opex_vt = 0.0
+        co2_vt_kg = 0.0
+        toll_split = float(sf.toll_share_pct) / 100.0
 
         for i in range(n_total):
             veh_id = f"{vt}{i}"
@@ -267,7 +283,7 @@ def calc_opex_vehicle(
             chg = vehicle_charger[vt][veh_id]
             is_bev = not (chg is None or str(chg).lower() == "none")  # None/"none" → ICEV
 
-            # ---------- Distance (km) ----------
+            # --- Distance (km) ---
             distance_km = 0.0
             if (veh_id, "dist") in df.columns:
                 distance_km = float(df.loc[:, (veh_id, "dist")].astype(float).sum())
@@ -289,44 +305,53 @@ def calc_opex_vehicle(
                     f"Expected (veh_id,'dist') or (veh_id,'distance_km')."
                 )
 
-            # ---------- Driving time (h) ----------
+            # --- Driving time (h) ---
             if (veh_id, "atbase") in df.columns:
                 atb = df.loc[:, (veh_id, "atbase")]
-                # robust cast: bool → float; strings "True"/"False" → 1/0
                 if atb.dtype == bool:
                     atbase = atb.astype(float).to_numpy()
                 else:
                     try:
                         atbase = atb.astype(float).to_numpy()
                     except Exception:
-                        atbase = atb.astype(str).str.lower().map({"true": 1.0, "false": 0.0}).fillna(0.0).to_numpy()
+                        atbase = (
+                            atb.astype(str)
+                               .str.lower()
+                               .map({"true": 1.0, "false": 0.0})
+                               .fillna(0.0)
+                               .to_numpy()
+                        )
                 driving_h = float(((1.0 - atbase) * FREQ_HOURS).sum())
             else:
-                raise ValueError(
-                    f"{veh_id}: driving time not computable (no 'atbase' and no distance)."
-                )
+                raise ValueError(f"{veh_id}: driving time not computable (no 'atbase' and no distance).")
 
-            # ---------- OPEX ----------
+            # --- OPEX components ---
             if is_bev:
                 opex_driver      = driver_wage * driving_h
                 opex_maintenance = mntex_bev * distance_km
                 opex_insurance   = float(sf.capex_bev_eur) * insurance_rate
                 opex_fuel        = 0.0
-                opex_toll        = toll_bev * distance_km
+                opex_toll        = toll_bev * distance_km * toll_split
+                # tailpipe CO2 for BEV is zero
+                co2_tailpipe_kg  = 0.0
             else:
                 opex_driver      = driver_wage * driving_h
                 opex_maintenance = mntex_icev * distance_km
                 opex_insurance   = float(sf.capex_icev_eur) * insurance_rate
                 opex_fuel        = fuel_eur_per_km * distance_km
-                opex_toll        = toll_icev * distance_km
+                opex_toll        = toll_icev * distance_km * toll_split
+                # tailpipe CO2 for ICEV
+                co2_tailpipe_kg  = co2_kg_per_km * distance_km
 
             opex_vt += (opex_driver + opex_maintenance + opex_insurance + opex_fuel + opex_toll)
+            co2_vt_kg += co2_tailpipe_kg
 
-        breakdown[vt] = opex_vt
-        total_eur += opex_vt
+        opex_by_sf[vt] = opex_vt
+        co2_by_sf[vt] = co2_vt_kg
+        opex_total_eur += opex_vt
+        co2_total_kg += co2_vt_kg
 
-    return float(total_eur), breakdown
-
+    return float(opex_total_eur), opex_by_sf, float(co2_total_kg), co2_by_sf
 
 
 def calc_infrastructure_capex(
@@ -334,7 +359,7 @@ def calc_infrastructure_capex(
     charger_settings: Dict[str, "ChargerSettings"],
     economics: "EconomicSettings",
     phase: Literal["baseline", "expansion"],
-) -> Tuple[float, Dict[str, float]]:
+) -> Tuple[float, Dict[str, float], float, Dict[str, float]]:
     """
     Calculate infrastructure CAPEX for the given phase.
     - 'baseline'  -> 0 EUR
@@ -346,29 +371,38 @@ def calc_infrastructure_capex(
       - capex_spec_ess_eur_per_wh
 
     Returns:
-      (capex_total, {"grid": ..., "pv": ..., "ess": ..., "chargers": ...})
+      (capex_total_eur,
+       {"grid": ..., "pv": ..., "ess": ..., "chargers": ...},
+       co2_total_kg,
+       {"grid": ..., "pv": ..., "ess": ..., "chargers": ...})
     """
     if phase == "baseline":
-        return 0.0, {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
+        return (
+            0.0,
+            {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0},
+            0.0,
+            {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0},
+        )
 
     # Cost rates (same defaults as in your current implementation)
-    rate_grid = 900
-    rate_pv   = 1000
-    rate_ess  = 300
+    rate_grid = 200 # EUR / kW
+    rate_pv   = 900 # EUR / kWp
+    rate_ess  = 450 # EUR / kWh
 
-    # Expansion capacities (already in W, Wp, Wh in your data model)
-    grid_exp_w  = float(location.grid_capacity_w.expansion or 0.0)
-    pv_exp_wp   = float(location.pv_capacity_wp.expansion or 0.0)
-    ess_exp_wh  = float(location.ess_capacity_wh.expansion or 0.0)
+    # ------- Embodied CO2 factors (kg CO2 per unit) -------
+    co2_per_kw_grid = 0.0  #ToDo co2 trafo relevant?
+    co2_per_kwp_pv = 798.0  # kg/kWp
+    co2_per_kwh_ess = 69.0  # kg/kWh
 
-    # convert sizes to kW/kWp/kWh
-    grid_exp_kW = grid_exp_w / 1000.0
-    pv_exp_kWp = pv_exp_wp / 1000.0
-    ess_exp_kWh = ess_exp_wh / 1000.0
+    # Expansion capacities (W, Wp, Wh) -> nach kW/kWp/kWh umrechnen
+    grid_exp_kw = float(location.grid_capacity_w.expansion or 0.0) / 1000.0
+    pv_exp_kwp = float(location.pv_capacity_wp.expansion or 0.0) / 1000.0
+    ess_exp_kwh = float(location.ess_capacity_wh.expansion or 0.0) / 1000.0
 
-    capex_grid = grid_exp_kW * rate_grid
-    capex_pv = pv_exp_kWp * rate_pv
-    capex_ess = ess_exp_kWh * rate_ess
+    # CAPEX
+    capex_grid     = grid_exp_kw  * rate_grid
+    capex_pv       = pv_exp_kwp   * rate_pv
+    capex_ess      = ess_exp_kwh  * rate_ess
 
     # Charger CAPEX: expansion number * cost per charger
     capex_chargers = float(sum(
@@ -376,15 +410,46 @@ def calc_infrastructure_capex(
         for cs in charger_settings.values()
     ))
 
+    co2_grid = grid_exp_kw  * co2_per_kw_grid
+    co2_pv   = pv_exp_kwp   * co2_per_kwp_pv
+    co2_ess  = ess_exp_kwh  * co2_per_kwh_ess
+
+    co2_chargers = 0.0
+    valid_keys = ", ".join(CHARGERS.keys())
+    for name, cs in charger_settings.items():
+        key = str(name).strip().lower()
+        meta = CHARGERS.get(key)
+        if meta is None:
+            # Fallback: versuche den Namen aus dem Objekt selbst
+            key = str(getattr(cs, "name", name)).strip().lower()
+            meta = CHARGERS.get(key)
+        if meta is None:
+            raise KeyError(
+                f"Unbekannter Charger-Typ '{name}'. Erlaubte Typen: {valid_keys}"
+            )
+        co2_chargers += float(cs.num_expansion) * float(meta.settings_CO2_per_unit)
+
+    #co2_chargers = float(sum(
+    #    float(cs.num_expansion) * CHARGERS[name].settings_CO2_per_unit
+    #    for name, cs in charger_settings.items()
+    #))
+
     # Detailed breakdown
-    breakdown = {
+    capex_breakdown = {
         "grid": capex_grid,
         "pv": capex_pv,
         "ess": capex_ess,
         "chargers": capex_chargers,
     }
-    total = capex_grid + capex_pv + capex_ess + capex_chargers
-    return float(total), breakdown
+    co2_breakdown = {
+        "grid": co2_grid,
+        "pv": co2_pv,
+        "ess": co2_ess,
+        "chargers": co2_chargers,
+    }
+    capex_total = capex_grid + capex_pv + capex_ess + capex_chargers
+    co2_total   = co2_grid + co2_pv + co2_ess + co2_chargers
+    return float(capex_total), capex_breakdown, float(co2_total), co2_breakdown
 
 
 def calc_vehicle_capex_split(
@@ -424,8 +489,8 @@ def calc_vehicle_capex_split(
         icev_phase = max(int(sf.num_total) - bev_phase, 0)
 
         # Subfleet CAPEX contributions
-        capex_bev_sf  = float(bev_phase)  * float(getattr(sf, "capex_bev_eur",  0.0))
-        capex_icev_sf = float(icev_phase) * float(getattr(sf, "capex_icev_eur", 0.0))
+        capex_bev_sf  = float(bev_phase)  * float(sf.capex_bev_eur)
+        capex_icev_sf = float(icev_phase) * float(sf.capex_icev_eur)
 
         # Store breakdown per subfleet key (vt)
         bd_bev[vt]  = capex_bev_sf
@@ -436,6 +501,44 @@ def calc_vehicle_capex_split(
         icev_total += capex_icev_sf
 
     return float(bev_total), float(icev_total), bd_bev, bd_icev
+
+
+def apply_vehicle_salvage_simple(
+    cashflow: np.ndarray,
+    *,
+    capex_bev_eur: float,
+    capex_icev_eur: float,
+    economics: "EconomicSettings",
+    replacement_years_idx: list[int] = [5, 11, 17],  # Salvage applied at replacement years
+    project_years: int = TIME_PRJ_YRS,           # Salvage applied at project end
+) -> None:
+    """
+    Simple salvage logic:
+      - Computes a fixed salvage value per vehicle cohort (BEV + ICEV combined),
+      - Subtracts it at given replacement years,
+      - Subtracts it again at project end (last year).
+
+    Assumptions:
+      - Each purchase wave has the same CAPEX size (capex_bev_eur + capex_icev_eur).
+      - Salvage rates are given in percentages in 'economics'.
+    """
+    salv_bev = float(economics.salvage_bev_pct) / 100.0
+    salv_ice = float(economics.salvage_icev_pct) / 100.0
+
+    # Fixed salvage value per cohort
+    salvage_per_cohort = capex_bev_eur * salv_bev + capex_icev_eur * salv_ice
+    if salvage_per_cohort <= 0.0:
+        return
+
+    # Subtract salvage at replacement years
+    for yr in replacement_years_idx:
+        if 0 <= yr < project_years:
+            cashflow[yr] -= salvage_per_cohort
+
+    # Subtract salvage at project end for the last cohort
+    end_idx = project_years - 1
+    if end_idx >= 0:
+        cashflow[end_idx] -= salvage_per_cohort
 
 
 def calc_phase_results(logs: Logs,
@@ -456,7 +559,7 @@ def calc_phase_results(logs: Logs,
         chargers=chargers,
     )
 
-    opex_vehicle_total, opex_vehicle_by_sf = calc_opex_vehicle(
+    opex_vehicle_total, opex_vehicle_by_sf, co2_tailpipe_total_kg, co2_tailpipe_by_sf = calc_opex_vehicle(
         logs=logs,
         subfleet_settings=subfleet_settings,
         economics=economics,
@@ -472,13 +575,19 @@ def calc_phase_results(logs: Logs,
         self_sufficiency_pct = 0.0
         self_consumption_pct = 0.0
 
-    co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
+    co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH + co2_tailpipe_total_kg
     co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
 
     if phase == "baseline":
-        capex_infra_eur, capex_infra_bd = 0.0, {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
+        capex_infra_eur = 0.0
+        capex_infra_bd = {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
+        co2_infra_kg = 0.0
+        co2_infra_bd = {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
     else:
-        capex_infra_eur, capex_infra_bd = calc_infrastructure_capex(
+        (capex_infra_eur,
+         capex_infra_bd,
+         co2_infra_kg,
+         co2_infra_bd) = calc_infrastructure_capex(
             location=location,
             charger_settings=charger_settings,
             economics=economics,
@@ -516,6 +625,15 @@ def calc_phase_results(logs: Logs,
         if idx < TIME_PRJ_YRS:
             cashflow[idx] += capex_vehicles_eur
 
+    apply_vehicle_salvage_simple(
+        cashflow,
+        capex_bev_eur=capex_bev_eur,
+        capex_icev_eur=capex_icev_eur,
+        economics=economics,
+        replacement_years_idx=[5, 11, 17],  # salvage when cohorts are replaced
+        project_years=TIME_PRJ_YRS,  # salvage for the last cohort at end of project
+    )
+
     # Infrastructure only in expansion scenario
     if phase == "expansion":
         # Grid, PV, and chargers entirely in year 1
@@ -544,6 +662,9 @@ def calc_phase_results(logs: Logs,
                         opex_grid_eur=opex_grid,
                         opex_vehicle_electric_secondary=opex_vehicle_total,
                         cashflow=cashflow,  # ToDo: calculate cashflow
+                        infra_capex_breakdown=capex_infra_bd,
+                        infra_co2_total_kg=co2_infra_kg,
+                        infra_co2_breakdown=co2_infra_bd,
                         )
 
 
@@ -569,8 +690,10 @@ def run_backend(settings: Settings) -> BackendResults:
                                            subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
                                        for subfleet in settings.subfleets.values()}
 
-    chargers_baseline = {t: c.num_preexisting for t, c in settings.chargers.items()}
-    chargers_expansion = {t: c.num_preexisting + c.num_expansion for t, c in settings.chargers.items()}
+    chargers_baseline = {str(t).lower(): int(c.num_preexisting)
+                         for t, c in settings.chargers.items()}
+    chargers_expansion = {str(t).lower(): int(c.num_preexisting + c.num_expansion)
+                          for t, c in settings.chargers.items()}
 
     results_baseline = calc_phase_results(logs=logs,
                                           capacities=settings.location.get_capacities('baseline'),

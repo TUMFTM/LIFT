@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from definitions import TIME_PRJ_YRS
+from typing import Dict, Tuple, List, Literal
 
 
 class GridPowerExceededError(Exception):
@@ -200,6 +201,9 @@ class PhaseResults:
     opex_toll_eur: float = 0.0  # toll cost over project time in euro
     opex_grid_eur: float = 0.0  # grid cost over project time in euro
     opex_vehicle_electric_secondary: float = 0.0 # maintenance, insurance, driver
+    infra_capex_breakdown: Dict[str, float] = field(default_factory=dict)
+    infra_co2_total_kg: float = 0.0
+    infra_co2_breakdown: Dict[str, float] = field(default_factory=dict)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
     # ToDo: think about using a DataFrame or Matrix for cashflows and replace all capex/opex variables by this
