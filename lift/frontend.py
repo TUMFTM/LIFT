@@ -431,34 +431,35 @@ def display_empty_results():
 
 def plot_flow(
     results,
-    attr: str = "cashflow",               # "cashflow" oder "co2_flow"
-    title: str | None = None,             # Chart-Titel
-    y_label: str | None = None,           # y-Achse
-    unit: str = "EUR",                    # Einheit für Tooltip/Legende
-    cumulative: bool = True,              # kumuliert oder jährlich
-    show_table: bool = False,             # Tabelle anzeigen?
-    value_format: str = ",.0f",           # Zahlenformat im Tooltip/Tabelle
+    attr: str = "cashflow",         # "cashflow" or "co2_flow"
+    title: str | None = None,
+    y_label: str | None = None,
+    unit: str = "EUR",
+    cumulative: bool = True,
+    show_table: bool = False,
+    value_format: str = ",.0f",
+    show_intersection: bool = True,  # show intersection marker
 ):
-    # 1) Arrays holen
+    # 1) Pull arrays
     base_arr = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
     exp_arr  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
 
     if base_arr.size == 0 and exp_arr.size == 0:
-        st.warning(f"Kein Array '{attr}' in results.baseline / results.expansion gefunden.")
+        st.warning(f"No array '{attr}' found on results.baseline / results.expansion.")
         return
 
-    # 2) Auf gleiche Länge bringen
+    # 2) Pad to the same length
     n_years = int(max(len(base_arr), len(exp_arr)))
     pad = lambda a: np.pad(a, (0, n_years - len(a)), mode="constant") if len(a) < n_years else a
     base_arr = pad(base_arr)
     exp_arr  = pad(exp_arr)
-    years = np.arange(1, n_years + 1)
+    years = np.arange(1, n_years + 1, dtype=float)  # float to support fractional years (interpolation)
 
-    # 3) Kumulieren (optional)
+    # 3) Cumulative or annual
     y_base = np.cumsum(base_arr) if cumulative else base_arr
     y_exp  = np.cumsum(exp_arr)  if cumulative else exp_arr
 
-    # 4) DataFrame
+    # 4) Build DataFrame
     df = pd.DataFrame({
         "Year": years,
         "Baseline": y_base,
@@ -466,37 +467,207 @@ def plot_flow(
     })
     df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Value")
 
-    # 5) Achsenbereich robust (auch wenn negativ/alles Null)
+    # 5) Robust axis domain (handles all-zero or negative values)
     y_min = float(min(np.nanmin(y_base), np.nanmin(y_exp), 0.0))
     y_max = float(max(np.nanmax(y_base), np.nanmax(y_exp), 0.0))
-    if y_max == y_min:  # alles gleich (z.B. 0)
+    if y_max == y_min:
         y_min, y_max = 0.0, 1.0
 
-    # 6) Defaults für Titel/Label
+    # 6) Defaults for title/labels
     if title is None:
         title = f"{'Cumulative' if cumulative else 'Annual'} {attr.replace('_', ' ').title()}"
     if y_label is None:
-        base = "Cumulative" if cumulative else "Annual"
-        y_label = f"{base} value [{unit}]"
+        base_lbl = "Cumulative" if cumulative else "Annual"
+        y_label = f"{base_lbl} value [{unit}]"
 
-    # 7) Chart
+    # 7) Build the base line chart first
     chart = (
         alt.Chart(df_long, title=title)
         .mark_line(point=True)
         .encode(
-            x=alt.X("Year:O", axis=alt.Axis(title="Year")),
+            x=alt.X("Year:Q", axis=alt.Axis(title="Year")),  # quantitative to allow fractional year mark
             y=alt.Y("Value:Q", axis=alt.Axis(title=y_label), scale=alt.Scale(domain=[y_min, y_max])),
             color=alt.Color("Scenario:N", legend=alt.Legend(title="Scenario")),
             tooltip=[
-                alt.Tooltip("Year:O", title="Year"),
+                alt.Tooltip("Year:Q", title="Year", format=".2f"),
                 alt.Tooltip("Scenario:N", title="Scenario"),
                 alt.Tooltip("Value:Q", title=f"Value [{unit}]", format=value_format),
             ],
         )
         .properties(height=360)
     )
+
+    # 8) Optional: add intersection marker
+    if show_intersection:
+        res = find_flow_intersection(results, attr=attr)
+        if isinstance(res, dict) and res.get("value") is not None:
+            x_pt = float(res["year_float"])
+            y_pt = float(res["value"])
+            point_df = pd.DataFrame([{"Year": x_pt, "Value": y_pt}])
+            point_layer = (
+                alt.Chart(point_df)
+                .mark_point(size=120, filled=True)
+                .encode(x="Year:Q", y="Value:Q")
+            )
+            chart = chart + point_layer
+
     st.altair_chart(chart, use_container_width=True)
 
+    # 9) Optional table
+    if show_table:
+        st.dataframe(df.style.format({"Baseline": value_format, "Expansion": value_format}))
+
+
+def find_flow_intersection(results, attr: str = "cashflow"):
+    """
+    Find the intersection of the cumulative curves (Baseline vs. Expansion)
+    for the given array attribute (e.g., 'cashflow' or 'co2_flow').
+
+    Returns:
+      - dict describing the intersection:
+          kind: 'exact' | 'interp' | 'identical'
+          year_float: 1-indexed year as float (can be between two years)
+          value: value at the intersection (same for both curves)
+        or
+      - None if there is no intersection.
+    """
+    base = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
+    exp  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
+
+    if base.size == 0 or exp.size == 0:
+        return None
+
+    # Pad to same length
+    n = int(max(len(base), len(exp)))
+    pad = lambda a: np.pad(a, (0, n - len(a)), mode="constant") if len(a) < n else a
+    base = pad(base)
+    exp  = pad(exp)
+
+    base_cum = np.cumsum(base)
+    exp_cum  = np.cumsum(exp)
+    diff = exp_cum - base_cum
+
+    # Identical curves
+    if np.allclose(diff, 0.0, atol=1e-12):
+        return {
+            "kind": "identical",
+            "year_float": None,
+            "value": None,
+            "message": "Curves are identical across the entire horizon."
+        }
+
+    # Exact intersection at a support point
+    for i in range(n):
+        if np.isclose(diff[i], 0.0, atol=1e-12):
+            return {
+                "kind": "exact",
+                "year_float": i + 1.0,  # 1-indexed
+                "value": float(base_cum[i]),
+                "index": i
+            }
+
+    # Sign change => intersection between two years (linear interpolation)
+    for i in range(1, n):
+        if diff[i-1] * diff[i] < 0:
+            t = (-diff[i-1]) / (diff[i] - diff[i-1])  # 0..1 within the interval
+            year_float = (i - 1) + t + 1.0            # 1-indexed
+            value = float(base_cum[i-1] + t * (base_cum[i] - base_cum[i-1]))
+            return {
+                "kind": "interp",
+                "year_float": year_float,
+                "value": value,
+                "between_years": (i, i+1),            # 1-indexed
+                "t": float(t)
+            }
+
+    # No intersection (one curve stays above/below the other)
+    return None
+
+def _radius_to_area(r_px: float) -> float:
+    # Altair's circle size uses *area* in pixels; convert a desired radius to area.
+    return float(np.pi * r_px * r_px)
+
+def circle_compare(
+    title: str,
+    base_value: float,
+    exp_value: float,
+    *,
+    unit: str = "",
+    max_value: float | None = None,   # shared scale for fair comparison; auto if None
+    min_radius: int = 16,             # px (shown even for zero to keep a visible dot)
+    max_radius: int = 72,             # px
+    base_color: str = "#155e75",      # Baseline color
+    exp_color: str = "#ea580c",       # Expansion color
+    width: int = 520,
+    height: int = 260,
+    show_labels_inside: bool = True,
+):
+    """
+    Render two size-encoded circles next to each other: Baseline vs Expansion.
+    Circle *area* is proportional to the KPI value. Both use the same max_value.
+    """
+    # Shared scale across both circles
+    if max_value is None:
+        m = max(float(base_value), float(exp_value))
+        max_value = (m * 1.10) if m > 0 else 1.0
+    max_value = float(max_value)
+
+    data = pd.DataFrame({
+        "Scenario": ["Baseline", "Expansion"],
+        "Value": [float(base_value), float(exp_value)],
+        "Color": [base_color, exp_color],
+        "Label": [f"{base_value:,.0f} {unit}".strip(),
+                  f"{exp_value:,.0f} {unit}".strip()],
+    })
+
+    # Size scale (area in px^2)
+    size_scale = alt.Scale(
+        domain=[0, max_value],
+        range=[_radius_to_area(min_radius), _radius_to_area(max_radius)],
+        nice=False
+    )
+
+    # Baseline chart: two circles on one row
+    y_center = height / 2
+    chart_circles = (
+        alt.Chart(data, title=title)
+        .mark_circle(stroke="#0f172a", strokeWidth=1)
+        .encode(
+            x=alt.X("Scenario:N",
+                    axis=alt.Axis(title=None, labelAngle=0),
+                    sort=["Baseline", "Expansion"]),
+            y=alt.value(y_center),
+            size=alt.Size("Value:Q", scale=size_scale, legend=None),
+            color=alt.Color("Scenario:N",
+                            scale=alt.Scale(
+                                domain=["Baseline", "Expansion"],
+                                range=[base_color, exp_color]),
+                            legend=None),
+            tooltip=[
+                alt.Tooltip("Scenario:N"),
+                alt.Tooltip("Value:Q", title=f"Value [{unit}]", format=",.0f"),
+            ],
+        )
+        .properties(width=width, height=height)
+    )
+
+    # Optional numeric labels inside the circles
+    if show_labels_inside:
+        text = (
+            alt.Chart(data)
+            .mark_text(baseline="middle", fontSize=14, color="white", stroke=None)
+            .encode(
+                x=alt.X("Scenario:N", sort=["Baseline", "Expansion"]),
+                y=alt.value(y_center),
+                text="Label:N",
+            )
+        )
+        chart = chart_circles + text
+    else:
+        chart = chart_circles
+
+    chart = chart.configure_view(stroke=None)
+    st.altair_chart(chart, use_container_width=True)
 
 def run_frontend():
     # define page settings
@@ -523,6 +694,73 @@ def run_frontend():
         try:
             results = backend.run_backend(settings=settings)
             display_results(results)
+
+            st.subheader("Baseline vs. Expansion — KPI (circle size = value)")
+
+            # 1) Self-sufficiency (%)
+            circle_compare(
+                "Autarkiegrad",
+                results.baseline.self_sufficiency_pct,
+                results.expansion.self_sufficiency_pct,
+                unit="%",
+                max_value=100.0,  # fix scale to 100% for fair perception
+            )
+
+            # 2) Self-consumption (%)
+            circle_compare(
+                "Eigenverbrauchsquote",
+                results.baseline.self_consumption_pct,
+                results.expansion.self_consumption_pct,
+                unit="%",
+                max_value=100.0,
+            )
+
+            # 3) CAPEX (total)
+            circle_compare(
+                "CAPEX (total)",
+                getattr(results.baseline, "capex_eur", 0.0),
+                getattr(results.expansion, "capex_eur", 0.0),
+                unit="EUR",
+            )
+
+            # 4) CAPEX Vehicles
+            circle_compare(
+                "CAPEX Fahrzeuge",
+                getattr(results.baseline, "capex_vehicles_eur", 0.0),
+                getattr(results.expansion, "capex_vehicles_eur", 0.0),
+                unit="EUR",
+            )
+
+            # 5) OPEX (per year)
+            circle_compare(
+                "OPEX (per year)",
+                getattr(results.baseline, "opex_eur", 0.0),
+                getattr(results.expansion, "opex_eur", 0.0),
+                unit="EUR",
+            )
+
+            # 6) OPEX Vehicles (maintenance + insurance + driver), per year
+            circle_compare(
+                "OPEX Fahrzeuge (per year)",
+                getattr(results.baseline, "opex_vehicle_electric_secondary", 0.0),
+                getattr(results.expansion, "opex_vehicle_electric_secondary", 0.0),
+                unit="EUR",
+            )
+
+            res = find_flow_intersection(results, attr="cashflow")
+            if res is None:
+                st.info("Kein Schnittpunkt (eine Kurve liegt stets über/unter der anderen).")
+            elif res["kind"] == "identical":
+                st.info("Beide Kurven sind identisch.")
+            else:
+                yr = res["year_float"]
+                val = res["value"]
+                st.success(f"Schnittpunkt bei Jahr ≈ {yr:.2f}, Wert ≈ {val:,.0f} EUR")
+            res_co2 = find_flow_intersection(results, attr="co2_flow")
+            if res_co2 and res_co2.get("value") is not None:
+                st.success(f"CO₂-Schnittpunkt bei Jahr ≈ {res_co2['year_float']:.2f}, "
+                           f"Wert ≈ {res_co2['value']:,.0f} kg")
+
             plot_flow(results, attr="cashflow",
                       title="Cumulative Cash Outflow",
                       y_label="Cumulative cash outflow [EUR]",
