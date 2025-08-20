@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import altair as alt
 from typing import Dict, Tuple, List, Literal
+from definitions import TIME_PRJ_YRS
+
 
 import backend
 
@@ -427,76 +429,73 @@ def display_empty_results():
                "**🚀 Berechnen**.")
 
 
-def plot_cashflow(results, show_table=False):
-    # 1) Extract cashflow arrays from PhaseResults
-    cf_base = np.asarray(getattr(results.baseline, "cashflow", np.array([])), dtype=float)
-    cf_exp  = np.asarray(getattr(results.expansion, "cashflow", np.array([])), dtype=float)
+def plot_flow(
+    results,
+    attr: str = "cashflow",               # "cashflow" oder "co2_flow"
+    title: str | None = None,             # Chart-Titel
+    y_label: str | None = None,           # y-Achse
+    unit: str = "EUR",                    # Einheit für Tooltip/Legende
+    cumulative: bool = True,              # kumuliert oder jährlich
+    show_table: bool = False,             # Tabelle anzeigen?
+    value_format: str = ",.0f",           # Zahlenformat im Tooltip/Tabelle
+):
+    # 1) Arrays holen
+    base_arr = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
+    exp_arr  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
 
-    # 2) Basic checks: if no arrays exist, exit early
-    if cf_base.size == 0 and cf_exp.size == 0:
-        st.warning("No cashflow arrays found on results.baseline / results.expansion.")
+    if base_arr.size == 0 and exp_arr.size == 0:
+        st.warning(f"Kein Array '{attr}' in results.baseline / results.expansion gefunden.")
         return
 
-    # 3) Ensure both arrays have the same length (pad with zeros if necessary)
-    n_years = int(max(len(cf_base), len(cf_exp)))
-    def pad(arr, n):
-        return np.pad(arr, (0, n - len(arr)), mode="constant") if len(arr) < n else arr
-    cf_base = pad(cf_base, n_years)
-    cf_exp  = pad(cf_exp, n_years)
-
+    # 2) Auf gleiche Länge bringen
+    n_years = int(max(len(base_arr), len(exp_arr)))
+    pad = lambda a: np.pad(a, (0, n_years - len(a)), mode="constant") if len(a) < n_years else a
+    base_arr = pad(base_arr)
+    exp_arr  = pad(exp_arr)
     years = np.arange(1, n_years + 1)
 
-    # 4) Convert annual cashflows into cumulative sums
-    cum_base = np.cumsum(cf_base)
-    cum_exp  = np.cumsum(cf_exp)
+    # 3) Kumulieren (optional)
+    y_base = np.cumsum(base_arr) if cumulative else base_arr
+    y_exp  = np.cumsum(exp_arr)  if cumulative else exp_arr
 
-    # 5) Build dataframe for plotting
+    # 4) DataFrame
     df = pd.DataFrame({
         "Year": years,
-        "Baseline (cumulative)": cum_base,
-        "Expansion (cumulative)": cum_exp,
+        "Baseline": y_base,
+        "Expansion": y_exp,
     })
-    df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Cumulative_Cost_EUR")
+    df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Value")
 
-    # 6) Axis scaling / diagnostic fallback
-    y_max = float(max(np.nanmax(cum_base), np.nanmax(cum_exp), 0.0))
-    if y_max == 0.0:
-        # If everything is 0, still show an axis so that chart is not empty
-        y_scale = alt.Scale(domain=[0, 1])
-        add_points = True
-    else:
-        y_scale = alt.Scale(domain=[0, y_max * 1.05])
-        add_points = False
+    # 5) Achsenbereich robust (auch wenn negativ/alles Null)
+    y_min = float(min(np.nanmin(y_base), np.nanmin(y_exp), 0.0))
+    y_max = float(max(np.nanmax(y_base), np.nanmax(y_exp), 0.0))
+    if y_max == y_min:  # alles gleich (z.B. 0)
+        y_min, y_max = 0.0, 1.0
 
-    # 7) Build line chart (two curves: baseline & expansion)
+    # 6) Defaults für Titel/Label
+    if title is None:
+        title = f"{'Cumulative' if cumulative else 'Annual'} {attr.replace('_', ' ').title()}"
+    if y_label is None:
+        base = "Cumulative" if cumulative else "Annual"
+        y_label = f"{base} value [{unit}]"
+
+    # 7) Chart
     chart = (
-        alt.Chart(df_long)
-        .mark_line(point=add_points)
+        alt.Chart(df_long, title=title)
+        .mark_line(point=True)
         .encode(
             x=alt.X("Year:O", axis=alt.Axis(title="Year")),
-            y=alt.Y("Cumulative_Cost_EUR:Q",
-                    axis=alt.Axis(title="Cumulative cash outflow [EUR]"),
-                    scale=y_scale),
+            y=alt.Y("Value:Q", axis=alt.Axis(title=y_label), scale=alt.Scale(domain=[y_min, y_max])),
             color=alt.Color("Scenario:N", legend=alt.Legend(title="Scenario")),
             tooltip=[
                 alt.Tooltip("Year:O", title="Year"),
                 alt.Tooltip("Scenario:N", title="Scenario"),
-                alt.Tooltip("Cumulative_Cost_EUR:Q", title="Cumulative cost [EUR]", format=",.0f"),
+                alt.Tooltip("Value:Q", title=f"Value [{unit}]", format=value_format),
             ],
         )
         .properties(height=360)
     )
-
-    # 8) Show in Streamlit
-    st.subheader("Cumulative cashflow over time")
     st.altair_chart(chart, use_container_width=True)
-
-    # 9) Optionally display the raw data tables
-    if show_table:
-        st.caption("Cumulative cashflow data (wide & long):")
-        st.dataframe(df)
-        st.dataframe(df_long)
-
 
 
 def run_frontend():
@@ -524,7 +523,90 @@ def run_frontend():
         try:
             results = backend.run_backend(settings=settings)
             display_results(results)
-            plot_cashflow(results)
+            plot_flow(results, attr="cashflow",
+                      title="Cumulative Cash Outflow",
+                      y_label="Cumulative cash outflow [EUR]",
+                      unit="EUR",
+                      cumulative=True,
+                      show_table=False)
+            plot_flow(results, attr="co2_flow",
+                      title="Cumulative CO₂ Emissions",
+                      y_label="Cumulative CO₂ [kg]",
+                      unit="kg",
+                      cumulative=True,
+                      show_table=True,
+                      value_format=",.0f")
+
+            rb = results.baseline
+            re = results.expansion
+
+            st.subheader("CO₂-Bilanz")
+
+            # Toggle: embodied Emissionen auf Projektlaufzeit umlegen?
+            annualize = st.checkbox("Herstellungs-Emissionen (Fahrzeuge & Infrastruktur) auf Projektlaufzeit umlegen",
+                                    value=True)
+            div = TIME_PRJ_YRS if annualize else 1.0
+
+            # Kennzahlen (Betrieb, jährlich)
+            c1, c2 = st.columns(2)
+            c1.metric("CO₂ Betrieb (jährlich) – Baseline", f"{rb.co2_yrl_kg:,.0f} kg")
+            c2.metric("CO₂ Betrieb (jährlich) – Expansion", f"{re.co2_yrl_kg:,.0f} kg",
+                      delta=f"{re.co2_yrl_kg - rb.co2_yrl_kg:,.0f} kg")
+
+            # Tabelle & Chart: Breakdown
+            def build_row(pr):
+                return {
+                    "Strom (jährlich)": pr.co2_grid_yrl_kg,
+                    "Tailpipe (jährlich)": pr.co2_tailpipe_yrl_kg,
+                    "Fahrzeuge Herstellung": pr.vehicles_co2_production_total_kg / div,
+                    "Infrastruktur Herstellung": pr.infra_co2_total_kg / div,
+                }
+
+            df_co2 = pd.DataFrame({
+                "Baseline": build_row(rb),
+                "Expansion": build_row(re),
+            }).T
+
+            st.markdown("**Zusammensetzung**")
+            st.dataframe(df_co2.style.format("{:,.0f}"))
+
+            st.markdown("**Vergleich (gestapelt)**")
+            st.bar_chart(df_co2)
+
+            # Detail: Tailpipe je Subfleet (jährlich)
+            with st.expander("Details: Tailpipe-Emissionen je Subfleet (jährlich)"):
+                df_tailpipe = pd.DataFrame({
+                    "Baseline": rb.co2_tailpipe_by_subfleet_kg,
+                    "Expansion": re.co2_tailpipe_by_subfleet_kg,
+                })
+                df_tailpipe = df_tailpipe.fillna(0).astype(float)
+                st.dataframe(df_tailpipe.style.format("{:,.0f}"))
+
+            with st.expander("Details: Fahrzeug-Herstellung je Subfleet"):
+                # Keys vereinheitlichen (lowercase), damit Zeilen sauber ausgerichtet werden
+                def lc_dict(d):
+                    return {str(k).lower(): float(v) for k, v in (d or {}).items()}
+
+                bev_base = lc_dict(rb.vehicles_co2_production_breakdown_bev)
+                ice_base = lc_dict(rb.vehicles_co2_production_breakdown_icev)
+                bev_expa = lc_dict(re.vehicles_co2_production_breakdown_bev)
+                ice_expa = lc_dict(re.vehicles_co2_production_breakdown_icev)
+
+                # Vollständigen Zeilenindex über alle Subfleets bilden
+                all_keys = sorted(set().union(bev_base, ice_base, bev_expa, ice_expa))
+                df_prod = pd.DataFrame({
+                    "BEV (Baseline)": [bev_base.get(k, 0.0) for k in all_keys],
+                    "ICEV (Baseline)": [ice_base.get(k, 0.0) for k in all_keys],
+                    "BEV (Expansion)": [bev_expa.get(k, 0.0) for k in all_keys],
+                    "ICEV (Expansion)": [ice_expa.get(k, 0.0) for k in all_keys],
+                }, index=all_keys)
+
+                # Optional: Summenzeile ergänzen
+                df_prod.loc["SUMME"] = df_prod.sum(numeric_only=True)
+
+                st.dataframe(df_prod.style.format("{:,.0f}"))
+
+
         except GridPowerExceededError as e:
             st.error(f"""\
             **Fehler in der Simulation**  

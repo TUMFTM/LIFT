@@ -5,7 +5,7 @@ import pvlib
 import streamlit as st
 from time import time
 from typing import TYPE_CHECKING, Literal, Tuple, Dict, Optional
-from definitions import FREQ_HOURS, CHARGERS
+from definitions import FREQ_HOURS, CHARGERS, SUBFLEETS
 
 import numpy as np
 
@@ -455,53 +455,71 @@ def calc_infrastructure_capex(
 def calc_vehicle_capex_split(
     subfleet_settings: dict[str, "SubFleetSettings"],
     phase: Literal["baseline", "expansion"],
-) -> Tuple[float, float, Dict[str, float], Dict[str, float]]:
+) -> Tuple[
+    float, float, Dict[str, float], Dict[str, float],   # CAPEX totals & breakdowns
+    float, float, Dict[str, float], Dict[str, float],   # CO2 totals  & breakdowns
+]:
     """
-    Compute vehicle CAPEX split by powertrain (BEV vs ICEV) for a given phase.
-
-    Phase semantics:
-      - baseline:
-          BEV count = num_bev_preexisting
-          ICEV count = num_total - BEV count
-      - expansion:
-          BEV count = num_bev_preexisting + num_bev_expansion
-          ICEV count = num_total - BEV count
-        (Assumption: total fleet size stays constant; adjust if your fleet grows.)
-
-    Returns:
-      (bev_total_capex, icev_total_capex, bev_breakdown_by_subfleet, icev_breakdown_by_subfleet)
+    CAPEX-Split (BEV/ICEV) + Herstellungs-CO2 (embodied) für die gewählte Phase.
+    - baseline:   BEV = num_bev_preexisting; ICEV = num_total - BEV
+    - expansion:  BEV = num_bev_preexisting + num_bev_expansion; ICEV = num_total - BEV
+                  (Flottengröße bleibt konstant)
+    Rückgabe:
+      capex_bev_total_eur, capex_icev_total_eur, capex_bev_by_sf, capex_icev_by_sf,
+      co2_bev_total_kg,    co2_icev_total_kg,   co2_bev_by_sf,    co2_icev_by_sf
     """
-    bev_total = 0.0
-    icev_total = 0.0
-    bd_bev: Dict[str, float] = {}
-    bd_icev: Dict[str, float] = {}
+    bev_total_capex = 0.0
+    icev_total_capex = 0.0
+    capex_bd_bev: Dict[str, float] = {}
+    capex_bd_icev: Dict[str, float] = {}
+
+    co2_bev_total_kg = 0.0
+    co2_icev_total_kg = 0.0
+    co2_bd_bev: Dict[str, float] = {}
+    co2_bd_icev: Dict[str, float] = {}
 
     for vt, sf in subfleet_settings.items():
-        # Determine BEV count in this phase (preexisting in baseline; preexisting+new in expansion)
-        bev_phase = (
-            int(sf.num_bev_preexisting)
-            if phase == "baseline"
-            else int(sf.num_bev_preexisting + sf.num_bev_expansion)
-        )
+        vt_key = vt if vt in SUBFLEETS else vt.lower()
+        if vt_key not in SUBFLEETS:
+            raise KeyError(f"SUBFLEETS enthält keinen Eintrag für '{vt}'. Verfügbar: {', '.join(SUBFLEETS.keys())}")
+        meta = SUBFLEETS[vt_key]
 
-        # Derive ICEV count in this phase as residual to total
-        # (Clamp at 0 to avoid negative values if inputs are inconsistent)
-        icev_phase = max(int(sf.num_total) - bev_phase, 0)
+        # Fahrzeuganzahl je Phase (alle Fahrzeuge der Flotte)
+        if phase == "baseline":
+            bev_cnt  = int(sf.num_bev_preexisting)
+        else:  # expansion
+            bev_cnt  = int(sf.num_bev_preexisting + sf.num_bev_expansion)
 
-        # Subfleet CAPEX contributions
-        capex_bev_sf  = float(bev_phase)  * float(sf.capex_bev_eur)
-        capex_icev_sf = float(icev_phase) * float(sf.capex_icev_eur)
+        icev_cnt = max(int(sf.num_total) - bev_cnt, 0)
 
-        # Store breakdown per subfleet key (vt)
-        bd_bev[vt]  = capex_bev_sf
-        bd_icev[vt] = capex_icev_sf
+        # --- CAPEX ---
+        capex_bev_sf  = float(bev_cnt)  * float(sf.capex_bev_eur)
+        capex_icev_sf = float(icev_cnt) * float(sf.capex_icev_eur)
 
-        # Accumulate totals
-        bev_total  += capex_bev_sf
-        icev_total += capex_icev_sf
+        capex_bd_bev[vt_key]  = capex_bev_sf
+        capex_bd_icev[vt_key] = capex_icev_sf
+        bev_total_capex  += capex_bev_sf
+        icev_total_capex += capex_icev_sf
 
-    return float(bev_total), float(icev_total), bd_bev, bd_icev
+        # --- CO2 (Herstellung/embodied) ---
+        co2_bev_sf_kg  = float(bev_cnt)  * float(meta.co2_production_bev)
+        co2_icev_sf_kg = float(icev_cnt) * float(meta.co2_production_icev)
 
+        co2_bd_bev[vt_key]  = co2_bev_sf_kg
+        co2_bd_icev[vt_key] = co2_icev_sf_kg
+        co2_bev_total_kg  += co2_bev_sf_kg
+        co2_icev_total_kg += co2_icev_sf_kg
+
+    return (
+        float(bev_total_capex),
+        float(icev_total_capex),
+        capex_bd_bev,
+        capex_bd_icev,
+        float(co2_bev_total_kg),
+        float(co2_icev_total_kg),
+        co2_bd_bev,
+        co2_bd_icev,
+    )
 
 def apply_vehicle_salvage_simple(
     cashflow: np.ndarray,
@@ -566,6 +584,10 @@ def calc_phase_results(logs: Logs,
         phase=phase,
     )
 
+    co2_grid_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
+    co2_tailpipe_yrl_kg = co2_tailpipe_total_kg
+    co2_yrl_kg = co2_grid_yrl_kg + co2_tailpipe_yrl_kg
+
     # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
     if capacities.pv_wp > 0:
         self_sufficiency_pct = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh) * 100
@@ -595,11 +617,16 @@ def calc_phase_results(logs: Logs,
         )
 
     # --- vehicle CAPEX split for each phase---
-    capex_bev_eur, capex_icev_eur, _, _ = calc_vehicle_capex_split(
+    (capex_bev_eur, capex_icev_eur,
+     capex_bev_by_sf, capex_icev_by_sf,
+     co2_prod_bev_kg, co2_prod_icev_kg,
+     co2_prod_bev_by_sf, co2_prod_icev_by_sf) = calc_vehicle_capex_split(
         subfleet_settings=subfleet_settings,
-        phase=phase.lower()
+        phase=phase.lower(),
     )
+
     capex_vehicles_eur = capex_bev_eur + capex_icev_eur
+    co2_vehicles_production_total_kg = co2_prod_bev_kg + co2_prod_icev_kg
 
     # --- total-CAPEX ---
     capex_total_eur = capex_infra_eur + capex_vehicles_eur
@@ -648,6 +675,35 @@ def calc_phase_results(logs: Logs,
         if 8 < TIME_PRJ_YRS:
             cashflow[8] += ess_total
 
+    # === CO2-FLOW (18 Jahre) analog zum Cashflow ===
+    co2_flow = np.zeros(TIME_PRJ_YRS, dtype=np.float64)
+
+    # 1) Betrieb: jährlich gleich (Grid + Tailpipe)
+    for y in range(TIME_PRJ_YRS):
+        co2_flow[y] += co2_yrl_kg  # = co2_grid_yrl_kg + co2_tailpipe_yrl_kg
+
+    # 2) Fahrzeuge: Herstellung zu den gleichen Zeitpunkten wie Fahrzeug-CAPEX
+    veh_cohort_co2 = co2_vehicles_production_total_kg  # BEV+ICEV für die Phase
+    for idx in veh_years_idx:
+        if idx < TIME_PRJ_YRS:
+            co2_flow[idx] += veh_cohort_co2
+
+    # 3) Infrastruktur: nur in Expansion, analog zu CAPEX-Timings
+    if phase == "expansion":
+        # Grid + PV + Charger in Jahr 1 (Index 0)
+        co2_infra_year0 = (
+                co2_infra_bd.get("grid", 0.0)
+                + co2_infra_bd.get("pv", 0.0)
+                + co2_infra_bd.get("chargers", 0.0)
+        )
+        co2_flow[0] += co2_infra_year0
+
+        # ESS in Jahr 1 und Jahr 9 (Index 0 und 8) – analog zu deinen CAPEX-Regeln
+        co2_ess = co2_infra_bd.get("ess", 0.0)
+        co2_flow[0] += co2_ess
+        if 8 < TIME_PRJ_YRS:
+            co2_flow[8] += co2_ess
+
     return PhaseResults(simulation=result_sim,
                         self_sufficiency_pct=self_sufficiency_pct,
                         self_consumption_pct=self_consumption_pct,
@@ -662,9 +718,18 @@ def calc_phase_results(logs: Logs,
                         opex_grid_eur=opex_grid,
                         opex_vehicle_electric_secondary=opex_vehicle_total,
                         cashflow=cashflow,  # ToDo: calculate cashflow
+                        co2_flow=co2_flow,
                         infra_capex_breakdown=capex_infra_bd,
                         infra_co2_total_kg=co2_infra_kg,
                         infra_co2_breakdown=co2_infra_bd,
+                        co2_grid_yrl_kg=co2_grid_yrl_kg,
+                        co2_tailpipe_yrl_kg=co2_tailpipe_yrl_kg,
+                        co2_tailpipe_by_subfleet_kg=co2_tailpipe_by_sf,
+                        vehicles_co2_production_total_kg=co2_vehicles_production_total_kg,
+                        vehicles_co2_production_bev_kg=co2_prod_bev_kg,
+                        vehicles_co2_production_icev_kg=co2_prod_icev_kg,
+                        vehicles_co2_production_breakdown_bev=co2_prod_bev_by_sf,
+                        vehicles_co2_production_breakdown_icev=co2_prod_icev_by_sf,
                         )
 
 
@@ -690,10 +755,14 @@ def run_backend(settings: Settings) -> BackendResults:
                                            subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
                                        for subfleet in settings.subfleets.values()}
 
-    chargers_baseline = {str(t).lower(): int(c.num_preexisting)
-                         for t, c in settings.chargers.items()}
-    chargers_expansion = {str(t).lower(): int(c.num_preexisting + c.num_expansion)
-                          for t, c in settings.chargers.items()}
+    chargers_baseline = {
+        str(t).strip().lower(): int(c.num_preexisting)
+        for t, c in settings.chargers.items()
+    }
+    chargers_expansion = {
+        str(t).strip().lower(): int(c.num_preexisting + c.num_expansion)
+        for t, c in settings.chargers.items()
+    }
 
     results_baseline = calc_phase_results(logs=logs,
                                           capacities=settings.location.get_capacities('baseline'),
