@@ -108,7 +108,6 @@ def _get_params_location() -> LocationSettings:
 
         st_folium(m, height=350, width='5%', key="map", on_change=callback)
         st.markdown(f"Position: {st.session_state['location'].as_dms_str}")
-        st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
     with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
         st.markdown("**Stromverbrauch Standort**")
