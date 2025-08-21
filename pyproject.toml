@@ -16,11 +16,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "demandlib",
+    "folium",
     "numpy",
     "matplotlib",
     "pandas",
     "pvlib>=0.13.0",
     "streamlit",
+    "streamlit_folium",
 ]
 
 [tool.setuptools]
