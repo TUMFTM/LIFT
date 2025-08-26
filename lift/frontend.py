@@ -449,9 +449,185 @@ def display_results(results):
             yr = res["year_float"]
             st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
         st.markdown("#### Kosten-Delta")
-        cost_delta = round(
-            float(np.cumsum(results.expansion.cashflow)[-1]) - float(np.cumsum(results.baseline.cashflow)[-1]), 0)
-        st.markdown(f"{cost_delta} EUR nach 18 Jahren")
+        cost_delta = float(np.cumsum(results.expansion.cashflow)[-1]) - float(np.cumsum(results.baseline.cashflow)[-1])
+        st.markdown(f"{cost_delta:,.0f} EUR nach 18 Jahren")
+
+    with st.expander("#### Verlauf CO2-Ausstoß"):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.markdown("#### Kumulierter CO2-Ausstoß")
+            plot_flow(results, attr="co2_flow",
+                      y_label="Cumulative CO2 [EUR]",
+                      unit="kg-CO2",
+                      cumulative=True,
+                      show_table=False)
+        with col2:
+            st.write("")
+            st.write("")
+            st.write("")
+            res = find_flow_intersection(results, attr="co2_flow")
+            st.markdown("#### CO2-Parität")
+            if res is None:
+                st.markdown("Kein Schnittpunkt")
+            elif res["kind"] == "identical":
+                st.markdown("Kurven identisch.")
+            else:
+                yr = res["year_float"]
+                st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
+            st.markdown("#### CO2-Delta")
+            cost_delta = float(np.cumsum(results.expansion.co2_flow)[-1]) - float(
+                np.cumsum(results.baseline.co2_flow)[-1])
+            st.markdown(f"{cost_delta:,.0f} kg-CO2 nach 18 Jahren")
+
+    with st.expander("Zusammensetzung der Kosten"):
+        # details costs
+        rb = results.baseline
+        re = results.expansion
+
+        st.subheader("Kostenbilanz (über gesamte Projektlaufzeit)")
+
+        # --- Zählregeln über 18 Jahre (wie in CO2) ---
+        veh_years_idx = [0, 5, 11]
+        veh_waves = sum(1 for i in veh_years_idx if i < TIME_PRJ_YRS)  # i.d.R. 3 Wellen
+        ess_mult = 2 if TIME_PRJ_YRS > 8 else 1 if TIME_PRJ_YRS > 0 else 0  # ESS in Jahr 1 und 9
+
+        # --- Gesamtkosten (Summe des Cashflows, inkl. evtl. Restwerte/Salvage) ---
+        tot_base_cf = float(np.sum(rb.cashflow))
+        tot_exp_cf = float(np.sum(re.cashflow))
+
+        c1, c2 = st.columns(2)
+        c1.metric("Gesamtkosten – Baseline (18 Jahre)", f"{tot_base_cf:,.0f} €")
+        c2.metric("Gesamtkosten – Expansion (18 Jahre)", f"{tot_exp_cf:,.0f} €",
+                  delta=f"{tot_exp_cf - tot_base_cf:,.0f} €")
+
+        # --- OPEX (jährlich) auf 18 Jahre hochskalieren ---
+        def annual_opex(pr):
+            # nutzt deine bereits ausgewiesenen OPEX-Komponenten
+            return float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)
+
+        # --- Infrastruktur-CAPEX über 18 Jahre gemäß deinen Timings ---
+        def infra_capex_total_18(pr):
+            bd = pr.infra_capex_breakdown or {}
+            return (
+                    float(bd.get("grid", 0.0)) +
+                    float(bd.get("pv", 0.0)) +
+                    float(bd.get("chargers", 0.0)) +
+                    float(bd.get("ess", 0.0)) * ess_mult
+            )
+
+        # --- Zeile für die Vergleichstabelle (18 Jahre) ---
+        def build_cost_row(pr):
+            return {
+                "OPEX Grid (18 Jahre)": float(pr.opex_grid_eur) * TIME_PRJ_YRS,
+                "OPEX Fahrzeuge (18 Jahre)": float(pr.opex_vehicle_electric_secondary) * TIME_PRJ_YRS,
+                "Fahrzeuge CAPEX (18 Jahre)": float(pr.capex_vehicles_eur) * veh_waves,
+                "Infrastruktur CAPEX (18 Jahre)": infra_capex_total_18(pr),
+            }
+
+        df_cost = pd.DataFrame({
+            "Baseline": build_cost_row(rb),
+            "Expansion": build_cost_row(re),
+        }).T
+
+        st.markdown("**Zusammensetzung (18 Jahre)**")
+        st.dataframe(df_cost.style.format("{:,.0f}"))
+
+        st.markdown("**Vergleich (gestapelt, 18 Jahre)**")
+        st.bar_chart(df_cost)
+
+        st.caption(
+            "Hinweis: Die Summe der aufgeschlüsselten Posten kann von der Cashflow-Summe abweichen, "
+            "falls Restwerte (Salvage) im Cashflow berücksichtigt werden."
+        )
+
+    with st.expander("Zusammensetzung des CO2-Ausstoß"):
+        # details co2
+        rb = results.baseline
+        re = results.expansion
+
+        st.subheader("CO₂-Bilanz (über gesamte Projektlaufzeit)")
+
+        # --- Konstanten / Zählungen über die Laufzeit ---
+        veh_years_idx = [0, 5, 11]
+        veh_waves = sum(1 for i in veh_years_idx if i < TIME_PRJ_YRS)  # i.d.R. 3 Wellen in 18 Jahren
+        ess_mult = 2 if TIME_PRJ_YRS > 8 else 1 if TIME_PRJ_YRS > 0 else 0  # ESS in Jahr 1 und 9
+
+        # --- Betrieb (Grid + Tailpipe) auf 18 Jahre hochskalieren ---
+        op_base_total = rb.co2_yrl_kg * TIME_PRJ_YRS
+        op_exp_total = re.co2_yrl_kg * TIME_PRJ_YRS
+
+        c1, c2 = st.columns(2)
+        c1.metric("CO₂ Betrieb – Baseline (18 Jahre)", f"{op_base_total:,.0f} kg")
+        c2.metric("CO₂ Betrieb – Expansion (18 Jahre)", f"{op_exp_total:,.0f} kg",
+                  delta=f"{op_exp_total - op_base_total:,.0f} kg")
+
+        # --- Breakdown über 18 Jahre ---
+        def build_row(pr):
+            # Betrieb über 18 Jahre
+            grid_total = float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS
+            tailpipe_total = float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS
+
+            # Fahrzeuge Herstellung: pro Ersatzwelle einmal (Jahr 1/6/12)
+            veh_prod_total = float(pr.vehicles_co2_production_total_kg) * veh_waves
+
+            # Infrastruktur Herstellung: Grid/PV/Charger 1x; ESS 2x (Jahr 1 und 9)
+            bd = pr.infra_co2_breakdown or {}
+            infra_total = (
+                    float(bd.get("grid", 0.0)) +
+                    float(bd.get("pv", 0.0)) +
+                    float(bd.get("chargers", 0.0)) +
+                    float(bd.get("ess", 0.0)) * ess_mult
+            )
+
+            return {
+                "Strom (18 Jahre)": grid_total,
+                "Tailpipe (18 Jahre)": tailpipe_total,
+                "Fahrzeuge Herstellung (18 Jahre)": veh_prod_total,
+                "Infrastruktur Herstellung (18 Jahre)": infra_total,
+            }
+
+        df_co2 = pd.DataFrame({
+            "Baseline": build_row(rb),
+            "Expansion": build_row(re),
+        }).T
+
+        st.markdown("**Zusammensetzung (18 Jahre)**")
+        st.dataframe(df_co2.style.format("{:,.0f}"))
+
+        st.markdown("**Vergleich (gestapelt, 18 Jahre)**")
+        st.bar_chart(df_co2)
+
+        # --- Details: Tailpipe je Subfleet über 18 Jahre ---
+        with st.expander("Details: Tailpipe-Emissionen je Subfleet (18 Jahre)"):
+            def scale_dict(d, factor):
+                return {k: float(v) * factor for k, v in (d or {}).items()}
+
+            df_tailpipe = pd.DataFrame({
+                "Baseline": scale_dict(rb.co2_tailpipe_by_subfleet_kg, TIME_PRJ_YRS),
+                "Expansion": scale_dict(re.co2_tailpipe_by_subfleet_kg, TIME_PRJ_YRS),
+            }).fillna(0).astype(float)
+            st.dataframe(df_tailpipe.style.format("{:,.0f}"))
+
+        # --- Details: Fahrzeug-Herstellung je Subfleet über 18 Jahre (inkl. Ersatzwellen) ---
+        with st.expander("Details: Fahrzeug-Herstellung je Subfleet (18 Jahre)"):
+            def lc_dict(d):
+                return {str(k).lower(): float(v) for k, v in (d or {}).items()}
+
+            bev_base = lc_dict(rb.vehicles_co2_production_breakdown_bev)
+            ice_base = lc_dict(rb.vehicles_co2_production_breakdown_icev)
+            bev_expa = lc_dict(re.vehicles_co2_production_breakdown_bev)
+            ice_expa = lc_dict(re.vehicles_co2_production_breakdown_icev)
+
+            keys = sorted(set().union(bev_base, ice_base, bev_expa, ice_expa))
+            df_prod = pd.DataFrame({
+                "BEV (Baseline, 18 Jahre)": [bev_base.get(k, 0.0) * veh_waves for k in keys],
+                "ICEV (Baseline, 18 Jahre)": [ice_base.get(k, 0.0) * veh_waves for k in keys],
+                "BEV (Expansion, 18 Jahre)": [bev_expa.get(k, 0.0) * veh_waves for k in keys],
+                "ICEV (Expansion, 18 Jahre)": [ice_expa.get(k, 0.0) * veh_waves for k in keys],
+            }, index=keys)
+
+            df_prod.loc["SUMME"] = df_prod.sum(numeric_only=True)
+            st.dataframe(df_prod.style.format("{:,.0f}"))
 
     for col, label, attr_name in zip(st.columns(2),
                                      ['Baseline', 'Erweiterung'],
@@ -459,14 +635,14 @@ def display_results(results):
         with col:
             st.write(f"**{label}**")
             res = getattr(results, attr_name)
-            st.write(f"Autarkiegrad: {res.self_sufficiency_pct:.2f}%")
-            st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:.2f}%")
-            st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
-            st.write(f"CAPEX Fahrzeuge: {res.capex_vehicles_eur:.2f} EUR")
-            st.write(f"OPEX: {res.opex_eur:.2f} EUR")
-            st.write(f"OPEX Fahrzeuge (Wartung, Versicherung, Maut, Diesel): {res.opex_vehicle_electric_secondary:,.2f} EUR/Jahr")
-            st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
-            st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
+            st.write(f"Autarkiegrad: {res.self_sufficiency_pct:,.0f}%")
+            st.write(f"Eigenverbrauchsquote: {res.self_consumption_pct:,.0f}%")
+            st.write(f"CAPEX: {res.capex_eur:,.0f} EUR")
+            st.write(f"CAPEX Fahrzeuge: {res.capex_vehicles_eur:,.0f} EUR")
+            st.write(f"OPEX: {res.opex_eur:,.0f} EUR")
+            st.write(f"OPEX Fahrzeuge (Wartung, Versicherung, Maut, Diesel): {res.opex_vehicle_electric_secondary:,.0f} EUR/Jahr")
+            st.write(f"CO2-Emissionen: {res.co2_yrl_kg:,.0f} kg / Jahr")
+            st.write(f"CO2-Kosten: {res.co2_yrl_eur:,.0f} EUR / Jahr")
             st.write(f"Infrastruktur-CO₂ (embodied): {res.infra_co2_total_kg:,.0f} kg")
             with st.expander("Details Infrastruktur-CAPEX / CO₂"):
                 st.write("CAPEX Breakdown:", res.infra_capex_breakdown)
@@ -774,87 +950,6 @@ def run_frontend():
         try:
             results = backend.run_backend(settings=settings)
             display_results(results)
-
-            plot_flow(results, attr="co2_flow",
-                      y_label="Cumulative CO₂ [kg]",
-                      unit="kg",
-                      cumulative=True,
-                      show_table=True,
-                      value_format=",.0f")
-
-            res_co2 = find_flow_intersection(results, attr="co2_flow")
-            if res_co2 and res_co2.get("value") is not None:
-                st.success(f"CO₂-Schnittpunkt bei Jahr ≈ {res_co2['year_float']:.2f}, "
-                           f"Wert ≈ {res_co2['value']:,.0f} kg")
-
-            rb = results.baseline
-            re = results.expansion
-
-            st.subheader("CO₂-Bilanz")
-
-            # Toggle: embodied Emissionen auf Projektlaufzeit umlegen?
-            annualize = st.checkbox("Herstellungs-Emissionen (Fahrzeuge & Infrastruktur) auf Projektlaufzeit umlegen",
-                                    value=True)
-            div = TIME_PRJ_YRS if annualize else 1.0
-
-            # Kennzahlen (Betrieb, jährlich)
-            c1, c2 = st.columns(2)
-            c1.metric("CO₂ Betrieb (jährlich) – Baseline", f"{rb.co2_yrl_kg:,.0f} kg")
-            c2.metric("CO₂ Betrieb (jährlich) – Expansion", f"{re.co2_yrl_kg:,.0f} kg",
-                      delta=f"{re.co2_yrl_kg - rb.co2_yrl_kg:,.0f} kg")
-
-            # Tabelle & Chart: Breakdown
-            def build_row(pr):
-                return {
-                    "Strom (jährlich)": pr.co2_grid_yrl_kg,
-                    "Tailpipe (jährlich)": pr.co2_tailpipe_yrl_kg,
-                    "Fahrzeuge Herstellung": pr.vehicles_co2_production_total_kg / div,
-                    "Infrastruktur Herstellung": pr.infra_co2_total_kg / div,
-                }
-
-            df_co2 = pd.DataFrame({
-                "Baseline": build_row(rb),
-                "Expansion": build_row(re),
-            }).T
-
-            st.markdown("**Zusammensetzung**")
-            st.dataframe(df_co2.style.format("{:,.0f}"))
-
-            st.markdown("**Vergleich (gestapelt)**")
-            st.bar_chart(df_co2)
-
-            # Detail: Tailpipe je Subfleet (jährlich)
-            with st.expander("Details: Tailpipe-Emissionen je Subfleet (jährlich)"):
-                df_tailpipe = pd.DataFrame({
-                    "Baseline": rb.co2_tailpipe_by_subfleet_kg,
-                    "Expansion": re.co2_tailpipe_by_subfleet_kg,
-                })
-                df_tailpipe = df_tailpipe.fillna(0).astype(float)
-                st.dataframe(df_tailpipe.style.format("{:,.0f}"))
-
-            with st.expander("Details: Fahrzeug-Herstellung je Subfleet"):
-                # Keys vereinheitlichen (lowercase), damit Zeilen sauber ausgerichtet werden
-                def lc_dict(d):
-                    return {str(k).lower(): float(v) for k, v in (d or {}).items()}
-
-                bev_base = lc_dict(rb.vehicles_co2_production_breakdown_bev)
-                ice_base = lc_dict(rb.vehicles_co2_production_breakdown_icev)
-                bev_expa = lc_dict(re.vehicles_co2_production_breakdown_bev)
-                ice_expa = lc_dict(re.vehicles_co2_production_breakdown_icev)
-
-                # Vollständigen Zeilenindex über alle Subfleets bilden
-                all_keys = sorted(set().union(bev_base, ice_base, bev_expa, ice_expa))
-                df_prod = pd.DataFrame({
-                    "BEV (Baseline)": [bev_base.get(k, 0.0) for k in all_keys],
-                    "ICEV (Baseline)": [ice_base.get(k, 0.0) for k in all_keys],
-                    "BEV (Expansion)": [bev_expa.get(k, 0.0) for k in all_keys],
-                    "ICEV (Expansion)": [ice_expa.get(k, 0.0) for k in all_keys],
-                }, index=all_keys)
-
-                # Optional: Summenzeile ergänzen
-                df_prod.loc["SUMME"] = df_prod.sum(numeric_only=True)
-
-                st.dataframe(df_prod.style.format("{:,.0f}"))
 
 
         except GridPowerExceededError as e:
