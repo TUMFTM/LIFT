@@ -146,22 +146,8 @@ def calc_opex_vehicle(
     phase: Literal["baseline", "expansion"],
     vehicle_charger: Dict[str, Dict[str, Optional[str]]] = None,
 ) -> Tuple[float, Dict[str, float], float, Dict[str, float]]:
-    """
-    Calculates vehicle OPEX *and* tailpipe CO₂ emissions based on charging schedule logs.
-    Expected columns per vehicle (MultiIndex: (veh_id, metric)):
-      - dist         : distance per timestep [km]
-      - atbase       : True/False (or 1/0, or "True"/"False")
-      - consumption  : (optional) power [W] for BEV fallback -> distance via kWh/km
-    ICEVs require a distance column (dist or distance_km).
-    Driving time is primarily derived from 'atbase', otherwise from distance/avg speed.
 
-    Returns:
-      (opex_total_eur,
-       opex_by_subfleet_eur,
-       co2_tailpipe_total_kg,
-       co2_tailpipe_by_subfleet_kg)
-    """
-    # Build BEV/ICEV assignment if not provided
+    # Falls nicht mitgegeben: Mapping BEV/ICEV je Fahrzeug erzeugen
     if vehicle_charger is None:
         vehicle_charger = {}
         for vt, sf in subfleet_settings.items():
@@ -173,34 +159,31 @@ def calc_opex_vehicle(
                 vt_map[veh_id] = (sf.charger.lower() if i < bev_count else None)  # None -> ICEV
             vehicle_charger[vt] = vt_map
 
-    # Parameters
-    fuel_consumption_l_per_100km = 25.0  # default ICEV consumption
-    CO2_PER_LITER_DIESEL_KG = 3.08       # kg CO2 per liter diesel
+    CO2_PER_LITER_DIESEL_KG = 3.08  # kg CO2 / Liter Diesel
 
-    driver_wage     = float(economics.driver_wage_eur_h)
-    mntex_bev       = float(economics.mntex_bev_eur_km)
-    mntex_icev      = float(economics.mntex_icev_eur_km)
-    toll_bev        = float(getattr(economics, "toll_bev_eur_km", 0.0))
-    toll_icev       = float(economics.toll_icev_eur_km)
-    insurance_rate  = float(economics.insurance_pct) / 100.0
+    # Kosten-/Tarifparameter (subfleet-unabhängig)
+    mntex_bev        = float(economics.mntex_bev_eur_km)
+    mntex_icev       = float(economics.mntex_icev_eur_km)
+    toll_bev         = float(getattr(economics, "toll_bev_eur_km", 0.0))
+    toll_icev        = float(economics.toll_icev_eur_km)
+    insurance_rate   = float(economics.insurance_pct) / 100.0
     fuel_price_eur_l = float(economics.fuel_price_eur_liter)
 
-    # Derived rates
-    fuel_eur_per_km = fuel_price_eur_l * (fuel_consumption_l_per_100km / 100.0)
-    co2_kg_per_km   = CO2_PER_LITER_DIESEL_KG * (fuel_consumption_l_per_100km / 100.0)
-
-    opex_total_eur = 0.0
+    opex_total_eur: float = 0.0
     opex_by_sf: Dict[str, float] = {}
-    co2_total_kg = 0.0
+    co2_total_kg: float = 0.0
     co2_by_sf: Dict[str, float] = {}
 
     for vt, sf in subfleet_settings.items():
-        if vt not in vehicle_charger:
-            raise ValueError(f"vehicle_charger missing subfleet '{vt}'.")
+        # ---> Verbrauch je Subfleet aus SUBFLEETS holen
+        vt_key = vt if vt in SUBFLEETS else vt.lower()
+        meta = SUBFLEETS.get(vt_key)
 
-        df = logs.fleet.get(vt)  # MultiIndex: (veh_id, metric)
-        if df is None or not isinstance(df.columns, pd.MultiIndex):
-            raise ValueError(f"No valid logs for subfleet '{vt}' to derive distance/time.")
+        fuel_l_per_100km = float(meta.consumption_icev)
+        fuel_eur_per_km  = fuel_price_eur_l * (fuel_l_per_100km / 100.0)
+        co2_kg_per_km    = CO2_PER_LITER_DIESEL_KG * (fuel_l_per_100km / 100.0)
+
+        df = logs.fleet.get(vt)  # MultiIndex-Spalten: (veh_id, metric)
 
         n_total = int(sf.num_total)
         opex_vt = 0.0
@@ -209,42 +192,35 @@ def calc_opex_vehicle(
 
         for i in range(n_total):
             veh_id = f"{vt}{i}"
-            if veh_id not in vehicle_charger[vt]:
-                raise ValueError(f"vehicle_charger['{vt}'] missing vehicle '{veh_id}'.")
-
             chg = vehicle_charger[vt][veh_id]
             is_bev = not (chg is None or str(chg).lower() == "none")  # None/"none" → ICEV
 
-            # --- Distance (km) ---
-            distance_km = 0.0
-            if (veh_id, "dist") in df.columns:
-                distance_km = float(df.loc[:, (veh_id, "dist")].astype(float).sum())
+            # Distanz (km) – deine Spalte heißt 'dist'
+            distance_km = float(df.loc[:, (veh_id, "dist")].astype(float).sum()) if (veh_id, "dist") in df.columns else 0.0
 
-            # --- OPEX components ---
             if is_bev:
                 opex_maintenance = mntex_bev * distance_km
                 opex_insurance   = float(sf.capex_bev_eur) * insurance_rate
                 opex_fuel        = 0.0
                 opex_toll        = toll_bev * distance_km * toll_split
-                # tailpipe CO2 for BEV is zero
                 co2_tailpipe_kg  = 0.0
             else:
                 opex_maintenance = mntex_icev * distance_km
                 opex_insurance   = float(sf.capex_icev_eur) * insurance_rate
                 opex_fuel        = fuel_eur_per_km * distance_km
                 opex_toll        = toll_icev * distance_km * toll_split
-                # tailpipe CO2 for ICEV
                 co2_tailpipe_kg  = co2_kg_per_km * distance_km
 
-            opex_vt += (opex_maintenance + opex_insurance + opex_fuel + opex_toll)
+            opex_vt   += (opex_maintenance + opex_insurance + opex_fuel + opex_toll)
             co2_vt_kg += co2_tailpipe_kg
 
         opex_by_sf[vt] = opex_vt
-        co2_by_sf[vt] = co2_vt_kg
+        co2_by_sf[vt]  = co2_vt_kg
         opex_total_eur += opex_vt
-        co2_total_kg += co2_vt_kg
+        co2_total_kg   += co2_vt_kg
 
     return float(opex_total_eur), opex_by_sf, float(co2_total_kg), co2_by_sf
+
 
 
 def calc_infrastructure_capex(

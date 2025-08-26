@@ -384,26 +384,6 @@ def display_results(results):
         st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
     with col1:
-        centered_h4("Eigenverbrauchsquote")
-        st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_consumption_pct / 100,
-                results.expansion.self_consumption_pct / 100
-            ),
-            use_container_width=True
-        )
-
-    with col2:
-        centered_h4("Autarkiegrad")
-        st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_sufficiency_pct / 100,
-                results.expansion.self_sufficiency_pct / 100
-            ),
-            use_container_width=True
-        )
-
-    with col3:
         centered_h4("Gesamtkosten")
         st.altair_chart(
             make_comparison_chart_discrete_values(
@@ -413,7 +393,7 @@ def display_results(results):
             use_container_width=True
         )
 
-    with col4:
+    with col2:
         centered_h4("Gesamt-CO₂")
         st.altair_chart(
             make_comparison_chart_discrete_values(
@@ -422,6 +402,27 @@ def display_results(results):
             ),
             use_container_width=True
         )
+
+    with col3:
+        centered_h4("Eigenverbrauchsquote")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_consumption_pct / 100,
+                results.expansion.self_consumption_pct / 100
+            ),
+            use_container_width=True
+        )
+
+    with col4:
+        centered_h4("Autarkiegrad")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_sufficiency_pct / 100,
+                results.expansion.self_sufficiency_pct / 100
+            ),
+            use_container_width=True
+        )
+
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("#### Kumulierte Kosten")
@@ -532,9 +533,14 @@ def plot_flow(
         alt.Chart(df_long)
         .mark_line(point=True)
         .encode(
-            x=alt.X("Year:Q", axis=alt.Axis(title="Year")),  # quantitative to allow fractional year mark
+            x=alt.X("Year:Q", axis=alt.Axis(title="Year")),
             y=alt.Y("Value:Q", axis=alt.Axis(title=y_label), scale=alt.Scale(domain=[y_min, y_max])),
-            color=alt.Color("Scenario:N", legend=alt.Legend(title="Scenario")),
+            color=alt.Color(
+                "Scenario:N",
+                legend=alt.Legend(title="Scenario"),
+                scale=alt.Scale(domain=["Baseline", "Expansion"],
+                                range=["steelblue", "orange"])
+            ),
             tooltip=[
                 alt.Tooltip("Year:Q", title="Year", format=".2f"),
                 alt.Tooltip("Scenario:N", title="Scenario"),
