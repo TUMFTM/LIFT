@@ -138,74 +138,6 @@ def simulate(logs: Logs,
                              energy_fleet_wh=fleet.energy_wh,
                              )
 
-# ---- Helpers: flexible column detection ----
-DIST_ALIASES = {
-    "distance_km", "distance", "dist_km", "km", "driven_km", "route_km", "mileage_km",
-    "distance_m", "dist_m", "meters", "meter", "m",
-}
-
-def _find_distance_km(df: pd.DataFrame, veh_id: str) -> Optional[float]:
-    """
-    Searches in df (MultiIndex: (veh_id, metric)) for a distance column and sums it up over the year.
-    Supports both km and m columns. Returns distance in km or None if not found.
-    """
-    if df is None or not isinstance(df.columns, pd.MultiIndex):
-        return None
-
-    # Candidate columns for this vehicle
-    candidates = [c for c in df.columns if c[0] == veh_id]
-    if not candidates:
-        return None
-
-    def score(metric: str) -> int:
-        m = metric.lower()
-        if m in DIST_ALIASES:
-            return 100
-        if m.endswith("_km"):
-            return 80
-        if "distance" in m:
-            return 60
-        if "km" in m:
-            return 40
-        if m.endswith("_m"):
-            return 30
-        return 0
-
-    best, best_score = None, 0
-    for col in candidates:
-        s = score(col[1])
-        if s > best_score:
-            best, best_score = col, s
-
-    if best is None or best_score == 0:
-        return None
-
-    s = df.loc[:, best].astype(float)
-    metric = best[1].lower()
-    if metric.endswith("_m") or metric in {"distance_m", "dist_m", "m", "meter", "meters"}:
-        return float(s.sum() / 1000.0)   # convert meters → km
-    return float(s.sum())                # already in km
-
-def _find_driving_hours(df: pd.DataFrame, veh_id: str) -> Optional[float]:
-    """
-    Uses (veh_id, 'atbase') → driving time = sum((1 - atbase) * Δt).
-    Returns driving hours or None if 'atbase' column is missing.
-    """
-    if df is None or not isinstance(df.columns, pd.MultiIndex):
-        return None
-    col = (veh_id, "atbase")
-    if col not in df.columns:
-        # Try common aliases
-        aliases = [(veh_id, a) for a in ("at_base", "atDepot", "at_depot", "available", "is_at_base")]
-        for c in aliases:
-            if c in df.columns:
-                col = c
-                break
-        else:
-            return None
-    atbase = df.loc[:, col].to_numpy(dtype=float)
-    return float(((1.0 - atbase) * FREQ_HOURS).sum())
-
 
 def calc_opex_vehicle(
     logs: "Logs",
@@ -287,47 +219,9 @@ def calc_opex_vehicle(
             distance_km = 0.0
             if (veh_id, "dist") in df.columns:
                 distance_km = float(df.loc[:, (veh_id, "dist")].astype(float).sum())
-            elif (veh_id, "distance_km") in df.columns:
-                distance_km = float(df.loc[:, (veh_id, "distance_km")].astype(float).sum())
-            else:
-                # optional BEV fallback: consumption + kWh/km
-                if is_bev and (veh_id, "consumption") in df.columns:
-                    energy_kwh = float(
-                        (df.loc[:, (veh_id, "consumption")].to_numpy(dtype=float) * FREQ_HOURS).sum() / 1000.0
-                    )
-                    kwh_per_km = float(getattr(sf, "kwh_per_km_bev", 0.0) or 0.0)
-                    if kwh_per_km > 0:
-                        distance_km = energy_kwh / kwh_per_km
-
-            if not is_bev and distance_km <= 0.0:
-                raise ValueError(
-                    f"ICEV '{veh_id}' has no distance column. "
-                    f"Expected (veh_id,'dist') or (veh_id,'distance_km')."
-                )
-
-            # --- Driving time (h) ---
-            if (veh_id, "atbase") in df.columns:
-                atb = df.loc[:, (veh_id, "atbase")]
-                if atb.dtype == bool:
-                    atbase = atb.astype(float).to_numpy()
-                else:
-                    try:
-                        atbase = atb.astype(float).to_numpy()
-                    except Exception:
-                        atbase = (
-                            atb.astype(str)
-                               .str.lower()
-                               .map({"true": 1.0, "false": 0.0})
-                               .fillna(0.0)
-                               .to_numpy()
-                        )
-                driving_h = float(((1.0 - atbase) * FREQ_HOURS).sum())
-            else:
-                raise ValueError(f"{veh_id}: driving time not computable (no 'atbase' and no distance).")
 
             # --- OPEX components ---
             if is_bev:
-                opex_driver      = driver_wage * driving_h
                 opex_maintenance = mntex_bev * distance_km
                 opex_insurance   = float(sf.capex_bev_eur) * insurance_rate
                 opex_fuel        = 0.0
@@ -335,7 +229,6 @@ def calc_opex_vehicle(
                 # tailpipe CO2 for BEV is zero
                 co2_tailpipe_kg  = 0.0
             else:
-                opex_driver      = driver_wage * driving_h
                 opex_maintenance = mntex_icev * distance_km
                 opex_insurance   = float(sf.capex_icev_eur) * insurance_rate
                 opex_fuel        = fuel_eur_per_km * distance_km
@@ -343,7 +236,7 @@ def calc_opex_vehicle(
                 # tailpipe CO2 for ICEV
                 co2_tailpipe_kg  = co2_kg_per_km * distance_km
 
-            opex_vt += (opex_driver + opex_maintenance + opex_insurance + opex_fuel + opex_toll)
+            opex_vt += (opex_maintenance + opex_insurance + opex_fuel + opex_toll)
             co2_vt_kg += co2_tailpipe_kg
 
         opex_by_sf[vt] = opex_vt
@@ -415,18 +308,11 @@ def calc_infrastructure_capex(
     co2_ess  = ess_exp_kwh  * co2_per_kwh_ess
 
     co2_chargers = 0.0
-    valid_keys = ", ".join(CHARGERS.keys())
+
     for name, cs in charger_settings.items():
         key = str(name).strip().lower()
         meta = CHARGERS.get(key)
-        if meta is None:
-            # Fallback: versuche den Namen aus dem Objekt selbst
-            key = str(getattr(cs, "name", name)).strip().lower()
-            meta = CHARGERS.get(key)
-        if meta is None:
-            raise KeyError(
-                f"Unbekannter Charger-Typ '{name}'. Erlaubte Typen: {valid_keys}"
-            )
+
         co2_chargers += float(cs.num_expansion) * float(meta.settings_CO2_per_unit)
 
     #co2_chargers = float(sum(
@@ -454,6 +340,7 @@ def calc_infrastructure_capex(
 
 def calc_vehicle_capex_split(
     subfleet_settings: dict[str, "SubFleetSettings"],
+    economics: "EconomicSettings",
     phase: Literal["baseline", "expansion"],
 ) -> Tuple[
     float, float, Dict[str, float], Dict[str, float],   # CAPEX totals & breakdowns
@@ -473,6 +360,9 @@ def calc_vehicle_capex_split(
     capex_bd_bev: Dict[str, float] = {}
     capex_bd_icev: Dict[str, float] = {}
 
+    salv_bev = float(economics.salvage_bev_pct) / 100.0
+    salv_ice = float(economics.salvage_icev_pct) / 100.0
+
     co2_bev_total_kg = 0.0
     co2_icev_total_kg = 0.0
     co2_bd_bev: Dict[str, float] = {}
@@ -480,8 +370,6 @@ def calc_vehicle_capex_split(
 
     for vt, sf in subfleet_settings.items():
         vt_key = vt if vt in SUBFLEETS else vt.lower()
-        if vt_key not in SUBFLEETS:
-            raise KeyError(f"SUBFLEETS enthält keinen Eintrag für '{vt}'. Verfügbar: {', '.join(SUBFLEETS.keys())}")
         meta = SUBFLEETS[vt_key]
 
         # Fahrzeuganzahl je Phase (alle Fahrzeuge der Flotte)
@@ -493,8 +381,8 @@ def calc_vehicle_capex_split(
         icev_cnt = max(int(sf.num_total) - bev_cnt, 0)
 
         # --- CAPEX ---
-        capex_bev_sf  = float(bev_cnt)  * float(sf.capex_bev_eur)
-        capex_icev_sf = float(icev_cnt) * float(sf.capex_icev_eur)
+        capex_bev_sf  = float(bev_cnt)  * float(sf.capex_bev_eur) * (1 - salv_bev)
+        capex_icev_sf = float(icev_cnt) * float(sf.capex_icev_eur) * (1 - salv_ice)
 
         capex_bd_bev[vt_key]  = capex_bev_sf
         capex_bd_icev[vt_key] = capex_icev_sf
@@ -520,43 +408,6 @@ def calc_vehicle_capex_split(
         co2_bd_bev,
         co2_bd_icev,
     )
-
-def apply_vehicle_salvage_simple(
-    cashflow: np.ndarray,
-    *,
-    capex_bev_eur: float,
-    capex_icev_eur: float,
-    economics: "EconomicSettings",
-    replacement_years_idx: list[int] = [5, 11, 17],  # Salvage applied at replacement years
-    project_years: int = TIME_PRJ_YRS,           # Salvage applied at project end
-) -> None:
-    """
-    Simple salvage logic:
-      - Computes a fixed salvage value per vehicle cohort (BEV + ICEV combined),
-      - Subtracts it at given replacement years,
-      - Subtracts it again at project end (last year).
-
-    Assumptions:
-      - Each purchase wave has the same CAPEX size (capex_bev_eur + capex_icev_eur).
-      - Salvage rates are given in percentages in 'economics'.
-    """
-    salv_bev = float(economics.salvage_bev_pct) / 100.0
-    salv_ice = float(economics.salvage_icev_pct) / 100.0
-
-    # Fixed salvage value per cohort
-    salvage_per_cohort = capex_bev_eur * salv_bev + capex_icev_eur * salv_ice
-    if salvage_per_cohort <= 0.0:
-        return
-
-    # Subtract salvage at replacement years
-    for yr in replacement_years_idx:
-        if 0 <= yr < project_years:
-            cashflow[yr] -= salvage_per_cohort
-
-    # Subtract salvage at project end for the last cohort
-    end_idx = project_years - 1
-    if end_idx >= 0:
-        cashflow[end_idx] -= salvage_per_cohort
 
 
 def calc_phase_results(logs: Logs,
@@ -622,6 +473,7 @@ def calc_phase_results(logs: Logs,
      co2_prod_bev_kg, co2_prod_icev_kg,
      co2_prod_bev_by_sf, co2_prod_icev_by_sf) = calc_vehicle_capex_split(
         subfleet_settings=subfleet_settings,
+        economics=economics,
         phase=phase.lower(),
     )
 
@@ -651,15 +503,6 @@ def calc_phase_results(logs: Logs,
     for idx in veh_years_idx:
         if idx < TIME_PRJ_YRS:
             cashflow[idx] += capex_vehicles_eur
-
-    apply_vehicle_salvage_simple(
-        cashflow,
-        capex_bev_eur=capex_bev_eur,
-        capex_icev_eur=capex_icev_eur,
-        economics=economics,
-        replacement_years_idx=[5, 11, 17],  # salvage when cohorts are replaced
-        project_years=TIME_PRJ_YRS,  # salvage for the last cohort at end of project
-    )
 
     # Infrastructure only in expansion scenario
     if phase == "expansion":

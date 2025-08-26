@@ -202,13 +202,11 @@ def _get_params_economic() -> EconomicSettings:
             fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
             toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
             toll_bev_eur_km=0.0,
-            driver_wage_eur_h=st.slider("Fahrerkosten (EUR/h)", 15, 50, 26, 1),
             mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01),
             mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01),
             insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1),
             salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, 25, 1),
             salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, 27, 1),
-            working_days_yrl=st.slider("Arbeitstage pro Jahr", 200, 350, 250, 1)
         )
 
 
@@ -256,11 +254,6 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                   value=max_value,
                                   ) * 1E3
 
-        battery_capacity_wh = st.slider(label="Batteriekapazität (kWh)",
-                                        key=f'battery_capacity_wh_{subfleet.name}',
-                                        **subfleet.settings_battery.dict,
-                                        ) * 1E3
-
         capex_bev_eur = st.slider(label="Anschaffungspreis BEV (EUR)",
                                   key=f'capex_bev_{subfleet.name}',
                                   **subfleet.settings_capex_bev.dict,
@@ -271,44 +264,19 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                    **subfleet.settings_capex_icev.dict,
                                    )
 
-        # ToDo: yearly distance instead of daily distance?
-        dist_avg_daily_km = st.slider(label="Tägliche Distanz/Fahrzeug (km)",
-                                      key=f'dist_avg_km_{subfleet.name}',
-                                      **subfleet.settings_dist_avg.dict,
-                                      )
-
         toll_share_pct = st.slider(label="Anteil mautplichtiger Strecken (%)",
                                    key=f'toll_share_pct_{subfleet.name}',
                                    **subfleet.settings_toll_share.dict,
                                    )
-
-        # ToDo: check whether this is required
-        #dist_max_km = st.slider(label="Max. Distanz pro Fahrzeug (km)",
-         #                       key=f'dist_max_km_{subfleet.name}',
-         #                       **subfleet.settings_dist_max.dict,
-          #                      )
-
-        # ToDo: check whether this is required
-        # depot_avg_h = st.slider(label="Standzeit am Depot (Std.)",
-        #                         key=f'depot_avg_h_{subfleet.id}',
-        #                         **subfleet.settings_depot_time.dict,
-        #                         )
-
-        # ToDo: check whether this is required
-        # load_avg_t = st.slider(label="Durchschnittliche Beladung (t)",
-        #                        key=f'load_avg_t_{subfleet.id}',
-        #                        **subfleet.settings_load.dict,
-        #                        )
 
     return SubFleetSettings(
         name=subfleet.name,
         num_total=num_total,
         num_bev_preexisting=num_bev_preexisting,
         num_bev_expansion=num_bev_expansion,
-        battery_capacity_wh=battery_capacity_wh,
+        battery_capacity_wh=subfleet.battery_capactiy_wh,
         capex_bev_eur=capex_bev_eur,
         capex_icev_eur=capex_icev_eur,
-        dist_avg_daily_km=dist_avg_daily_km,
         toll_share_pct=toll_share_pct,
         charger=charger,
         pwr_max_w=pwr_max_w,
@@ -398,6 +366,78 @@ def get_input_params() -> Settings:
 def display_results(results):
     st.subheader("Ergebnisse")
     st.success(f"Berechnung erfolgreich!")
+
+    st.subheader("Baseline vs. Expansion")
+    col1, col2, col3, col4 = st.columns(4)
+
+    def centered_h4(text: str) -> None:
+        st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
+
+    with col1:
+        centered_h4("Eigenverbrauchsquote")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_consumption_pct / 100,
+                results.expansion.self_consumption_pct / 100
+            ),
+            use_container_width=True
+        )
+
+    with col2:
+        centered_h4("Autarkiegrad")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_sufficiency_pct / 100,
+                results.expansion.self_sufficiency_pct / 100
+            ),
+            use_container_width=True
+        )
+
+    with col3:
+        centered_h4("Gesamtkosten")
+        st.altair_chart(
+            make_comparison_chart_discrete_values(
+                float(np.cumsum(results.baseline.cashflow)[-1]),
+                float(np.cumsum(results.expansion.cashflow)[-1])
+            ),
+            use_container_width=True
+        )
+
+    with col4:
+        centered_h4("Gesamt-CO₂")
+        st.altair_chart(
+            make_comparison_chart_discrete_values(
+                float(np.cumsum(results.baseline.co2_flow)[-1]),
+                float(np.cumsum(results.expansion.co2_flow)[-1])
+            ),
+            use_container_width=True
+        )
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("#### Kumulierte Kosten")
+        plot_flow(results, attr="cashflow",
+                  y_label="Cumulative cash outflow [EUR]",
+                  unit="EUR",
+                  cumulative=True,
+                  show_table=False)
+    with col2:
+        st.write("")
+        st.write("")
+        st.write("")
+        res = find_flow_intersection(results, attr="cashflow")
+        st.markdown("#### Preisparität")
+        if res is None:
+            st.markdown("Kein Schnittpunkt")
+        elif res["kind"] == "identical":
+            st.markdown("Kurven identisch.")
+        else:
+            yr = res["year_float"]
+            st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
+        st.markdown("#### Kosten-Delta")
+        cost_delta = round(
+            float(np.cumsum(results.expansion.cashflow)[-1]) - float(np.cumsum(results.baseline.cashflow)[-1]), 0)
+        st.markdown(f"{cost_delta} EUR nach 18 Jahren")
+
     for col, label, attr_name in zip(st.columns(2),
                                      ['Baseline', 'Erweiterung'],
                                      ['baseline', 'expansion']):
@@ -409,7 +449,7 @@ def display_results(results):
             st.write(f"CAPEX: {res.capex_eur:.2f} EUR")
             st.write(f"CAPEX Fahrzeuge: {res.capex_vehicles_eur:.2f} EUR")
             st.write(f"OPEX: {res.opex_eur:.2f} EUR")
-            st.write(f"OPEX Fahrzeuge (Wartung+Vers.+Fahrer): {res.opex_vehicle_electric_secondary:,.2f} EUR/Jahr")
+            st.write(f"OPEX Fahrzeuge (Wartung, Versicherung, Maut, Diesel): {res.opex_vehicle_electric_secondary:,.2f} EUR/Jahr")
             st.write(f"CO2-Emissionen: {res.co2_yrl_kg:.2f} kg / Jahr")
             st.write(f"CO2-Kosten: {res.co2_yrl_eur:.2f} EUR / Jahr")
             st.write(f"Infrastruktur-CO₂ (embodied): {res.infra_co2_total_kg:,.0f} kg")
@@ -432,7 +472,6 @@ def display_empty_results():
 def plot_flow(
     results,
     attr: str = "cashflow",         # "cashflow" or "co2_flow"
-    title: str | None = None,
     y_label: str | None = None,
     unit: str = "EUR",
     cumulative: bool = True,
@@ -474,15 +513,13 @@ def plot_flow(
         y_min, y_max = 0.0, 1.0
 
     # 6) Defaults for title/labels
-    if title is None:
-        title = f"{'Cumulative' if cumulative else 'Annual'} {attr.replace('_', ' ').title()}"
     if y_label is None:
         base_lbl = "Cumulative" if cumulative else "Annual"
         y_label = f"{base_lbl} value [{unit}]"
 
     # 7) Build the base line chart first
     chart = (
-        alt.Chart(df_long, title=title)
+        alt.Chart(df_long)
         .mark_line(point=True)
         .encode(
             x=alt.X("Year:Q", axis=alt.Axis(title="Year")),  # quantitative to allow fractional year mark
@@ -583,91 +620,109 @@ def find_flow_intersection(results, attr: str = "cashflow"):
     # No intersection (one curve stays above/below the other)
     return None
 
-def _radius_to_area(r_px: float) -> float:
-    # Altair's circle size uses *area* in pixels; convert a desired radius to area.
-    return float(np.pi * r_px * r_px)
-
-def circle_compare(
-    title: str,
-    base_value: float,
-    exp_value: float,
-    *,
-    unit: str = "",
-    max_value: float | None = None,   # shared scale for fair comparison; auto if None
-    min_radius: int = 16,             # px (shown even for zero to keep a visible dot)
-    max_radius: int = 72,             # px
-    base_color: str = "#155e75",      # Baseline color
-    exp_color: str = "#ea580c",       # Expansion color
-    width: int = 520,
-    height: int = 260,
-    show_labels_inside: bool = True,
-):
+def make_ring(
+    phase: str,
+    value: float,
+    radius: float,
+    thickness: float,
+    color: str
+) -> alt.Chart:
     """
-    Render two size-encoded circles next to each other: Baseline vs Expansion.
-    Circle *area* is proportional to the KPI value. Both use the same max_value.
+    value: float (0–1)
+    radius: inner radius
+    thickness: ring thickness
+    color: foreground color
     """
-    # Shared scale across both circles
-    if max_value is None:
-        m = max(float(base_value), float(exp_value))
-        max_value = (m * 1.10) if m > 0 else 1.0
-    max_value = float(max_value)
 
-    data = pd.DataFrame({
-        "Scenario": ["Baseline", "Expansion"],
-        "Value": [float(base_value), float(exp_value)],
-        "Color": [base_color, exp_color],
-        "Label": [f"{base_value:,.0f} {unit}".strip(),
-                  f"{exp_value:,.0f} {unit}".strip()],
-    })
-
-    # Size scale (area in px^2)
-    size_scale = alt.Scale(
-        domain=[0, max_value],
-        range=[_radius_to_area(min_radius), _radius_to_area(max_radius)],
-        nice=False
-    )
-
-    # Baseline chart: two circles on one row
-    y_center = height / 2
-    chart_circles = (
-        alt.Chart(data, title=title)
-        .mark_circle(stroke="#0f172a", strokeWidth=1)
-        .encode(
-            x=alt.X("Scenario:N",
-                    axis=alt.Axis(title=None, labelAngle=0),
-                    sort=["Baseline", "Expansion"]),
-            y=alt.value(y_center),
-            size=alt.Size("Value:Q", scale=size_scale, legend=None),
-            color=alt.Color("Scenario:N",
-                            scale=alt.Scale(
-                                domain=["Baseline", "Expansion"],
-                                range=[base_color, exp_color]),
-                            legend=None),
-            tooltip=[
-                alt.Tooltip("Scenario:N"),
-                alt.Tooltip("Value:Q", title=f"Value [{unit}]", format=",.0f"),
-            ],
+    # Background ring: full circle, semi-transparent, no tooltip
+    bg = (
+        alt.Chart(pd.DataFrame({"value": [1]}))
+        .mark_arc(
+            innerRadius=radius,
+            outerRadius=radius + thickness,
+            color=color,
+            opacity=0.4,
+            tooltip=None,
         )
-        .properties(width=width, height=height)
+        .encode(theta=alt.Theta("value:Q", stack=True))
     )
 
-    # Optional numeric labels inside the circles
-    if show_labels_inside:
-        text = (
-            alt.Chart(data)
-            .mark_text(baseline="middle", fontSize=14, color="white", stroke=None)
-            .encode(
-                x=alt.X("Scenario:N", sort=["Baseline", "Expansion"]),
-                y=alt.value(y_center),
-                text="Label:N",
+    # Foreground ring with tooltip
+    fg = (
+        alt.Chart(
+            pd.DataFrame(
+                {"value": [value], "tooltip_label": [f"{value * 100:.1f} %"]}
             )
         )
-        chart = chart_circles + text
-    else:
-        chart = chart_circles
+        .mark_arc(
+            innerRadius=radius,
+            outerRadius=radius + thickness,
+            cornerRadius=2,
+            color=color,
+        )
+        .encode(
+            theta=alt.Theta("value:Q", stack=True),
+            tooltip=[alt.Tooltip("tooltip_label:N", title=f"{phase}:")],
+        )
+    )
 
-    chart = chart.configure_view(stroke=None)
-    st.altair_chart(chart, use_container_width=True)
+    return bg + fg
+
+
+def make_comparison_chart(val_baseline,
+                          val_expansion,
+                          ):
+
+    # Create rings
+    baseline_ring = make_ring('Baseline', val_baseline, 40, 30, "steelblue")
+    expansion_ring = make_ring('Expansion', val_expansion, 80, 30, "orange")
+
+    # Center text (single-row dataframe, minimal overhead)
+    center_text = alt.Chart(pd.DataFrame({"text": [f"{(val_expansion - val_baseline) * 100:+.1f} %"]})).mark_text(
+        size=20,
+        fontWeight="bold",
+        color="green" if val_expansion > val_baseline else "red",
+        tooltip=None
+    ).encode(
+        text="text:N"
+    )
+    # Combine chart
+    chart = (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
+
+    return chart
+
+def make_comparison_chart_discrete_values(val_baseline,
+                          val_expansion,
+                          ):
+
+    if val_baseline < val_expansion: # red
+        val_inner = val_baseline / val_expansion
+        val_outer = 1
+        display_value = - (1 - (val_expansion / val_baseline))
+    else: # green
+        val_inner = 1
+        val_outer = val_expansion / val_baseline
+        display_value = - (1 - (val_expansion / val_baseline))
+
+    # Create rings
+    baseline_ring = make_ring('Baseline', val_inner, 40, 30, "steelblue")
+    expansion_ring = make_ring('Expansion', val_outer, 80, 30, "orange")
+
+    # Center text (single-row dataframe, minimal overhead)
+    center_text = alt.Chart(pd.DataFrame({"text": [f"{(display_value) * 100:+.1f} %"]})).mark_text(
+        size=20,
+        fontWeight="bold",
+        color="green" if val_expansion < val_baseline else "red",
+        tooltip=None
+    ).encode(
+        text="text:N"
+    )
+    # Combine chart
+    chart = (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
+
+    return chart
+
+
 
 def run_frontend():
     # define page settings
@@ -695,85 +750,17 @@ def run_frontend():
             results = backend.run_backend(settings=settings)
             display_results(results)
 
-            st.subheader("Baseline vs. Expansion — KPI (circle size = value)")
-
-            # 1) Self-sufficiency (%)
-            circle_compare(
-                "Autarkiegrad",
-                results.baseline.self_sufficiency_pct,
-                results.expansion.self_sufficiency_pct,
-                unit="%",
-                max_value=100.0,  # fix scale to 100% for fair perception
-            )
-
-            # 2) Self-consumption (%)
-            circle_compare(
-                "Eigenverbrauchsquote",
-                results.baseline.self_consumption_pct,
-                results.expansion.self_consumption_pct,
-                unit="%",
-                max_value=100.0,
-            )
-
-            # 3) CAPEX (total)
-            circle_compare(
-                "CAPEX (total)",
-                getattr(results.baseline, "capex_eur", 0.0),
-                getattr(results.expansion, "capex_eur", 0.0),
-                unit="EUR",
-            )
-
-            # 4) CAPEX Vehicles
-            circle_compare(
-                "CAPEX Fahrzeuge",
-                getattr(results.baseline, "capex_vehicles_eur", 0.0),
-                getattr(results.expansion, "capex_vehicles_eur", 0.0),
-                unit="EUR",
-            )
-
-            # 5) OPEX (per year)
-            circle_compare(
-                "OPEX (per year)",
-                getattr(results.baseline, "opex_eur", 0.0),
-                getattr(results.expansion, "opex_eur", 0.0),
-                unit="EUR",
-            )
-
-            # 6) OPEX Vehicles (maintenance + insurance + driver), per year
-            circle_compare(
-                "OPEX Fahrzeuge (per year)",
-                getattr(results.baseline, "opex_vehicle_electric_secondary", 0.0),
-                getattr(results.expansion, "opex_vehicle_electric_secondary", 0.0),
-                unit="EUR",
-            )
-
-            res = find_flow_intersection(results, attr="cashflow")
-            if res is None:
-                st.info("Kein Schnittpunkt (eine Kurve liegt stets über/unter der anderen).")
-            elif res["kind"] == "identical":
-                st.info("Beide Kurven sind identisch.")
-            else:
-                yr = res["year_float"]
-                val = res["value"]
-                st.success(f"Schnittpunkt bei Jahr ≈ {yr:.2f}, Wert ≈ {val:,.0f} EUR")
-            res_co2 = find_flow_intersection(results, attr="co2_flow")
-            if res_co2 and res_co2.get("value") is not None:
-                st.success(f"CO₂-Schnittpunkt bei Jahr ≈ {res_co2['year_float']:.2f}, "
-                           f"Wert ≈ {res_co2['value']:,.0f} kg")
-
-            plot_flow(results, attr="cashflow",
-                      title="Cumulative Cash Outflow",
-                      y_label="Cumulative cash outflow [EUR]",
-                      unit="EUR",
-                      cumulative=True,
-                      show_table=False)
             plot_flow(results, attr="co2_flow",
-                      title="Cumulative CO₂ Emissions",
                       y_label="Cumulative CO₂ [kg]",
                       unit="kg",
                       cumulative=True,
                       show_table=True,
                       value_format=",.0f")
+
+            res_co2 = find_flow_intersection(results, attr="co2_flow")
+            if res_co2 and res_co2.get("value") is not None:
+                st.success(f"CO₂-Schnittpunkt bei Jahr ≈ {res_co2['year_float']:.2f}, "
+                           f"Wert ≈ {res_co2['value']:,.0f} kg")
 
             rb = results.baseline
             re = results.expansion

@@ -24,13 +24,14 @@ class SubFleetDefinition:
     weight_empty_bev: float
     weight_empty_icev: float
     settings_battery: SliderSettings
-    settings_dist_avg: SliderSettings
+    battery_capactiy_wh: float
     settings_toll_share: SliderSettings
     settings_load: SliderSettings
     settings_capex_bev: SliderSettings
     settings_capex_icev: SliderSettings
     co2_production_bev: float
     co2_production_icev: float
+    consumption_icev: float
 
 
 @dataclass
@@ -58,13 +59,14 @@ SUBFLEETS = dict(
         weight_empty_bev=18000,
         weight_empty_icev=16600,
         settings_battery=SliderSettings(min_value=0.0, max_value=1000.0, value=500.0, step=10.0),
-        settings_dist_avg=SliderSettings(min_value=0.0, max_value=1000.0, value=200.0, step=10.0),
-        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
+        battery_capactiy_wh=480000,
+        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=80.0, step=1.0),
         settings_load=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
         settings_capex_bev=SliderSettings(min_value=0.0, max_value=250000.0, value=250000.0, step=10000.0),
         settings_capex_icev=SliderSettings(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
         co2_production_bev=84600.0,
         co2_production_icev=54000.0,
+        consumption_icev=27.0,
     ),
 
     # Leergewicht: 10.4t, Zuladung: 16.6t
@@ -76,13 +78,14 @@ SUBFLEETS = dict(
         weight_empty_bev=10400,
         weight_empty_icev=9000,
         settings_battery=SliderSettings(min_value=0.0, max_value=1000.0, value=500.0, step=10.0),
-        settings_dist_avg=SliderSettings(min_value=0.0, max_value=1000.0, value=200.0, step=10.0),
-        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
+        battery_capactiy_wh=400000,
+        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=70.0, step=1.0),
         settings_load=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
         settings_capex_bev=SliderSettings(min_value=0.0, max_value=250000.0, value=250000.0, step=10000.0),
         settings_capex_icev=SliderSettings(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
         co2_production_bev=59000.0,
         co2_production_icev=31200.0,
+        consumption_icev=23.0,
     ),
 
     # Leergewicht: 5.4t, Zuladung: 6.6t
@@ -94,13 +97,14 @@ SUBFLEETS = dict(
         weight_empty_bev=5400,
         weight_empty_icev=5400,
         settings_battery=SliderSettings(min_value=0.0, max_value=1000.0, value=300.0, step=10.0),
-        settings_dist_avg=SliderSettings(min_value=0.0, max_value=1000.0, value=200.0, step=10.0),
-        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
+        battery_capactiy_wh=160000,
+        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=40.0, step=1.0),
         settings_load=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
         settings_capex_bev=SliderSettings(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
         settings_capex_icev=SliderSettings(min_value=0.0, max_value=250000.0, value=100000.0, step=10000.0),
         co2_production_bev=26700.0,
         co2_production_icev=16200.0,
+        consumption_icev=19.0,
     ),
 
     # Leergewicht: 2.5t, Zuladung: 1.0t
@@ -112,13 +116,14 @@ SUBFLEETS = dict(
         weight_empty_bev=2500,
         weight_empty_icev=2300,
         settings_battery=SliderSettings(min_value=0.0, max_value=1000.0, value=300.0, step=10.0),
-        settings_dist_avg=SliderSettings(min_value=0.0, max_value=1000.0, value=200.0, step=10.0),
-        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
+        battery_capactiy_wh=81000,
+        settings_toll_share=SliderSettings(min_value=0.0, max_value=100.0, value=0.0, step=1.0),
         settings_load=SliderSettings(min_value=0.0, max_value=100.0, value=50.0, step=1.0),
         settings_capex_bev=SliderSettings(min_value=0.0, max_value=100000.0, value=45000.0, step=1000.0),
         settings_capex_icev=SliderSettings(min_value=0.0, max_value=100000.0, value=35000.0, step=1000.0),
         co2_production_bev=13870.0,
         co2_production_icev=8622.0,
+        consumption_icev=15.0,
     ),
 )
 
