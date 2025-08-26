@@ -388,7 +388,9 @@ def display_results(results):
         st.altair_chart(
             make_comparison_chart_discrete_values(
                 float(np.cumsum(results.baseline.cashflow)[-1]),
-                float(np.cumsum(results.expansion.cashflow)[-1])
+                float(np.cumsum(results.expansion.cashflow)[-1]),
+                unit="EUR",
+                abs_title="Kosten"
             ),
             use_container_width=True
         )
@@ -398,7 +400,9 @@ def display_results(results):
         st.altair_chart(
             make_comparison_chart_discrete_values(
                 float(np.cumsum(results.baseline.co2_flow)[-1]),
-                float(np.cumsum(results.expansion.co2_flow)[-1])
+                float(np.cumsum(results.expansion.co2_flow)[-1]),
+                unit="kg-CO2",
+                abs_title="Emissionen"
             ),
             use_container_width=True
         )
@@ -641,49 +645,46 @@ def make_ring(
     value: float,
     radius: float,
     thickness: float,
-    color: str
+    color: str,
+    abs_total: float | None = None,
+    abs_title: str = "Absolut",
+    abs_format: str | None = ",.0f",
+    unit: str = "",
+    co2_eur_per_t: float | None = None,   # <- NEW: show CO₂ costs if unit is CO2 and this is set
 ) -> alt.Chart:
-    """
-    value: float (0–1)
-    radius: inner radius
-    thickness: ring thickness
-    color: foreground color
-    """
-
-    # Background ring: full circle, semi-transparent, no tooltip
+    """Draw a ring with percent in the middle; tooltips can include absolute values and optional CO₂ costs."""
     bg = (
         alt.Chart(pd.DataFrame({"value": [1]}))
-        .mark_arc(
-            innerRadius=radius,
-            outerRadius=radius + thickness,
-            color=color,
-            opacity=0.4,
-            tooltip=None,
-        )
+        .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4, tooltip=None)
         .encode(theta=alt.Theta("value:Q", stack=True))
     )
 
-    # Foreground ring with tooltip
+    # Build data for tooltip
+    data = {"value": [value], "phase": [phase], "percent": [value * 100]}
+    if abs_total is not None:
+        abs_val = value * abs_total
+        data["abs_val"] = [abs_val]
+        # If this is CO2, compute cost = kg / 1000 * EUR/t
+        if unit and "co2" in unit.lower().replace("-", "").replace(" ", "") and co2_eur_per_t is not None:
+            data["co2_cost_eur"] = [abs_val / 1000.0 * float(co2_eur_per_t)]
+
+    # Tooltips
+    tooltips = [
+        alt.Tooltip("phase:N",   title="Szenario"),
+        alt.Tooltip("percent:Q", title="Anteil", format=".1f"),
+    ]
+    if abs_total is not None:
+        title_abs = abs_title + (f" [{unit}]" if unit else "")
+        tooltips.append(alt.Tooltip("abs_val:Q", title=title_abs, format=(abs_format or ",.0f")))
+        if "co2_cost_eur" in data:
+            tooltips.append(alt.Tooltip("co2_cost_eur:Q", title="CO₂-Kosten [EUR]", format=",.0f"))
+
     fg = (
-        alt.Chart(
-            pd.DataFrame(
-                {"value": [value], "tooltip_label": [f"{value * 100:.1f} %"]}
-            )
-        )
-        .mark_arc(
-            innerRadius=radius,
-            outerRadius=radius + thickness,
-            cornerRadius=2,
-            color=color,
-        )
-        .encode(
-            theta=alt.Theta("value:Q", stack=True),
-            tooltip=[alt.Tooltip("tooltip_label:N", title=f"{phase}:")],
-        )
+        alt.Chart(pd.DataFrame(data))
+        .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
+        .encode(theta=alt.Theta("value:Q", stack=True), tooltip=tooltips)
     )
-
     return bg + fg
-
 
 def make_comparison_chart(val_baseline,
                           val_expansion,
@@ -707,37 +708,45 @@ def make_comparison_chart(val_baseline,
 
     return chart
 
-def make_comparison_chart_discrete_values(val_baseline,
-                          val_expansion,
-                          ):
+def make_comparison_chart_discrete_values(
+    val_baseline: float,
+    val_expansion: float,
+    unit: str | None = None,
+    abs_title: str = "Absolut",
+    abs_format: str | None = None,
+) -> alt.Chart:
+    max_val = max(float(val_baseline), float(val_expansion), 1e-9)
+    base_ratio = float(val_baseline) / max_val
+    exp_ratio  = float(val_expansion) / max_val
 
-    if val_baseline < val_expansion: # red
-        val_inner = val_baseline / val_expansion
-        val_outer = 1
-        display_value = - (1 - (val_expansion / val_baseline))
-    else: # green
-        val_inner = 1
-        val_outer = val_expansion / val_baseline
-        display_value = - (1 - (val_expansion / val_baseline))
+    if abs_format is None:
+        abs_format = ",.0f"
 
-    # Create rings
-    baseline_ring = make_ring('Baseline', val_inner, 40, 30, "steelblue")
-    expansion_ring = make_ring('Expansion', val_outer, 80, 30, "orange")
+    # Use 55 EUR/t only for CO2 units
+    co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
 
-    # Center text (single-row dataframe, minimal overhead)
-    center_text = alt.Chart(pd.DataFrame({"text": [f"{(display_value) * 100:+.1f} %"]})).mark_text(
-        size=20,
-        fontWeight="bold",
-        color="green" if val_expansion < val_baseline else "red",
-        tooltip=None
-    ).encode(
-        text="text:N"
+    baseline_ring = make_ring(
+        phase="Baseline", value=base_ratio, radius=40, thickness=30, color="steelblue",
+        abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
     )
-    # Combine chart
-    chart = (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
+    expansion_ring = make_ring(
+        phase="Expansion", value=exp_ratio, radius=80, thickness=30, color="orange",
+        abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
+    )
 
-    return chart
+    # Center text = relative change vs baseline in %
+    if val_baseline > 0:
+        diff_pct = (val_expansion / val_baseline - 1.0) * 100.0
+    else:
+        diff_pct = 0.0
 
+    center_text = (
+        alt.Chart(pd.DataFrame({"text": [f"{diff_pct:+.1f} %"]}))
+        .mark_text(size=20, fontWeight="bold", color="green" if val_expansion < val_baseline else "red", tooltip=None)
+        .encode(text="text:N")
+    )
+
+    return (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
 
 
 def run_frontend():
