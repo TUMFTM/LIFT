@@ -1,7 +1,10 @@
+import folium
+import importlib.resources
 import streamlit as st
 from streamlit_folium import st_folium
-import folium
+import toml
 import traceback
+from typing import Tuple
 import numpy as np
 import pandas as pd
 import altair as alt
@@ -24,30 +27,42 @@ from interfaces import (
 )
 
 
-footer_css = """
+# Load specified project colors from colors.toml
+@st.cache_data
+def get_colors() -> Tuple[str, str, str]:
+    # Get custom colors from config.toml
+    with importlib.resources.files("lift").joinpath(".streamlit/colors.toml").open("r") as f:
+        config = toml.load(f)
+    colors = config.get("custom_colors", {})
+    return colors['tumblue'], colors['baseline'], colors['expansion']
+
+COLOR_TUMBLUE, COLOR_BL, COLOR_EX = get_colors()
+
+
+footer_css = f"""
     <style>
         /* Style for fixed footer */
-        .footer {
+        .footer {{
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: #2c3e50;
+            background-color: {COLOR_TUMBLUE};
             color: white;
             text-align: center;
             padding: 10px;
             font-size: 14px;
-        }
+        }}
         
         /* Remove link styling inside the footer */
-        .footer a {
+        .footer a {{
             color: inherit;
             text-decoration: none;
-        }
+        }}
 
-        .footer a:hover {
+        .footer a:hover {{
             text-decoration: underline;
-        }
+        }}
     </style>
 """
 
@@ -99,7 +114,6 @@ def _get_params_location() -> LocationSettings:
 
         st_folium(m, height=350, width='5%', key="map", on_change=callback)
         st.markdown(f"Position: {st.session_state['location'].as_dms_str}")
-        st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
     with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
         st.markdown("**Stromverbrauch Standort**")

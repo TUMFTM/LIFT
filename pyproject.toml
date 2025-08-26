@@ -16,18 +16,20 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "demandlib",
+    "folium",
     "numpy",
     "matplotlib",
     "pandas",
     "pvlib>=0.13.0",
     "streamlit",
+    "streamlit_folium",
 ]
 
 [tool.setuptools]
 packages = ["lift"]
 
 [tool.setuptools.package-data]
-lift = ["data/*"]
+lift = ["data/*", ".streamlit/*"]
 
 [project.scripts]
 lift = "lift.__main__:main"
