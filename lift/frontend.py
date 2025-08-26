@@ -1,21 +1,17 @@
-import folium
 import importlib.resources
-import streamlit as st
-from streamlit_folium import st_folium
 import toml
 import traceback
 from typing import Tuple
+
+import altair as alt
+import folium
 import numpy as np
 import pandas as pd
-import altair as alt
-from typing import Dict, Tuple, List, Literal
-from definitions import TIME_PRJ_YRS
-
+import streamlit as st
+from streamlit_folium import st_folium
 
 import backend
-
-from definitions import SubFleetDefinition, ChargerDefinition, SUBFLEETS, CHARGERS
-
+from definitions import SubFleetDefinition, ChargerDefinition, SUBFLEETS, CHARGERS, TIME_PRJ_YRS
 from interfaces import (
     GridPowerExceededError,
     SOCError,
