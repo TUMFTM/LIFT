@@ -80,6 +80,7 @@ sidebar_style = """
 
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
+VEH_YEARS_IDX = [0, 5, 11]
 
 def _get_params_location() -> LocationSettings:
 
@@ -480,123 +481,69 @@ def display_results(results):
             st.markdown(f"{cost_delta:,.0f} kg-CO2 nach 18 Jahren")
 
     with st.expander("Zusammensetzung der Kosten"):
-        # details costs
         rb = results.baseline
         re = results.expansion
 
-        st.subheader("Kostenbilanz (über gesamte Projektlaufzeit)")
+        # --- KOSTEN ---
+        cost_base = build_cost_breakdown_18y(rb, phase="baseline", project_years=TIME_PRJ_YRS)  # dict
+        cost_exp = build_cost_breakdown_18y(re, phase="expansion", project_years=TIME_PRJ_YRS)  # dict
 
-        # --- Zählregeln über 18 Jahre (wie in CO2) ---
-        veh_years_idx = [0, 5, 11]
-        veh_waves = sum(1 for i in veh_years_idx if i < TIME_PRJ_YRS)  # i.d.R. 3 Wellen
-        ess_mult = 2 if TIME_PRJ_YRS > 8 else 1 if TIME_PRJ_YRS > 0 else 0  # ESS in Jahr 1 und 9
+        # DataFrame für Tabelle/Chart
+        df_cost = pd.DataFrame({"Baseline": cost_base, "Expansion": cost_exp}).T
+        st.markdown("### Kosten – 18 Jahre (konsistent zum Cashflow)")
 
-        # --- Gesamtkosten (Summe des Cashflows, inkl. evtl. Restwerte/Salvage) ---
-        tot_base_cf = float(np.sum(rb.cashflow))
-        tot_exp_cf = float(np.sum(re.cashflow))
+        # --- Summen berechnen ---
+        total_cost_base = float(sum(map(float, cost_base.values())))
+        total_cost_exp = float(sum(map(float, cost_exp.values())))
+        delta_cost = total_cost_exp - total_cost_base
 
         c1, c2 = st.columns(2)
-        c1.metric("Gesamtkosten – Baseline (18 Jahre)", f"{tot_base_cf:,.0f} €")
-        c2.metric("Gesamtkosten – Expansion (18 Jahre)", f"{tot_exp_cf:,.0f} €",
-                  delta=f"{tot_exp_cf - tot_base_cf:,.0f} €")
+        c1.metric("Gesamtkosten – Baseline (18 Jahre)", f"{total_cost_base:,.0f} €")
+        c2.metric("Gesamtkosten – Expansion (18 Jahre)", f"{total_cost_exp:,.0f} €",
+                  delta=f"{delta_cost:+,.0f} €")
 
-        # --- OPEX (jährlich) auf 18 Jahre hochskalieren ---
-        def annual_opex(pr):
-            # nutzt deine bereits ausgewiesenen OPEX-Komponenten
-            return float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)
-
-        # --- Infrastruktur-CAPEX über 18 Jahre gemäß deinen Timings ---
-        def infra_capex_total_18(pr):
-            bd = pr.infra_capex_breakdown or {}
-            return (
-                    float(bd.get("grid", 0.0)) +
-                    float(bd.get("pv", 0.0)) +
-                    float(bd.get("chargers", 0.0)) +
-                    float(bd.get("ess", 0.0)) * ess_mult
-            )
-
-        # --- Zeile für die Vergleichstabelle (18 Jahre) ---
-        def build_cost_row(pr):
-            return {
-                "OPEX Grid (18 Jahre)": float(pr.opex_grid_eur) * TIME_PRJ_YRS,
-                "OPEX Fahrzeuge (18 Jahre)": float(pr.opex_vehicle_electric_secondary) * TIME_PRJ_YRS,
-                "Fahrzeuge CAPEX (18 Jahre)": float(pr.capex_vehicles_eur) * veh_waves,
-                "Infrastruktur CAPEX (18 Jahre)": infra_capex_total_18(pr),
-            }
-
-        df_cost = pd.DataFrame({
-            "Baseline": build_cost_row(rb),
-            "Expansion": build_cost_row(re),
-        }).T
-
-        st.markdown("**Zusammensetzung (18 Jahre)**")
-        st.dataframe(df_cost.style.format("{:,.0f}"))
-
-        st.markdown("**Vergleich (gestapelt, 18 Jahre)**")
-        st.bar_chart(df_cost)
-
-        st.caption(
-            "Hinweis: Die Summe der aufgeschlüsselten Posten kann von der Cashflow-Summe abweichen, "
-            "falls Restwerte (Salvage) im Cashflow berücksichtigt werden."
+        # Stacked-Bar
+        df_cost_long = df_cost.reset_index(names="Scenario").melt(
+            id_vars="Scenario", var_name="Komponente", value_name="EUR"
         )
+        chart_cost = alt.Chart(df_cost_long).mark_bar().encode(
+            x=alt.X("Scenario:N", title=None),
+            y=alt.Y("EUR:Q", title="EUR (18 Jahre)"),
+            color=alt.Color("Komponente:N", title=None),
+            tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("EUR:Q", format=",.0f")]
+        ).properties(height=280)
+        st.altair_chart(chart_cost, use_container_width=True)
 
     with st.expander("Zusammensetzung des CO2-Ausstoß"):
         # details co2
         rb = results.baseline
         re = results.expansion
 
-        st.subheader("CO₂-Bilanz (über gesamte Projektlaufzeit)")
+        co2_base = build_co2_breakdown_18y(rb, phase="baseline", project_years=TIME_PRJ_YRS)
+        co2_exp = build_co2_breakdown_18y(re, phase="expansion", project_years=TIME_PRJ_YRS)
 
-        # --- Konstanten / Zählungen über die Laufzeit ---
-        veh_years_idx = [0, 5, 11]
-        veh_waves = sum(1 for i in veh_years_idx if i < TIME_PRJ_YRS)  # i.d.R. 3 Wellen in 18 Jahren
-        ess_mult = 2 if TIME_PRJ_YRS > 8 else 1 if TIME_PRJ_YRS > 0 else 0  # ESS in Jahr 1 und 9
+        df_co2 = pd.DataFrame({"Baseline": co2_base, "Expansion": co2_exp}).T
 
-        # --- Betrieb (Grid + Tailpipe) auf 18 Jahre hochskalieren ---
-        op_base_total = rb.co2_yrl_kg * TIME_PRJ_YRS
-        op_exp_total = re.co2_yrl_kg * TIME_PRJ_YRS
-
-        c1, c2 = st.columns(2)
-        c1.metric("CO₂ Betrieb – Baseline (18 Jahre)", f"{op_base_total:,.0f} kg")
-        c2.metric("CO₂ Betrieb – Expansion (18 Jahre)", f"{op_exp_total:,.0f} kg",
-                  delta=f"{op_exp_total - op_base_total:,.0f} kg")
-
-        # --- Breakdown über 18 Jahre ---
-        def build_row(pr):
-            # Betrieb über 18 Jahre
-            grid_total = float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS
-            tailpipe_total = float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS
-
-            # Fahrzeuge Herstellung: pro Ersatzwelle einmal (Jahr 1/6/12)
-            veh_prod_total = float(pr.vehicles_co2_production_total_kg) * veh_waves
-
-            # Infrastruktur Herstellung: Grid/PV/Charger 1x; ESS 2x (Jahr 1 und 9)
-            bd = pr.infra_co2_breakdown or {}
-            infra_total = (
-                    float(bd.get("grid", 0.0)) +
-                    float(bd.get("pv", 0.0)) +
-                    float(bd.get("chargers", 0.0)) +
-                    float(bd.get("ess", 0.0)) * ess_mult
-            )
-
-            return {
-                "Strom (18 Jahre)": grid_total,
-                "Tailpipe (18 Jahre)": tailpipe_total,
-                "Fahrzeuge Herstellung (18 Jahre)": veh_prod_total,
-                "Infrastruktur Herstellung (18 Jahre)": infra_total,
-            }
-
-        df_co2 = pd.DataFrame({
-            "Baseline": build_row(rb),
-            "Expansion": build_row(re),
-        }).T
-
-        st.markdown("**Zusammensetzung (18 Jahre)**")
+        st.markdown("### CO₂ – 18 Jahre (konsistent zum CO₂-Flow)")
         st.dataframe(df_co2.style.format("{:,.0f}"))
 
-        st.markdown("**Vergleich (gestapelt, 18 Jahre)**")
-        st.bar_chart(df_co2)
+        df_co2_long = df_co2.reset_index(names="Scenario").melt(id_vars="Scenario", var_name="Komponente",
+                                                                value_name="kg CO₂")
+        chart_co2 = alt.Chart(df_co2_long).mark_bar().encode(
+            x=alt.X("Scenario:N", title=None),
+            y=alt.Y("kg CO₂:Q", title="kg CO₂ (18 Jahre)"),
+            color=alt.Color("Komponente:N", title=None),
+            tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("kg CO₂:Q", format=",.0f")]
+        ).properties(height=280)
+        st.altair_chart(chart_co2, use_container_width=True)
 
+        # Konsistenz: Summe Balken == Summe co2_flow
+        co2_sum_base = float(np.sum(rb.co2_flow))
+        co2_sum_exp = float(np.sum(re.co2_flow))
+        tbl2_sum_base = float(df_co2.loc["Baseline"].sum())
+        tbl2_sum_exp = float(df_co2.loc["Expansion"].sum())
+        st.caption(f"Δ Baseline (Balken – CO₂-Flow): {tbl2_sum_base - co2_sum_base:,.0f} kg")
+        st.caption(f"Δ Expansion (Balken – CO₂-Flow): {tbl2_sum_exp - co2_sum_exp :,.0f} kg")
         # --- Details: Tailpipe je Subfleet über 18 Jahre ---
         with st.expander("Details: Tailpipe-Emissionen je Subfleet (18 Jahre)"):
             def scale_dict(d, factor):
@@ -924,6 +871,75 @@ def make_comparison_chart_discrete_values(
 
     return (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
 
+
+def _num_waves(project_years: int) -> int:
+    return sum(1 for i in VEH_YEARS_IDX if i < project_years)
+
+def build_cost_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, float]:
+    """
+    Baut die 18-Jahres-Kosten so auf, wie der cashflow gefüllt wird:
+    - Jährliches OPEX: (opex_grid + opex_vehicle) * Jahre
+    - CAPEX Fahrzeuge: capex_vehicles_eur je Welle (0/5/11)
+    - CAPEX Infra: in Expansion Jahr 0 voll (grid+pv+chargers), ESS in Jahr 0 und 8
+    """
+    waves = _num_waves(project_years)
+
+    # jährliches OPEX (genau wie im cashflow addiert)
+    opex_total_18 = (float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)) * project_years
+
+    # Fahrzeuge CAPEX: bereits netto (Salvage schon im capex eingepreist)
+    capex_veh_all_waves = float(pr.capex_vehicles_eur) * waves
+
+    # Infrastruktur CAPEX-Timings (nur Expansion)
+    if phase.lower() == "expansion":
+        capex_infra_y0 = (
+            float(pr.infra_capex_breakdown.get("grid", 0.0))
+          + float(pr.infra_capex_breakdown.get("pv", 0.0))
+          + float(pr.infra_capex_breakdown.get("chargers", 0.0))
+        )
+        # ESS in Jahr 0 und 8 (sofern im Projektzeitraum)
+        ess_once = float(pr.infra_capex_breakdown.get("ess", 0.0))
+        ess_count = (1 if project_years > 0 else 0) + (1 if project_years > 8 else 0)
+        capex_infra_total = capex_infra_y0 + ess_once * ess_count
+    else:
+        capex_infra_total = 0.0
+
+    # Für Balken aufschlüsseln (optional)
+    return {
+        "OPEX (18J)": opex_total_18,
+        "CAPEX Fahrzeuge (alle Wellen)": capex_veh_all_waves,
+        "CAPEX Infrastruktur (inkl. ESS-Timings)": capex_infra_total,
+    }
+
+def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, float]:
+    """
+    Baut die 18-Jahres-CO2-Summen so auf, wie co2_flow gefüllt wird:
+    - Betrieb: co2_yrl_kg * Jahre  (Grid + Tailpipe)
+    - Fahrzeuge Herstellung: pro Welle (0/5/11)
+    - Infrastruktur Herstellung: in Expansion Jahr 0 (grid+pv+chargers), ESS in Jahr 0 und 8
+    """
+    waves = _num_waves(project_years)
+
+    co2_oper_18 = float(pr.co2_yrl_kg) * project_years
+    co2_veh_prod_all_waves = float(pr.vehicles_co2_production_total_kg) * waves
+
+    if phase.lower() == "expansion":
+        co2_infra_y0 = (
+            float(pr.infra_co2_breakdown.get("grid", 0.0))
+          + float(pr.infra_co2_breakdown.get("pv", 0.0))
+          + float(pr.infra_co2_breakdown.get("chargers", 0.0))
+        )
+        ess_once = float(pr.infra_co2_breakdown.get("ess", 0.0))
+        ess_count = (1 if project_years > 0 else 0) + (1 if project_years > 8 else 0)
+        co2_infra_total = co2_infra_y0 + ess_once * ess_count
+    else:
+        co2_infra_total = 0.0
+
+    return {
+        "Betrieb (18J)": co2_oper_18,
+        "Fahrzeuge Herstellung (alle Wellen)": co2_veh_prod_all_waves,
+        "Infrastruktur Herstellung (inkl. ESS-Timings)": co2_infra_total,
+    }
 
 def run_frontend():
     # define page settings
