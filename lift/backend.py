@@ -145,7 +145,9 @@ def calc_opex_vehicle(
     economics: "EconomicSettings",
     phase: Literal["baseline", "expansion"],
     vehicle_charger: Dict[str, Dict[str, Optional[str]]] = None,
-) -> Tuple[float, Dict[str, float], float, Dict[str, float]]:
+) -> Tuple[
+    float, Dict[str, float], float, Dict[str, float], Dict[str, float]
+]:
 
     # Falls nicht mitgegeben: Mapping BEV/ICEV je Fahrzeug erzeugen
     if vehicle_charger is None:
@@ -173,6 +175,7 @@ def calc_opex_vehicle(
     opex_by_sf: Dict[str, float] = {}
     co2_total_kg: float = 0.0
     co2_by_sf: Dict[str, float] = {}
+    comp_totals = {"maintenance": 0.0, "insurance": 0.0, "fuel_diesel": 0.0, "toll": 0.0}
 
     for vt, sf in subfleet_settings.items():
         # ---> Verbrauch je Subfleet aus SUBFLEETS holen
@@ -190,6 +193,12 @@ def calc_opex_vehicle(
         co2_vt_kg = 0.0
         toll_split = float(sf.toll_share_pct) / 100.0
 
+        opex_maintenance = 0.0
+        opex_insurance = 0.0
+        opex_fuel = 0.0
+        opex_toll = 0.0
+        co2_tailpipe_kg = 0.0
+
         for i in range(n_total):
             veh_id = f"{vt}{i}"
             chg = vehicle_charger[vt][veh_id]
@@ -200,16 +209,14 @@ def calc_opex_vehicle(
 
             if is_bev:
                 opex_maintenance = mntex_bev * distance_km
-                opex_insurance   = float(sf.capex_bev_eur) * insurance_rate
-                opex_fuel        = 0.0
-                opex_toll        = toll_bev * distance_km * toll_split
-                co2_tailpipe_kg  = 0.0
+                opex_insurance = float(sf.capex_bev_eur) * insurance_rate
+                opex_toll = toll_bev * distance_km * toll_split
             else:
                 opex_maintenance = mntex_icev * distance_km
-                opex_insurance   = float(sf.capex_icev_eur) * insurance_rate
-                opex_fuel        = fuel_eur_per_km * distance_km
-                opex_toll        = toll_icev * distance_km * toll_split
-                co2_tailpipe_kg  = co2_kg_per_km * distance_km
+                opex_insurance = float(sf.capex_icev_eur) * insurance_rate
+                opex_fuel = fuel_eur_per_km * distance_km
+                opex_toll = toll_icev * distance_km * toll_split
+                co2_tailpipe_kg = co2_kg_per_km * distance_km
 
             opex_vt   += (opex_maintenance + opex_insurance + opex_fuel + opex_toll)
             co2_vt_kg += co2_tailpipe_kg
@@ -219,7 +226,12 @@ def calc_opex_vehicle(
         opex_total_eur += opex_vt
         co2_total_kg   += co2_vt_kg
 
-    return float(opex_total_eur), opex_by_sf, float(co2_total_kg), co2_by_sf
+        comp_totals["maintenance"] += opex_maintenance
+        comp_totals["insurance"] += opex_insurance
+        comp_totals["fuel_diesel"] += opex_fuel
+        comp_totals["toll"] += opex_toll
+
+    return float(opex_total_eur), opex_by_sf, float(co2_total_kg), co2_by_sf, comp_totals
 
 
 
@@ -243,8 +255,14 @@ def calc_infrastructure_capex(
       (capex_total_eur,
        {"grid": ..., "pv": ..., "ess": ..., "chargers": ...},
        co2_total_kg,
-       {"grid": ..., "pv": ..., "ess": ..., "chargers": ...})
+       {"grid": ..., "pv": ..., "ess": ..., "chargers": ...}
     """
+
+    capex_chargers_ac = 0.0
+    capex_chargers_dc = 0.0
+    co2_chargers_ac = 0.0
+    co2_chargers_dc = 0.0
+
     if phase == "baseline":
         return (
             0.0,
@@ -286,28 +304,33 @@ def calc_infrastructure_capex(
     co2_chargers = 0.0
 
     for name, cs in charger_settings.items():
-        key = str(name).strip().lower()
+        key = str(name).strip().lower()  # "ac" / "dc"
         meta = CHARGERS.get(key)
+        capex = float(cs.num_expansion) * float(cs.cost_per_charger_eur)
+        co2 = float(cs.num_expansion) * float(meta.settings_CO2_per_unit)
+        if key == "ac":
+            capex_chargers_ac += capex
+            co2_chargers_ac += co2
+        elif key == "dc":
+            capex_chargers_dc += capex
+            co2_chargers_dc += co2
 
-        co2_chargers += float(cs.num_expansion) * float(meta.settings_CO2_per_unit)
+    capex_chargers = capex_chargers_ac + capex_chargers_dc
+    co2_chargers = co2_chargers_ac + co2_chargers_dc
 
-    #co2_chargers = float(sum(
-    #    float(cs.num_expansion) * CHARGERS[name].settings_CO2_per_unit
-    #    for name, cs in charger_settings.items()
-    #))
-
-    # Detailed breakdown
     capex_breakdown = {
-        "grid": capex_grid,
-        "pv": capex_pv,
-        "ess": capex_ess,
+        "grid": capex_grid, "pv": capex_pv, "ess": capex_ess,
         "chargers": capex_chargers,
+        "chargers_ac": capex_chargers_ac,
+        "chargers_dc": capex_chargers_dc,
     }
     co2_breakdown = {
         "grid": co2_grid,
         "pv": co2_pv,
         "ess": co2_ess,
         "chargers": co2_chargers,
+        "chargers_ac": co2_chargers_ac,
+        "chargers_dc": co2_chargers_dc,
     }
     capex_total = capex_grid + capex_pv + capex_ess + capex_chargers
     co2_total   = co2_grid + co2_pv + co2_ess + co2_chargers
@@ -404,12 +427,28 @@ def calc_phase_results(logs: Logs,
         chargers=chargers,
     )
 
-    opex_vehicle_total, opex_vehicle_by_sf, co2_tailpipe_total_kg, co2_tailpipe_by_sf = calc_opex_vehicle(
+    (opex_vehicle_total,
+     opex_vehicle_by_sf,
+     co2_tailpipe_total_kg,
+     co2_tailpipe_by_sf,
+     opex_vehicle_comp) = calc_opex_vehicle(
         logs=logs,
         subfleet_settings=subfleet_settings,
         economics=economics,
         phase=phase,
     )
+
+    grid_buy_eur = result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh
+    grid_sell_eur = result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh
+
+    opex_breakdown = {
+        "Stromeinkauf": float(grid_buy_eur),
+        "Stromverkauf": -float(grid_sell_eur),  # als negative Kosten (Erlös)
+        "Diesel": float(opex_vehicle_comp["fuel_diesel"]),
+        "Maut": float(opex_vehicle_comp["toll"]),
+        "Wartung": float(opex_vehicle_comp["maintenance"]),
+        "Versicherung": float(opex_vehicle_comp["insurance"]),
+    }
 
     co2_grid_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
     co2_tailpipe_yrl_kg = co2_tailpipe_total_kg
@@ -455,6 +494,11 @@ def calc_phase_results(logs: Logs,
 
     capex_vehicles_eur = capex_bev_eur + capex_icev_eur
     co2_vehicles_production_total_kg = co2_prod_bev_kg + co2_prod_icev_kg
+
+    capex_vehicles_by_sf = {
+        k: float(capex_bev_by_sf.get(k, 0.0)) + float(capex_icev_by_sf.get(k, 0.0))
+        for k in set(capex_bev_by_sf) | set(capex_icev_by_sf)
+    }
 
     # --- total-CAPEX ---
     capex_total_eur = capex_infra_eur + capex_vehicles_eur
@@ -536,6 +580,8 @@ def calc_phase_results(logs: Logs,
                         opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
                         opex_grid_eur=opex_grid,
                         opex_vehicle_electric_secondary=opex_vehicle_total,
+                        opex_breakdown=opex_breakdown,
+                        capex_vehicles_by_subfleet=capex_vehicles_by_sf,
                         cashflow=cashflow,  # ToDo: calculate cashflow
                         co2_flow=co2_flow,
                         infra_capex_breakdown=capex_infra_bd,

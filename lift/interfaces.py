@@ -218,6 +218,8 @@ class PhaseResults:
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
     co2_flow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
+    opex_breakdown: Dict[str, float] = field(default_factory=dict)
+    capex_vehicles_by_subfleet: Dict[str, float] = field(default_factory=dict)
     # ToDo: think about using a DataFrame or Matrix for cashflows and replace all capex/opex variables by this
 
     @property
