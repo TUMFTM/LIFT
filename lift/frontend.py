@@ -77,6 +77,38 @@ sidebar_style = """
             }
         </style>
         """
+st.markdown("""
+<style>
+/* 1) Markdown-headlines (#, ##, ### ...) */
+[data-testid="stMarkdownContainer"] h1 > a,
+[data-testid="stMarkdownContainer"] h2 > a,
+[data-testid="stMarkdownContainer"] h3 > a,
+[data-testid="stMarkdownContainer"] h4 > a,
+[data-testid="stMarkdownContainer"] h5 > a,
+[data-testid="stMarkdownContainer"] h6 > a,
+[data-testid="stMarkdownContainer"] h1 svg,
+[data-testid="stMarkdownContainer"] h2 svg,
+[data-testid="stMarkdownContainer"] h3 svg,
+[data-testid="stMarkdownContainer"] h4 svg,
+[data-testid="stMarkdownContainer"] h5 svg,
+[data-testid="stMarkdownContainer"] h6 svg {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 2) component headlines (st.header/subheader/title) */
+[data-testid="stHeading"] a,
+[data-testid="stHeading"] svg,
+[data-testid="stHeadingWithAnchor"] a,
+[data-testid="stHeadingWithAnchor"] svg {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
@@ -746,7 +778,7 @@ def plot_flow(
                 "Scenario:N",
                 legend=alt.Legend(title="Scenario"),
                 scale=alt.Scale(domain=["Baseline", "Expansion"],
-                                range=["steelblue", "orange"])
+                                range=[COLOR_BL, COLOR_EX])
             ),
             tooltip=[
                 alt.Tooltip("Year:Q", title="Year", format=".2f"),
@@ -894,8 +926,8 @@ def make_comparison_chart(val_baseline,
                           ):
 
     # Create rings
-    baseline_ring = make_ring('Baseline', val_baseline, 40, 30, "steelblue")
-    expansion_ring = make_ring('Expansion', val_expansion, 80, 30, "orange")
+    baseline_ring = make_ring('Baseline', val_baseline, 40, 30, COLOR_BL)
+    expansion_ring = make_ring('Expansion', val_expansion, 80, 30, COLOR_EX)
 
     # Center text (single-row dataframe, minimal overhead)
     center_text = alt.Chart(pd.DataFrame({"text": [f"{(val_expansion - val_baseline) * 100:+.1f} %"]})).mark_text(
@@ -929,11 +961,11 @@ def make_comparison_chart_discrete_values(
     co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
 
     baseline_ring = make_ring(
-        phase="Baseline", value=base_ratio, radius=40, thickness=30, color="steelblue",
+        phase="Baseline", value=base_ratio, radius=40, thickness=30, color=COLOR_BL,
         abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
     )
     expansion_ring = make_ring(
-        phase="Expansion", value=exp_ratio, radius=80, thickness=30, color="orange",
+        phase="Expansion", value=exp_ratio, radius=80, thickness=30, color=COLOR_EX,
         abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
     )
 
