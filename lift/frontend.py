@@ -30,9 +30,9 @@ def get_colors() -> Tuple[str, str, str]:
     with importlib.resources.files("lift").joinpath(".streamlit/colors.toml").open("r") as f:
         config = toml.load(f)
     colors = config.get("custom_colors", {})
-    return colors['tumblue'], colors['baseline'], colors['expansion']
+    return colors['tumblue'], colors['baseline'], colors['expansion'], colors['lightblue']
 
-COLOR_TUMBLUE, COLOR_BL, COLOR_EX = get_colors()
+COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
 
 footer_css = f"""
@@ -585,9 +585,14 @@ def display_results(results):
         delta_cost = total_cost_exp - total_cost_base
 
         c1, c2 = st.columns(2)
-        c1.metric("Gesamtkosten – Baseline (18 Jahre)", f"{total_cost_base:,.0f} €")
-        c2.metric("Gesamtkosten – Expansion (18 Jahre)", f"{total_cost_exp:,.0f} €",
-                  delta=f"{delta_cost:+,.0f} €")
+        c1.metric("Gesamtkosten – Baseline", f"{total_cost_base:,.0f} €")
+        delta_cost = total_cost_exp - total_cost_base
+        c2.metric(
+            "Gesamtkosten – Expansion",
+            f"{total_cost_exp:,.0f} €",
+            delta=f"{delta_cost:+,.0f} €",
+            delta_color="inverse"  # + rot, – grün
+        )
 
         # Stacked-Bar
         df_cost_long = df_cost.reset_index(names="Scenario").melt(
@@ -595,13 +600,21 @@ def display_results(results):
         )
         chart_cost = alt.Chart(df_cost_long).mark_bar().encode(
             x=alt.X("Scenario:N", title=None),
-            y=alt.Y("EUR:Q", title="EUR (18 Jahre)"),
-            color=alt.Color("Komponente:N", title=None),
+            y=alt.Y("EUR:Q", title="EUR"),
+            color=alt.Color(
+                "Komponente:N",
+                title=None,
+                scale=alt.Scale(
+                    domain=["OPEX", "CAPEX Infrastruktur", "CAPEX Fahrzeuge"],
+                    range=[COLOR_EX, COLOR_LIGHTBLUE, COLOR_TUMBLUE]  # OPEX, Infra, Fahrzeuge
+                ),
+                sort=["OPEX", "CAPEX Infrastruktur", "CAPEX Fahrzeuge"]
+            ),
             tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("EUR:Q", format=",.0f")]
         ).properties(height=280)
         st.altair_chart(chart_cost, use_container_width=True)
 
-        with st.expander("OPEX-Breakdown (18 Jahre)"):
+        with st.expander("OPEX-Breakdown"):
             rb = results.baseline
             re = results.expansion
 
@@ -616,7 +629,7 @@ def display_results(results):
             df_opex = pd.DataFrame({"Baseline": opex_base, "Expansion": opex_exp}).T
             st.dataframe(df_opex.style.format("{:,.0f}"))
 
-        with st.expander("CAPEX-Breakdown (18 Jahre)"):
+        with st.expander("CAPEX-Breakdown"):
             rb = results.baseline
             re = results.expansion
 
@@ -662,16 +675,27 @@ def display_results(results):
         delta_co2 = total_co2_exp - total_co2_base
 
         c1, c2 = st.columns(2)
-        c1.metric("Gesamt-CO₂ – Baseline (18 Jahre)", f"{total_co2_base:,.0f} kg CO₂")
-        c2.metric("Gesamt-CO₂ – Expansion (18 Jahre)", f"{total_co2_exp:,.0f} kg CO₂",
-                  delta=f"{delta_co2:+,.0f} kg CO₂")
+        c1.metric("Gesamt-CO₂ – Baseline", f"{total_co2_base:,.0f} kg CO₂")
+        delta_co2 = total_co2_exp - total_co2_base
+        c2.metric(
+            "Gesamt-CO₂ – Expansion",
+            f"{total_cost_exp:,.0f} kg CO₂",
+            delta=f"{delta_co2:+,.0f} kg CO₂",
+            delta_color="inverse"  # + rot, – grün
+        )
 
         df_co2_long = df_co2.reset_index(names="Scenario").melt(id_vars="Scenario", var_name="Komponente",
                                                                 value_name="kg CO₂")
         chart_co2 = alt.Chart(df_co2_long).mark_bar().encode(
             x=alt.X("Scenario:N", title=None),
-            y=alt.Y("kg CO₂:Q", title="kg CO₂ (18 Jahre)"),
-            color=alt.Color("Komponente:N", title=None),
+            y=alt.Y("kg CO₂:Q", title="kg CO₂"),
+            color=alt.Color("Komponente:N",
+                            title=None,
+                            scale=alt.Scale(domain=["Betrieb", "Fahrzeuge Herstellung", "Infrastruktur Herstellung"],
+                                            range=[COLOR_EX, COLOR_LIGHTBLUE, COLOR_TUMBLUE]  # OPEX, Infra, Fahrzeuge
+                                            ),
+                            sort=["Betrieb", "Fahrzeuge Herstellung", "Infrastruktur Herstellung"]
+                            ),
             tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("kg CO₂:Q", format=",.0f")]
         ).properties(height=280)
         st.altair_chart(chart_co2, use_container_width=True)
@@ -1018,9 +1042,9 @@ def build_cost_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, fl
 
     # Für Balken aufschlüsseln (optional)
     return {
-        "OPEX (18J)": opex_total_18,
-        "CAPEX Fahrzeuge (alle Wellen)": capex_veh_all_waves,
-        "CAPEX Infrastruktur (inkl. ESS-Timings)": capex_infra_total,
+        "OPEX": opex_total_18,
+        "CAPEX Fahrzeuge": capex_veh_all_waves,
+        "CAPEX Infrastruktur": capex_infra_total,
     }
 
 def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, float]:
@@ -1048,9 +1072,9 @@ def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, flo
         co2_infra_total = 0.0
 
     return {
-        "Betrieb (18J)": co2_oper_18,
-        "Fahrzeuge Herstellung (alle Wellen)": co2_veh_prod_all_waves,
-        "Infrastruktur Herstellung (inkl. ESS-Timings)": co2_infra_total,
+        "Betrieb": co2_oper_18,
+        "Fahrzeuge Herstellung": co2_veh_prod_all_waves,
+        "Infrastruktur Herstellung": co2_infra_total,
     }
 
 def run_frontend():
