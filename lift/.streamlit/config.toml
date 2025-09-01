@@ -4,3 +4,6 @@ backgroundColor = "#FFFFFF"             # Main app background; default: "#FFFFFF
 secondaryBackgroundColor = "#F0F2F6"    # Sidebar / widget containers; default: "#F0F2F6"
 textColor = "#31333F"                   # default: "#31333F"
 font = "sans serif"                     # "sans serif", "serif", or "monospace"
+
+[client]
+toolbarMode = "viewer"
