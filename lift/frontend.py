@@ -485,8 +485,8 @@ def display_results(results):
         f"<span style='color:{COLOR_EX}'>Expansion</span>",
         unsafe_allow_html=True,
     )
-    col1, col2, col3, col4 = st.columns(4)
 
+    col1, col2, col3, col4 = st.columns(4)
     def centered_h4(text: str) -> None:
         st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
@@ -511,6 +511,49 @@ def display_results(results):
                 unit="kg-CO₂",
                 abs_title="Emissionen"
             ),
+            use_container_width=True
+        )
+
+    with col3:
+        centered_h4("Eigenverbrauchsquote")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_consumption_pct / 100,
+                results.expansion.self_consumption_pct / 100
+            ),
+            use_container_width=True
+        )
+
+    with col4:
+        centered_h4("Autarkiegrad")
+        st.altair_chart(
+            make_comparison_chart(
+                results.baseline.self_sufficiency_pct / 100,
+                results.expansion.self_sufficiency_pct / 100
+            ),
+            use_container_width=True
+        )
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    def centered_h4(text: str) -> None:
+        st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
+
+    with col1:
+        centered_h4("Gesamtkosten")
+        st.altair_chart(
+            make_comparison_bars_discrete_values(float(np.cumsum(results.baseline.cashflow)[-1]),
+                float(np.cumsum(results.expansion.cashflow)[-1]),
+                                                 unit="EUR", abs_title="Gesamtkosten", abs_format=",.0f"),
+            use_container_width=True
+        )
+
+    with col2:
+        centered_h4("Gesamt-CO₂")
+        st.altair_chart(
+            make_comparison_bars_discrete_values(float(np.cumsum(results.baseline.co2_flow)[-1]),
+                float(np.cumsum(results.expansion.co2_flow)[-1]),
+                                                 unit="kg-CO2", abs_title="CO₂ gesamt", abs_format=",.0f"),
             use_container_width=True
         )
 
@@ -770,45 +813,40 @@ def plot_flow(
     cumulative: bool = True,
     show_table: bool = False,
     value_format: str = ",.0f",
-    show_intersection: bool = True,  # show intersection marker
+    show_intersection: bool = True,
 ):
-    # 1) Pull arrays
+    # 1) Daten ziehen
     base_arr = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
     exp_arr  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
 
-
-    # 2) Pad to the same length
+    # 2) Längen angleichen
     n_years = int(max(len(base_arr), len(exp_arr)))
     pad = lambda a: np.pad(a, (0, n_years - len(a)), mode="constant") if len(a) < n_years else a
     base_arr = pad(base_arr)
     exp_arr  = pad(exp_arr)
-    years = np.arange(1, n_years + 1, dtype=float)  # float to support fractional years (interpolation)
+    years = np.arange(1, n_years + 1, dtype=float)
 
-    # 3) Cumulative or annual
+    # 3) Kumuliert oder jährlich
     y_base = np.cumsum(base_arr) if cumulative else base_arr
     y_exp  = np.cumsum(exp_arr)  if cumulative else exp_arr
 
-    # 4) Build DataFrame
-    df = pd.DataFrame({
-        "Year": years,
-        "Baseline": y_base,
-        "Expansion": y_exp,
-    })
+    # 4) DataFrame
+    df = pd.DataFrame({"Year": years, "Baseline": y_base, "Expansion": y_exp})
     df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Value")
 
-    # 5) Robust axis domain (handles all-zero or negative values)
+    # 5) Achsendomänen robust
     y_min = float(min(np.nanmin(y_base), np.nanmin(y_exp), 0.0))
     y_max = float(max(np.nanmax(y_base), np.nanmax(y_exp), 0.0))
     if y_max == y_min:
         y_min, y_max = 0.0, 1.0
 
-    # 6) Defaults for title/labels
+    # 6) Label-Defaults
     if y_label is None:
-        base_lbl = "Cumulative" if cumulative else "Annual"
-        y_label = f"{base_lbl} value [{unit}]"
+        base_lbl = "Kumuliert" if cumulative else "Jährlich"
+        y_label = f"{base_lbl} [{unit}]"
 
-    # 7) Build the base line chart first
-    chart = (
+    # 7) Basis-Linienchart (OHNE configure_*)
+    line = (
         alt.Chart(df_long)
         .mark_line(point=True)
         .encode(
@@ -817,8 +855,7 @@ def plot_flow(
             color=alt.Color(
                 "Scenario:N",
                 legend=None,
-                scale=alt.Scale(domain=["Baseline", "Expansion"],
-                                range=[COLOR_BL, COLOR_EX])
+                scale=alt.Scale(domain=["Baseline", "Expansion"], range=[COLOR_BL, COLOR_EX]),
             ),
             tooltip=[
                 alt.Tooltip("Year:Q", title="Jahr", format=".2f"),
@@ -829,7 +866,8 @@ def plot_flow(
         .properties(height=360)
     )
 
-    # 8) Optional: add intersection marker
+    # 8) Optional: Schnittpunkt als eigener Layer
+    layers = [line]
     if show_intersection:
         res = find_flow_intersection(results, attr=attr)
         if isinstance(res, dict) and res.get("value") is not None:
@@ -841,14 +879,24 @@ def plot_flow(
                 .mark_point(size=120, filled=True)
                 .encode(x="Year:Q", y="Value:Q")
             )
-            chart = chart + point_layer
+            layers.append(point_layer)
+
+    # 9) Jetzt Layer zusammenführen UND DANN konfigurieren
+    chart = alt.layer(*layers).configure_axis(
+        labelColor="black",
+        titleColor="black",
+        tickColor="black",
+        domainColor="black",
+    ).configure_view(
+        stroke=None,
+        strokeWidth=1,
+    )
 
     st.altair_chart(chart, use_container_width=True)
 
-    # 9) Optional table
+    # 10) Optional Tabelle
     if show_table:
         st.dataframe(df.style.format({"Baseline": value_format, "Expansion": value_format}))
-
 
 def find_flow_intersection(results, attr: str = "cashflow"):
     """
@@ -1023,6 +1071,86 @@ def make_comparison_chart_discrete_values(
 
     return (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
 
+def make_comparison_bars_discrete_values(
+    val_baseline: float,
+    val_expansion: float,
+    unit: str | None = None,
+    abs_title: str = "Absolut",
+    abs_format: str | None = None,
+    width: int = 250,          # an deine Ring-Charts anpassen
+    height: int = 250,         # dito
+    top_px: int = 22,                 # vertikale Textposition
+    bar_size: int = 40,               # Balkendicke in Pixeln (kleiner => dünner)
+) -> alt.Chart:
+
+
+    # Normalisieren (0..1)
+    max_val = max(float(val_baseline), float(val_expansion), 1e-9)
+    base_ratio = float(val_baseline) / max_val
+    exp_ratio  = float(val_expansion) / max_val
+
+    if abs_format is None:
+        abs_format = ",.0f"
+
+    # CO2-Preis nur, wenn Einheit CO2 enthält
+    co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
+
+    df = pd.DataFrame({
+        "Scenario": ["Baseline", "Expansion"],
+        "Value":    [base_ratio,  exp_ratio],
+        "Percent":  [base_ratio*100, exp_ratio*100],
+        "Abs":      [float(val_baseline), float(val_expansion)],
+    })
+    if co2_price is not None:
+        df["CO2_cost"] = (df["Abs"] / 1000.0) * co2_price  # kg → t → € pro t
+
+    color_scale = alt.Scale(domain=["Baseline", "Expansion"],
+                            range=[COLOR_BL, COLOR_EX])
+
+    tooltips = [
+        alt.Tooltip("Scenario:N", title="Szenario"),
+        alt.Tooltip("Percent:Q",  title="Anteil", format=".1f"),
+        alt.Tooltip("Abs:Q",      title=abs_title + (f" [{unit}]" if unit else ""), format=abs_format),
+    ]
+    if co2_price is not None:
+        tooltips.append(alt.Tooltip("CO2_cost:Q", title="CO₂-Kosten [€]", format=",.0f"))
+
+    # Vertikale Balken; Abstand zwischen Kategorien via paddingInner/Outer,
+    # Balkendicke via mark_bar(size=...)
+    bars = (
+        alt.Chart(df)
+        .mark_bar(size=bar_size, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+        .encode(
+            x=alt.X(
+                "Scenario:N",
+                axis=None,
+                sort=["Baseline", "Expansion"],
+                scale=alt.Scale(paddingInner=0, paddingOuter=0)  # kein zusätzlicher Außenabstand
+            ),
+            y=alt.Y("Value:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
+            color=alt.Color("Scenario:N", legend=None, scale=color_scale),
+            tooltip=tooltips,
+        )
+        .properties(width=width, height=height)
+    )
+
+    # Δ in %
+    diff_pct = (val_expansion / val_baseline - 1.0) * 100.0 if val_baseline > 0 else 0.0
+    is_improvement = (val_expansion < val_baseline)
+    text_color = "green" if is_improvement else "red"
+
+    # Position: grün = mittig, rot = weiter links
+    x_pos = (width / 2.0)
+
+    center_text = (
+        alt.Chart(pd.DataFrame({"label": [f"{diff_pct:+.1f} %"]}))
+        .mark_text(fontWeight="bold", size=20, color=text_color)
+        .encode(x=alt.value(x_pos), y=alt.value(top_px), text="label:N")
+    )
+
+    return (bars + center_text).configure_view(strokeWidth=0).properties(
+        padding={"top": 0, "left": 0, "right": 0, "bottom": 0}
+    )
 
 def _num_waves(project_years: int) -> int:
     return sum(1 for i in VEH_YEARS_IDX if i < project_years)
