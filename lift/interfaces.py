@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from definitions import TIME_PRJ_YRS
-from typing import Dict, Tuple, List, Literal
+from typing import Dict, Tuple, List, Literal, Final
 
 
 class GridPowerExceededError(Exception):
@@ -235,3 +235,42 @@ class BackendResults:
     roi_rel: float = 0.0
     period_payback_rel: float = 0.0
     npc_delta: float = 0.0
+
+TIME_PRJ_YRS: Final[int] = 18
+
+@dataclass(frozen=True)
+class DefaultLocation:
+    consumption_building_yrl_mwh: int = 26 # jährlicher Gebäude-Stromverbrauch [Mh]
+    slp: str = 'G0'  # Loadprofile
+    grid_connection_kwh: int = 1000
+    existing_pv_kwp: int = 100
+    existing_ess_kwh: int = 100
+
+@dataclass(frozen=True)
+class DefaultEconomics:
+    salvage_bev_pct: int = 29  # in %
+    salvage_icev_pct: int = 26
+    opex_spec_grid_buy_eur_per_wh: float = 0.20
+    opex_spec_grid_sell_eur_per_wh: float = 0.10
+    opex_spec_grid_peak_eur_per_wp: int = 150
+    mntex_bev_eur_km: float = 0.13
+    mntex_icev_eur_km: float = 0.18
+    toll_bev_eur_km: float = 0.0
+    toll_icev_eur_km: float = 0.269
+    insurance_pct: float = 2.0
+    fuel_price_eur_liter: float = 1.56
+
+@dataclass(frozen=True)
+class DefaultChargers:
+    # Beispiel: Stückkosten Defaults
+    ac_cost_per_unit_eur: float = 1000.0
+    dc_cost_per_unit_eur: float = 80000.0
+
+@dataclass(frozen=True)
+class DefaultValues:
+    location: DefaultLocation = DefaultLocation()
+    economics: DefaultEconomics = DefaultEconomics()
+    chargers: DefaultChargers = DefaultChargers()
+
+# Eine einzige, zentrale Instanz:
+DEFAULTS = DefaultValues()

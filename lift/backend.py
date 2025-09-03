@@ -301,8 +301,6 @@ def calc_infrastructure_capex(
     co2_pv   = pv_exp_kwp   * co2_per_kwp_pv
     co2_ess  = ess_exp_kwh  * co2_per_kwh_ess
 
-    co2_chargers = 0.0
-
     for name, cs in charger_settings.items():
         key = str(name).strip().lower()  # "ac" / "dc"
         meta = CHARGERS.get(key)
@@ -319,7 +317,9 @@ def calc_infrastructure_capex(
     co2_chargers = co2_chargers_ac + co2_chargers_dc
 
     capex_breakdown = {
-        "grid": capex_grid, "pv": capex_pv, "ess": capex_ess,
+        "grid": capex_grid,
+        "pv": capex_pv,
+        "ess": capex_ess,
         "chargers": capex_chargers,
         "chargers_ac": capex_chargers_ac,
         "chargers_dc": capex_chargers_dc,
@@ -604,7 +604,7 @@ def run_backend(settings: Settings) -> BackendResults:
 
     # get log data for the simulation
     logs = Logs(pv_spec=get_log_pv(coordinates=settings.location.coordinates),
-                dem=get_log_dem(slp=settings.location.slp,
+                dem=get_log_dem(slp=settings.location.slp.lower(),
                                 consumption_yrl_wh=settings.location.consumption_yrl_wh,
                                 ),
                 # ToDo: get input parameters from settings

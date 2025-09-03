@@ -19,7 +19,10 @@ from interfaces import (
     SubFleetSettings,
     ChargerSettings,
     EconomicSettings,
-    Settings, Coordinates, Size
+    Settings,
+    Coordinates,
+    Size,
+    DEFAULTS
 )
 
 
@@ -42,10 +45,11 @@ footer_css = f"""
             position: fixed;
             bottom: 0;
             left: 0;
+            right: 0;
             width: 100%;
             background-color: {COLOR_TUMBLUE};
             color: white;
-            text-align: center;
+            text-align: right;
             padding: 10px;
             font-size: 14px;
         }}
@@ -107,6 +111,14 @@ st.markdown("""
   pointer-events: none !important;
 }
 
+header.stAppHeader {
+    background-color: transparent;
+}
+section.stMain .block-container {
+    padding-top: 0rem;
+    z-index: 1;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,17 +160,21 @@ def _get_params_location() -> LocationSettings:
         st.markdown("**Stromverbrauch Standort**")
         col1, col2 = st.columns(col_share)
         with col1:
-            slp=st.selectbox(label="Lastprofil",
-                             key="slp",
-                             options=['H0', 'H0_dyn',
-                                      'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
-                                      'L0', 'L1', 'L2']).lower()
+            options = ['H0', 'H0_dyn',
+                       'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
+                       'L0', 'L1', 'L2']
+            slp = st.selectbox(
+                label="Lastprofil",
+                options=options,
+                index=options.index(DEFAULTS.location.slp),  # 'G0' als Default
+                key="slp",
+            )
         with col2:
             consumption_yrl_wh=st.slider(label="Jahresstromverbrauch (MWh)",
                                          key="consumption_yrl_wh",
                                          min_value=10,
                                          max_value=1000,
-                                         value=500,
+                                         value=DEFAULTS.location.consumption_building_yrl_mwh,
                                          step=10,
                                          ) * 1E6  # convert to Wh
 
@@ -171,7 +187,7 @@ def _get_params_location() -> LocationSettings:
                                           key="grid_preexisting",
                                           min_value=0,
                                           max_value=10000,
-                                          value=1000,
+                                          value=DEFAULTS.location.grid_connection_kwh,
                                           )
         with col2:
             expansion = st.slider(label="Zusätzlich (kW)",
@@ -192,7 +208,7 @@ def _get_params_location() -> LocationSettings:
                                           key="pv_preexisting",
                                           min_value=0,
                                           max_value=1000,
-                                          value=0,
+                                          value=DEFAULTS.location.existing_pv_kwp,
                                           )
         with col2:
             expansion = st.slider(label="Zusätzlich (kWp)",
@@ -213,7 +229,7 @@ def _get_params_location() -> LocationSettings:
                                           key="ess_preexisting",
                                           min_value=0,
                                           max_value=1000,
-                                          value=0,
+                                          value=DEFAULTS.location.existing_ess_kwh,
                                           )
         with col2:
             expansion = st.slider(label="Zusätzlich (kWh)",
@@ -239,17 +255,17 @@ def _get_params_economic() -> EconomicSettings:
     with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                              icon="💶"):
         return EconomicSettings(
-            opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00, 0.20, 0.01) * 1E-3,
-            opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00, 0.20, 0.01) * 1E-3,
-            opex_spec_grid_peak_eur_per_wp=st.slider("Leistungspreis (EUR/kWp)", 0, 300, 50, 1) * 1E-3,
-            fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, 1.50, 0.05),
-            toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, 0.27, 0.01),
-            toll_bev_eur_km=0.0,
-            mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, 0.13, 0.01),
-            mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, 0.18, 0.01),
-            insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, 2.0, 0.1),
-            salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, 25, 1),
-            salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, 27, 1),
+            opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_buy_eur_per_wh, 0.01) * 1E-3,
+            opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_sell_eur_per_wh, 0.01) * 1E-3,
+            opex_spec_grid_peak_eur_per_wp=st.slider("Leistungspreis (EUR/kWp)", 0, 300, DEFAULTS.economics.opex_spec_grid_peak_eur_per_wp, 1) * 1E-3,
+            fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00, DEFAULTS.economics.fuel_price_eur_liter, 0.05),
+            toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00, DEFAULTS.economics.toll_icev_eur_km, 0.01),
+            toll_bev_eur_km=DEFAULTS.economics.toll_bev_eur_km,
+            mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, DEFAULTS.economics.mntex_bev_eur_km, 0.01),
+            mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, DEFAULTS.economics.mntex_icev_eur_km, 0.01),
+            insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0, DEFAULTS.economics.insurance_pct, 0.1),
+            salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, DEFAULTS.economics.salvage_bev_pct, 1),
+            salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, DEFAULTS.economics.salvage_icev_pct, 1),
         )
 
 
@@ -462,10 +478,13 @@ def co2_oper_18(pr):
 
 
 def display_results(results):
-    st.subheader("Ergebnisse")
     st.success(f"Berechnung erfolgreich!")
 
-    st.subheader("Baseline vs. Expansion")
+    st.markdown(
+        f"### <span style='color:{COLOR_BL}'>Baseline</span> vs. "
+        f"<span style='color:{COLOR_EX}'>Expansion</span>",
+        unsafe_allow_html=True,
+    )
     col1, col2, col3, col4 = st.columns(4)
 
     def centered_h4(text: str) -> None:
@@ -519,7 +538,7 @@ def display_results(results):
     with col1:
         st.markdown("#### Kumulierte Kosten")
         plot_flow(results, attr="cashflow",
-                  y_label="Cumulative cash outflow [EUR]",
+                  y_label="Kumulierte Kosten [EUR]",
                   unit="EUR",
                   cumulative=True,
                   show_table=False)
@@ -545,7 +564,7 @@ def display_results(results):
         with col1:
             st.markdown("#### Kumulierter CO₂-Ausstoß")
             plot_flow(results, attr="co2_flow",
-                      y_label="Cumulative CO₂ [EUR]",
+                      y_label="Komuliertes CO₂ [EUR]",
                       unit="kg-CO₂",
                       cumulative=True,
                       show_table=False)
@@ -757,9 +776,6 @@ def plot_flow(
     base_arr = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
     exp_arr  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
 
-    if base_arr.size == 0 and exp_arr.size == 0:
-        st.warning(f"No array '{attr}' found on results.baseline / results.expansion.")
-        return
 
     # 2) Pad to the same length
     n_years = int(max(len(base_arr), len(exp_arr)))
@@ -796,18 +812,18 @@ def plot_flow(
         alt.Chart(df_long)
         .mark_line(point=True)
         .encode(
-            x=alt.X("Year:Q", axis=alt.Axis(title="Year")),
+            x=alt.X("Year:Q", axis=alt.Axis(title="Jahre")),
             y=alt.Y("Value:Q", axis=alt.Axis(title=y_label), scale=alt.Scale(domain=[y_min, y_max])),
             color=alt.Color(
                 "Scenario:N",
-                legend=alt.Legend(title="Scenario"),
+                legend=None,
                 scale=alt.Scale(domain=["Baseline", "Expansion"],
                                 range=[COLOR_BL, COLOR_EX])
             ),
             tooltip=[
-                alt.Tooltip("Year:Q", title="Year", format=".2f"),
-                alt.Tooltip("Scenario:N", title="Scenario"),
-                alt.Tooltip("Value:Q", title=f"Value [{unit}]", format=value_format),
+                alt.Tooltip("Year:Q", title="Jahr", format=".2f"),
+                alt.Tooltip("Scenario:N", title="Szenario"),
+                alt.Tooltip("Value:Q", title=f"Wert [{unit}]", format=value_format),
             ],
         )
         .properties(height=360)
