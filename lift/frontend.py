@@ -20,6 +20,13 @@ from interfaces import (
     Settings, Coordinates, Size
 )
 
+# define page settings
+st.set_page_config(
+    page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
+    page_icon="🚚",
+    layout="wide"
+)
+
 
 # Load specified project colors from colors.toml
 @st.cache_data
@@ -432,13 +439,6 @@ def display_empty_results():
 
 
 def run_frontend():
-    # define page settings
-    st.set_page_config(
-        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
-        page_icon="🚚",
-        layout="wide"
-    )
-
     # css styles for sidebar
     st.markdown(sidebar_style, unsafe_allow_html=True)
     st.markdown(footer_css, unsafe_allow_html=True)
