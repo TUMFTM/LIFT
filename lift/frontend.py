@@ -395,7 +395,7 @@ def get_input_params() -> Settings:
     col1, col2 = st.sidebar.columns([6, 4])
     with col1:
         auto_refresh = st.toggle("**Automatisch aktualisieren**",
-                                 value=True)
+                                 value=False)
     with col2:
         if auto_refresh:
             st.session_state["run_backend"] = True
@@ -1050,12 +1050,13 @@ def make_comparison_chart(val_baseline,
     return chart
 
 def make_comparison_chart_discrete_values(
-    val_baseline: float,
-    val_expansion: float,
-    unit: str | None = None,
-    abs_title: str = "Absolut",
-    abs_format: str | None = None,
-) -> alt.Chart:
+        val_baseline: float,
+        val_expansion: float,
+        unit: str | None = None,
+        abs_title: str = "Absolut",
+        abs_format: str | None = None,
+    ) -> alt.Chart:
+
     max_val = max(float(val_baseline), float(val_expansion), 1e-9)
     base_ratio = float(val_baseline) / max_val
     exp_ratio  = float(val_expansion) / max_val
