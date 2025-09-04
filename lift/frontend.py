@@ -262,6 +262,7 @@ def _get_params_economic() -> EconomicSettings:
     with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                              icon="💶"):
         return EconomicSettings(
+            fix_cost_construction=st.slider("Fixkosten Standortausbau (EUR)", 0, 1000000, 0, 5000),
             opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_buy_eur_per_wh, 0.01) * 1E-3,
             opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_sell_eur_per_wh, 0.01) * 1E-3,
             opex_spec_grid_peak_eur_per_wp=st.slider("Leistungspreis (EUR/kWp)", 0, 300, DEFAULTS.economics.opex_spec_grid_peak_eur_per_wp, 1) * 1E-3,
@@ -702,25 +703,35 @@ def display_results(results):
             rb = results.baseline
             re = results.expansion
 
-            # Fahrzeuge je Klasse (BEV+ICEV)
-            veh_rows = sorted(set(rb.capex_vehicles_by_subfleet) | set(re.capex_vehicles_by_subfleet))
+            # Helper: sicher aus dem Infra-Breakdown lesen
+            def infra_row(pr, key: str) -> float:
+                return float(getattr(pr, "infra_capex_breakdown", {}).get(key, 0.0))
 
-            def capex_table(pr):
+            # Alle Subfleets sammeln (Baseline ∪ Expansion)
+            veh_rows = sorted(
+                set(getattr(rb, "capex_vehicles_by_subfleet", {}).keys())
+                | set(getattr(re, "capex_vehicles_by_subfleet", {}).keys())
+            )
+
+            # Tabelle für eine Phase aufbauen
+            def capex_table(pr, veh_rows):
                 rows = {}
                 # Fahrzeuge je Klasse
                 for sf in veh_rows:
-                    label = f"Fahrzeuge – {sf.upper()}"
-                    rows[label] = float(pr.capex_vehicles_by_subfleet.get(sf, 0.0))
+                    rows[f"{sf.upper()}"] = float(
+                        getattr(pr, "capex_vehicles_by_subfleet", {}).get(sf, 0.0)
+                    )
                 # Infrastruktur
-                rows["Ladeinfrastruktur – AC"] = infra_row(pr, "chargers_ac")
-                rows["Ladeinfrastruktur – DC"] = infra_row(pr, "chargers_dc")
+                rows["AC - Charger"] = infra_row(pr, "chargers_ac")
+                rows["DC - Charger"] = infra_row(pr, "chargers_dc")
                 rows["Netzanschluss"] = infra_row(pr, "grid")
                 rows["PV"] = infra_row(pr, "pv")
                 rows["Speicher"] = infra_row(pr, "ess")
+                rows["Standortausbau"] = infra_row(pr, "construction")  # Fixkosten
                 return rows
 
-            capex_base = capex_table(rb)
-            capex_exp = capex_table(re)
+            capex_base = capex_table(rb, veh_rows)
+            capex_exp = capex_table(re, veh_rows)
 
             df_capex = pd.DataFrame({"Baseline": capex_base, "Expansion": capex_exp}).T
             st.dataframe(df_capex.style.format("{:,.0f}"))

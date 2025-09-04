@@ -526,10 +526,22 @@ def calc_phase_results(logs: Logs,
 
     # Infrastructure only in expansion scenario
     if phase == "expansion":
-        # Grid, PV, and chargers entirely in year 1
-        infra_year0 = capex_infra_bd.get("grid", 0.0) \
-                      + capex_infra_bd.get("pv", 0.0) \
-                      + capex_infra_bd.get("chargers", 0.0)
+        fix_cost = float(getattr(economics, "fix_cost_construction", 0.0))
+
+        # in Breakdown aufnehmen (neuer Key "construction")
+        capex_infra_bd["construction"] = capex_infra_bd.get("construction", 0.0) + fix_cost
+        capex_infra_eur += fix_cost
+
+        # CO2 für Bau-Fixkosten (meist 0)
+        co2_infra_bd["construction"] = co2_infra_bd.get("construction", 0.0) + 0.0
+        co2_infra_kg = float(sum(co2_infra_bd.values()))
+
+        infra_year0 = (
+                capex_infra_bd.get("grid", 0.0)
+                + capex_infra_bd.get("pv", 0.0)
+                + capex_infra_bd.get("chargers", 0.0)
+                + capex_infra_bd.get("construction", 0.0)
+        )
         cashflow[0] += infra_year0
 
         # ESS in year 1 and year 9 (full cost each time)
