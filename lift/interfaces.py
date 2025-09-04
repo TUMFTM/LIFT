@@ -164,6 +164,7 @@ class EconomicSettings:
     salvage_bev_pct: float = 40.0
     salvage_icev_pct: float = 40.0
     working_days_yrl: int = 220
+    fix_cost_construction: int = 10000
 
 
 @dataclass
