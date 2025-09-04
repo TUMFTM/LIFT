@@ -25,6 +25,13 @@ from interfaces import (
     DEFAULTS
 )
 
+# define page settings
+st.set_page_config(
+    page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
+    page_icon="🚚",
+    layout="wide"
+)
+
 
 # Load specified project colors from colors.toml
 @st.cache_data
@@ -1222,13 +1229,6 @@ def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, flo
     }
 
 def run_frontend():
-    # define page settings
-    st.set_page_config(
-        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
-        page_icon="🚚",
-        layout="wide"
-    )
-
     # css styles for sidebar
     st.markdown(sidebar_style, unsafe_allow_html=True)
     st.markdown(footer_css, unsafe_allow_html=True)
