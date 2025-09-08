@@ -37,7 +37,7 @@ def get_colors() -> Tuple[str, str, str, str]:
 COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
 
-styles = f"""
+STYLES = f"""
     <style>
         /* Style for fixed footer */
         .footer {{
@@ -1232,7 +1232,7 @@ def run_frontend():
     )
 
     # css styles for sidebar
-    st.markdown(styles, unsafe_allow_html=True)
+    st.markdown(STYLES, unsafe_allow_html=True)
 
     # initialize session state for backend run
     if "run_backend" not in st.session_state:
