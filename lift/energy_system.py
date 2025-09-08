@@ -8,7 +8,7 @@ import streamlit as st
 
 
 from definitions import DTI, FREQ_HOURS
-from interfaces import GridPowerExceededError, SOCError, SubfleetSimSettings
+from interfaces import GridPowerExceededError, SOCError, SimInputSubfleet
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
@@ -183,7 +183,7 @@ class FixedDemand(DemandBlock):
 class Fleet(DemandBlock):
     pwr_lim_w: float
     log: pd.DataFrame
-    subfleets: dict[str, SubfleetSimSettings]
+    subfleets: dict[str, SimInputSubfleet]
     chargers: dict[str, int]
 
     def __post_init__(self):

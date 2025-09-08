@@ -13,13 +13,7 @@ class SOCError(Exception):
     pass
 
 
-@dataclass
-class SubfleetSimSettings:
-    name: str = 'hlt'
-    num: int = 1
-    pwr_chg_max_w: float = 11E3
-    charger: str = 'ac'
-    capacity_wh: float = 80E3
+
 
 
 @dataclass
@@ -95,6 +89,37 @@ class InputLocation:
 
 
 @dataclass
+class SimInputSubfleet:
+    name: str = 'hlt'
+    num: int = 1
+    pwr_chg_max_w: float = 11E3
+    charger: str = 'ac'
+    capacity_wh: float = 80E3
+
+
+@dataclass
+class PhaseInputSubfleet:
+    name: str = 'hlt'
+    num_total: int = 5
+    num_bev: int = 1
+    battery_capacity_wh: float = 80E3
+    capex_bev_eur: float = 100E3
+    capex_icev_eur: float = 80E3
+    dist_avg_daily_km: float = 100.0
+    toll_share_pct: float = 30.0
+    charger: str = 'ac'
+    pwr_max_w: float = 11E3
+
+    def get_sim_input(self) -> SimInputSubfleet:
+        # ToDo: property + st.cache?
+        return SimInputSubfleet(name=self.name,
+                                num=self.num_bev,
+                                pwr_chg_max_w=self.pwr_max_w,
+                                charger=self.charger,
+                                capacity_wh=self.battery_capacity_wh)
+
+
+@dataclass
 class InputSubfleet:
     name: str = 'hlt'
     num_total: int = 5
@@ -108,24 +133,39 @@ class InputSubfleet:
     charger: str = 'ac'
     pwr_max_w: float = 11E3
 
-    def get_subfleet_sim_settings_baseline(self,
-                                           charger_settings: dict[str, 'InputCharger']) -> SubfleetSimSettings:
-        key = str(self.charger).strip().lower()
-        return SubfleetSimSettings(name=self.name,
-                                   num=int(self.num_bev.preexisting),
-                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[key].pwr_max_w),
-                                   charger=key,
-                                   capacity_wh=self.battery_capacity_wh)
+    def get_phase_input(self,
+                      phase: Literal['baseline', 'expansion']) -> PhaseInputSubfleet:
+        return PhaseInputSubfleet(name=self.name,
+                                  num_total=self.num_total,
+                                  num_bev=int(self.num_bev.preexisting) if phase == 'baseline' else int(self.num_bev.total),
+                                  battery_capacity_wh=self.battery_capacity_wh,
+                                  capex_bev_eur=self.capex_bev_eur,
+                                  capex_icev_eur=self.capex_icev_eur,
+                                  dist_avg_daily_km=self.dist_avg_daily_km,
+                                  toll_share_pct=self.toll_share_pct,
+                                  charger=self.charger,
+                                  pwr_max_w=self.pwr_max_w,
+                                  )
 
-    def get_subfleet_sim_settings_expansion(self,
-                                            charger_settings: dict[str, 'InputCharger']) -> SubfleetSimSettings:
-        key = str(self.charger).strip().lower()
-        return SubfleetSimSettings(name=self.name,
-                                   num=int(self.num_bev.total),
-                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[key].pwr_max_w),
-                                   charger=key,
-                                   capacity_wh=self.battery_capacity_wh)
 
+@dataclass
+class SimInputCharger:
+    name: str = 'ac'
+    num: int = 0
+    pwr_max_w: float = 11E3
+
+
+@dataclass
+class PhaseInputCharger:
+    name: str = 'ac'
+    num: int = 0
+    pwr_max_w: float = 11E3
+    cost_per_charger_eur: float = 3000.0
+
+    def get_sim_input(self) -> SimInputCharger:
+        return SimInputCharger(name=self.name,
+                               num=self.num,
+                               pwr_max_w=self.pwr_max_w)
 
 @dataclass
 class InputCharger:
@@ -134,6 +174,14 @@ class InputCharger:
                                                                                  expansion=4))
     pwr_max_w: float = 11E3
     cost_per_charger_eur: float = 3000.0
+
+    def get_phase_input(self,
+                        phase: Literal['baseline', 'expansion']) -> PhaseInputCharger:
+        return PhaseInputCharger(name=self.name,
+                                 num=int(self.num.preexisting) if phase == 'baseline' else int(self.num.total),
+                                 pwr_max_w=self.pwr_max_w,
+                                 cost_per_charger_eur=self.cost_per_charger_eur,
+                                 )
 
 
 @dataclass
@@ -171,7 +219,7 @@ class Logs:
 
 
 @dataclass
-class SimulationResults:
+class ResultSimulation:
     energy_pv_pot_wh: float = 0.0
     energy_pv_curt_wh: float = 0.0
     energy_grid_buy_wh: float = 0.0
@@ -183,42 +231,13 @@ class SimulationResults:
 
 @dataclass
 class PhaseResults:
-    simulation : SimulationResults = field(default_factory=SimulationResults)
+    simulation : ResultSimulation = field(default_factory=ResultSimulation)
     self_sufficiency_pct: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     self_consumption_pct: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
-    co2_yrl_kg: float = 0.0  # emitted CO2 per year in kg
-    co2_yrl_eur: float = 0.0  # cost for emitted co2 per year in Euro
-    co2_grid_yrl_kg: float = 0.0
-    co2_tailpipe_yrl_kg: float = 0.0
-    co2_tailpipe_by_subfleet_kg: Dict[str, float] = field(default_factory=dict)
-    capex_eur: float = 0.0  # capex over project time in euro
-    capex_infra_eur: float = 0.0
-    capex_vehicles_eur: float = 0.0
-    capex_vehicles_bev_eur: float = 0.0
-    capex_vehicles_icev_eur: float = 0.0
-    vehicles_co2_production_total_kg: float = 0.0
-    vehicles_co2_production_bev_kg: float = 0.0
-    vehicles_co2_production_icev_kg: float = 0.0
-    vehicles_co2_production_breakdown_bev: Dict[str, float] = field(default_factory=dict)
-    vehicles_co2_production_breakdown_icev: Dict[str, float] = field(default_factory=dict)
-    opex_fuel_eur: float = 0.0  # fuel cost over project time in euro
-    opex_toll_eur: float = 0.0  # toll cost over project time in euro
-    opex_grid_eur: float = 0.0  # grid cost over project time in euro
-    opex_vehicle_electric_secondary: float = 0.0 # maintenance, insurance, driver
-    infra_capex_breakdown: Dict[str, float] = field(default_factory=dict)
-    infra_co2_total_kg: float = 0.0
-    infra_co2_breakdown: Dict[str, float] = field(default_factory=dict)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
     co2_flow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
-    opex_breakdown: Dict[str, float] = field(default_factory=dict)
-    capex_vehicles_by_subfleet: Dict[str, float] = field(default_factory=dict)
-    # ToDo: think about using a DataFrame or Matrix for cashflows and replace all capex/opex variables by this
-
-    @property
-    def opex_eur(self) -> float:
-        return self.opex_fuel_eur + self.opex_grid_eur + self.opex_toll_eur + self.opex_vehicle_electric_secondary
 
 
 @dataclass
@@ -227,8 +246,11 @@ class BackendResults:
     expansion: PhaseResults
 
     roi_rel: float = 0.0
-    period_payback_rel: float = 0.0
-    npc_delta: float = 0.0
+    period_payback: float = 0.0
+
+    @property
+    def npc_delta(self) -> float:
+        return self.expansion.cashflow.sum() - self.baseline.cashflow.sum()
 
 TIME_PRJ_YRS: Final[int] = 18
 

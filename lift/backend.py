@@ -25,13 +25,18 @@ from energy_system import (FixedDemand,
 from interfaces import (Coordinates,
                         Input,
                         InputLocation,
+                        SimInputCharger,
+                        PhaseInputCharger,
                         InputCharger,
+                        SimInputSubfleet,
+                        PhaseInputSubfleet,
                         InputSubfleet,
                         InputEconomic,
                         Logs,
                         Capacities,
-                        SubfleetSimSettings,
-                        SimulationResults,
+                        SimInputSubfleet,
+                        SimInputCharger,
+                        ResultSimulation,
                         PhaseResults,
                         BackendResults,
                         )
@@ -43,7 +48,6 @@ if TYPE_CHECKING:
 
 @st.cache_data
 def get_log_pv(coordinates: Coordinates) -> np.typing.NDArray[np.float64]:
-
     data, *_ = pvlib.iotools.get_pvgis_hourly(
         latitude=coordinates.latitude,
         longitude=coordinates.longitude,
@@ -90,9 +94,9 @@ def get_log_subfleet(vehicle_type: str) -> pd.DataFrame:
 @st.cache_data
 def simulate(logs: Logs,
              capacities: Capacities,
-             subfleets: dict[str, SubfleetSimSettings],
-             chargers: dict[str, int],
-             ) -> SimulationResults:
+             subfleets: dict[str, SimInputSubfleet],
+             chargers: dict[str, SimInputCharger],
+             ) -> ResultSimulation:
 
     dem = FixedDemand(log=logs.dem)
     fleet = Fleet(pwr_lim_w=np.inf,
@@ -129,14 +133,14 @@ def simulate(logs: Logs,
         for block in blocks_supply:
             pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
 
-    return SimulationResults(energy_pv_pot_wh=pv.energy_pot_wh,
-                             energy_pv_curt_wh=grid.energy_curt_wh,
-                             energy_grid_buy_wh=grid.energy_buy_wh,
-                             energy_grid_sell_wh=grid.energy_sell_wh,
-                             pwr_grid_peak_w=grid.pwr_peak_w,
-                             energy_dem_wh=dem.energy_wh,
-                             energy_fleet_wh=fleet.energy_wh,
-                             )
+    return ResultSimulation(energy_pv_pot_wh=pv.energy_pot_wh,
+                            energy_pv_curt_wh=grid.energy_curt_wh,
+                            energy_grid_buy_wh=grid.energy_buy_wh,
+                            energy_grid_sell_wh=grid.energy_sell_wh,
+                            pwr_grid_peak_w=grid.pwr_peak_w,
+                            energy_dem_wh=dem.energy_wh,
+                            energy_fleet_wh=fleet.energy_wh,
+                            )
 
 
 def calc_opex_vehicle(
@@ -412,255 +416,83 @@ def calc_vehicle_capex_split(
 def calc_phase_results(logs: Logs,
                        capacities: Capacities,
                        economics: InputEconomic,
-                       subfleets: dict[str, SubfleetSimSettings],
-                       chargers: dict[str, int],
-                       *,
+                       subfleets: dict[str, PhaseInputSubfleet],
+                       chargers: dict[str, PhaseInputCharger],
                        phase: str,
                        location: InputLocation,
-                       charger_settings: dict[str, InputCharger],
-                       subfleet_settings: dict[str, InputSubfleet],
                        ) -> PhaseResults:
+
+    cost = dict()
+    co2 = dict()
+
     result_sim = simulate(
         logs=logs,
         capacities=capacities,
-        subfleets=subfleets,
-        chargers=chargers,
+        subfleets={sf.name: sf.get_sim_input() for sf in subfleets.values()},
+        chargers={chg.name: chg.get_sim_input() for chg in chargers.values()},
     )
 
-    (opex_vehicle_total,
-     opex_vehicle_by_sf,
-     co2_tailpipe_total_kg,
-     co2_tailpipe_by_sf,
-     opex_vehicle_comp) = calc_opex_vehicle(
-        logs=logs,
-        subfleet_settings=subfleet_settings,
-        economics=economics,
-        phase=phase,
-    )
-
-    grid_buy_eur = result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh
-    grid_sell_eur = result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh
-
-    opex_breakdown = {
-        "Stromeinkauf": float(grid_buy_eur),
-        "Stromverkauf": -float(grid_sell_eur),  # als negative Kosten (Erlös)
-        "Diesel": float(opex_vehicle_comp["fuel_diesel"]),
-        "Maut": float(opex_vehicle_comp["toll"]),
-        "Wartung": float(opex_vehicle_comp["maintenance"]),
-        "Versicherung": float(opex_vehicle_comp["insurance"]),
-    }
-
-    co2_grid_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH
-    co2_tailpipe_yrl_kg = co2_tailpipe_total_kg
-    co2_yrl_kg = co2_grid_yrl_kg + co2_tailpipe_yrl_kg
-
-    # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
-    if capacities.pv_wp > 0:
+    # calculate self-sufficiency and self consumption based on simulation results
+    if capacities.pv_wp == 0:
+        self_sufficiency_pct = 0.0
+        self_consumption_pct = 0.0
+    else:
+        # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
         self_sufficiency_pct = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh) * 100
         # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
         self_consumption_pct = 100 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh) * 100
-    else:
-        self_sufficiency_pct = 0.0
-        self_consumption_pct = 0.0
 
-    co2_yrl_kg = result_sim.energy_grid_buy_wh * CO2_SPEC_KG_PER_WH + co2_tailpipe_total_kg
-    co2_yrl_eur = co2_yrl_kg * OPEX_SPEC_CO2_PER_KG
+    cost['grid_yrl'] = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
+                     result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
 
-    if phase == "baseline":
-        capex_infra_eur = 0.0
-        capex_infra_bd = {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
-        co2_infra_kg = 0.0
-        co2_infra_bd = {"grid": 0.0, "pv": 0.0, "ess": 0.0, "chargers": 0.0}
-    else:
-        (capex_infra_eur,
-         capex_infra_bd,
-         co2_infra_kg,
-         co2_infra_bd) = calc_infrastructure_capex(
-            location=location,
-            charger_settings=charger_settings,
-            economics=economics,
-            phase=phase,
-        )
+    # ToDo: check whether net balance is correct here
+    co2['grid_yrl'] = (result_sim.energy_grid_buy_wh - result_sim.energy_grid_sell_wh) * CO2_SPEC_KG_PER_WH
 
-    # --- vehicle CAPEX split for each phase---
-    (capex_bev_eur, capex_icev_eur,
-     capex_bev_by_sf, capex_icev_by_sf,
-     co2_prod_bev_kg, co2_prod_icev_kg,
-     co2_prod_bev_by_sf, co2_prod_icev_by_sf) = calc_vehicle_capex_split(
-        subfleet_settings=subfleet_settings,
-        economics=economics,
-        phase=phase.lower(),
-    )
-
-    capex_vehicles_eur = capex_bev_eur + capex_icev_eur
-    co2_vehicles_production_total_kg = co2_prod_bev_kg + co2_prod_icev_kg
-
-    capex_vehicles_by_sf = {
-        k: float(capex_bev_by_sf.get(k, 0.0)) + float(capex_icev_by_sf.get(k, 0.0))
-        for k in set(capex_bev_by_sf) | set(capex_icev_by_sf)
-    }
-
-    # --- total-CAPEX ---
-    capex_total_eur = capex_infra_eur + capex_vehicles_eur
-
-    opex_grid_energy = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
-                        result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
-
-    opex_grid_power = result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
-
-    opex_grid = opex_grid_energy + opex_grid_power
-
-    # === CASHFLOW (18 years) according to your rules ===
-    cashflow = np.zeros(TIME_PRJ_YRS, dtype=np.float64)
-
-    # Annual OPEX in every year (including grid + vehicle)
-    annual_opex = opex_grid + opex_vehicle_total
-    for y in range(TIME_PRJ_YRS):
-        cashflow[y] += annual_opex
-
-    # Vehicles: full replacement costs in year 1, 6, and 12 (indices 0, 5, 11)
-    veh_years_idx = [0, 5, 11]
-    for idx in veh_years_idx:
-        if idx < TIME_PRJ_YRS:
-            cashflow[idx] += capex_vehicles_eur
-
-    # Infrastructure only in expansion scenario
-    if phase == "expansion":
-        fix_cost = float(getattr(economics, "fix_cost_construction", 0.0))
-
-        # in Breakdown aufnehmen (neuer Key "construction")
-        capex_infra_bd["construction"] = capex_infra_bd.get("construction", 0.0) + fix_cost
-        capex_infra_eur += fix_cost
-
-        # CO2 für Bau-Fixkosten (meist 0)
-        co2_infra_bd["construction"] = co2_infra_bd.get("construction", 0.0) + 0.0
-        co2_infra_kg = float(sum(co2_infra_bd.values()))
-
-        infra_year0 = (
-                capex_infra_bd.get("grid", 0.0)
-                + capex_infra_bd.get("pv", 0.0)
-                + capex_infra_bd.get("chargers", 0.0)
-                + capex_infra_bd.get("construction", 0.0)
-        )
-        cashflow[0] += infra_year0
-
-        # ESS in year 1 and year 9 (full cost each time)
-        ess_total = capex_infra_bd.get("ess", 0.0)
-        cashflow[0] += ess_total
-        if 8 < TIME_PRJ_YRS:
-            cashflow[8] += ess_total
-
-    # === CO2-FLOW (18 Jahre) analog zum Cashflow ===
-    co2_flow = np.zeros(TIME_PRJ_YRS, dtype=np.float64)
-
-    # 1) Betrieb: jährlich gleich (Grid + Tailpipe)
-    for y in range(TIME_PRJ_YRS):
-        co2_flow[y] += co2_yrl_kg  # = co2_grid_yrl_kg + co2_tailpipe_yrl_kg
-
-    # 2) Fahrzeuge: Herstellung zu den gleichen Zeitpunkten wie Fahrzeug-CAPEX
-    veh_cohort_co2 = co2_vehicles_production_total_kg  # BEV+ICEV für die Phase
-    for idx in veh_years_idx:
-        if idx < TIME_PRJ_YRS:
-            co2_flow[idx] += veh_cohort_co2
-
-    # 3) Infrastruktur: nur in Expansion, analog zu CAPEX-Timings
-    if phase == "expansion":
-        # Grid + PV + Charger in Jahr 1 (Index 0)
-        co2_infra_year0 = (
-                co2_infra_bd.get("grid", 0.0)
-                + co2_infra_bd.get("pv", 0.0)
-                + co2_infra_bd.get("chargers", 0.0)
-        )
-        co2_flow[0] += co2_infra_year0
-
-        # ESS in Jahr 1 und Jahr 9 (Index 0 und 8) – analog zu deinen CAPEX-Regeln
-        co2_ess = co2_infra_bd.get("ess", 0.0)
-        co2_flow[0] += co2_ess
-        if 8 < TIME_PRJ_YRS:
-            co2_flow[8] += co2_ess
+    cashflow = np.zeros(TIME_PRJ_YRS) + np.random.random()  # ToDo: fix
+    co2_flow = np.zeros(TIME_PRJ_YRS) + 1
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency_pct=self_sufficiency_pct,
                         self_consumption_pct=self_consumption_pct,
-                        co2_yrl_kg=co2_yrl_kg,
-                        co2_yrl_eur=co2_yrl_eur,
-                        capex_eur=capex_total_eur,
-                        capex_vehicles_eur=capex_vehicles_eur,
-                        capex_vehicles_bev_eur=capex_bev_eur,
-                        capex_vehicles_icev_eur=capex_icev_eur,
-                        opex_fuel_eur=0.0,  # ToDo: calculate OPEX fuel
-                        opex_toll_eur=0.0,  # ToDo: calculate OPEX toll
-                        opex_grid_eur=opex_grid,
-                        opex_vehicle_electric_secondary=opex_vehicle_total,
-                        opex_breakdown=opex_breakdown,
-                        capex_vehicles_by_subfleet=capex_vehicles_by_sf,
-                        cashflow=cashflow,  # ToDo: calculate cashflow
+                        cashflow=cashflow,
                         co2_flow=co2_flow,
-                        infra_capex_breakdown=capex_infra_bd,
-                        infra_co2_total_kg=co2_infra_kg,
-                        infra_co2_breakdown=co2_infra_bd,
-                        co2_grid_yrl_kg=co2_grid_yrl_kg,
-                        co2_tailpipe_yrl_kg=co2_tailpipe_yrl_kg,
-                        co2_tailpipe_by_subfleet_kg=co2_tailpipe_by_sf,
-                        vehicles_co2_production_total_kg=co2_vehicles_production_total_kg,
-                        vehicles_co2_production_bev_kg=co2_prod_bev_kg,
-                        vehicles_co2_production_icev_kg=co2_prod_icev_kg,
-                        vehicles_co2_production_breakdown_bev=co2_prod_bev_by_sf,
-                        vehicles_co2_production_breakdown_icev=co2_prod_icev_by_sf,
                         )
 
 
-def run_backend(settings: Input) -> BackendResults:
+def run_backend(input: Input) -> BackendResults:
     # start time tracking
     start_time = time()
 
     # get log data for the simulation
-    logs = Logs(pv_spec=get_log_pv(coordinates=settings.location.coordinates),
-                dem=get_log_dem(slp=settings.location.slp.lower(),
-                                consumption_yrl_wh=settings.location.consumption_yrl_wh,
+    logs = Logs(pv_spec=get_log_pv(coordinates=input.location.coordinates),
+                dem=get_log_dem(slp=input.location.slp.lower(),
+                                consumption_yrl_wh=input.location.consumption_yrl_wh,
                                 ),
                 # ToDo: get input parameters from settings
                 fleet={vehicle_type: get_log_subfleet(vehicle_type=vehicle_type)
-                       for vehicle_type, subfleet in settings.subfleets.items()},
+                       for vehicle_type, subfleet in input.subfleets.items()},
                 )
 
-    subfleet_sim_settings_baseline = {subfleet.name:
-                                          subfleet.get_subfleet_sim_settings_baseline(settings.chargers)
-                                      for subfleet in settings.subfleets.values()}
-
-    subfleet_sim_settings_expansion = {subfleet.name:
-                                           subfleet.get_subfleet_sim_settings_expansion(settings.chargers)
-                                       for subfleet in settings.subfleets.values()}
-
-    chargers_baseline = {
-        str(t).strip().lower(): int(c.num.preexisting)
-        for t, c in settings.chargers.items()
-    }
-    chargers_expansion = {
-        str(t).strip().lower(): int(c.num.total)
-        for t, c in settings.chargers.items()
-    }
-
     results_baseline = calc_phase_results(logs=logs,
-                                          capacities=settings.location.get_capacities('baseline'),
-                                          economics=settings.economic,
-                                          subfleets=subfleet_sim_settings_baseline,
-                                          chargers=chargers_baseline,
+                                          capacities=input.location.get_capacities('baseline'),
+                                          economics=input.economic,
+                                          subfleets={sf.name: sf.get_phase_input(phase='baseline')
+                                                     for sf in input.subfleets.values()},
+                                          chargers={chg.name: chg.get_phase_input(phase='baseline')
+                                                     for chg in input.chargers.values()},
                                           phase="baseline",
-                                          location=settings.location,
-                                          charger_settings=settings.chargers,
-                                          subfleet_settings=settings.subfleets,
+                                          location=input.location,
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
-                                           capacities=settings.location.get_capacities('expansion'),
-                                           economics=settings.economic,
-                                           subfleets=subfleet_sim_settings_expansion,
-                                           chargers=chargers_expansion,
+                                           capacities=input.location.get_capacities('expansion'),
+                                           economics=input.economic,
+                                           subfleets={sf.name: sf.get_phase_input(phase='expansion')
+                                                      for sf in input.subfleets.values()},
+                                           chargers={chg.name: chg.get_phase_input(phase='expansion')
+                                                     for chg in input.chargers.values()},
                                            phase="expansion",
-                                           location=settings.location,
-                                           charger_settings=settings.chargers,
-                                           subfleet_settings=settings.subfleets,
+                                           location=input.location,
                                            )
 
     roi_rel = 0.0  #ToDo: calculate!
@@ -673,13 +505,12 @@ def run_backend(settings: Input) -> BackendResults:
     return BackendResults(baseline=results_baseline,
                           expansion=results_expansion,
                           roi_rel=roi_rel,
-                          period_payback_rel=period_payback_rel,
-                          npc_delta=npc_delta,
+                          period_payback=period_payback_rel,
                           )
 
 
 if __name__ == "__main__":
     settings_default = Input()
-    result = run_backend(settings=settings_default)
+    result = run_backend(input=settings_default)
     print(result.baseline.simulation)
     print(result.expansion.simulation)

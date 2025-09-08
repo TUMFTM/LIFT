@@ -121,8 +121,6 @@ SHARE_COLUMN_INPUT = [3, 7]
 
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
-VEH_YEARS_IDX = [0, 5, 11]
-
 def create_sidebar_and_get_input() -> Input:
     # get simulation settings
     def _get_sim_settings():
@@ -408,60 +406,6 @@ def create_sidebar_and_get_input() -> Input:
                  economic=input_economic
                  )
 
-
-def opex18(pr):
-    od = pr.opex_breakdown  # erwartet Dict mit Keys wie unten
-    return {
-        "Stromeinkauf": float(od.get("Stromeinkauf", 0.0)) * TIME_PRJ_YRS,
-        "Stromverkauf": float(od.get("Stromverkauf", 0.0)) * TIME_PRJ_YRS,  # negativ = Erlös
-        "Diesel": float(od.get("Diesel", 0.0)),  # schon 18y aggregiert
-        "Maut": float(od.get("Maut", 0.0)),
-        "Wartung": float(od.get("Wartung", 0.0)),
-        "Versicherung": float(od.get("Versicherung", 0.0)),
-    }
-
-
-# Ladeinfrastruktur/Netz/PV/Speicher
-def infra_row(pr, key):
-    return float(pr.infra_capex_breakdown.get(key, 0.0))
-
-
-def co2_infra_18(pr):
-    bd = pr.infra_co2_breakdown or {}
-    # ESS wird in deinem Flow in Jahr 0 und Jahr 8 angesetzt → multipliziere bei 18 Jahren mit 2
-    ess_cycles = 1 + (1 if (TIME_PRJ_YRS > 8 and float(bd.get("ess", 0.0)) > 0.0) else 0)
-
-    rows = {}
-    # Charger: AC/DC, falls vorhanden – sonst "gesamt"
-    ac = float(bd.get("chargers_ac", 0.0))
-    dc = float(bd.get("chargers_dc", 0.0))
-    ch_total = float(bd.get("chargers", 0.0))
-    if ac > 0 or dc > 0:
-        rows["Ladeinfrastruktur – AC"] = ac
-        rows["Ladeinfrastruktur – DC"] = dc
-    elif ch_total > 0:
-        rows["Ladeinfrastruktur (gesamt)"] = ch_total
-
-    rows["Netzanschluss"] = float(bd.get("grid", 0.0))
-    rows["PV"] = float(bd.get("pv", 0.0))
-    rows["Speicher"] = float(bd.get("ess", 0.0)) * ess_cycles
-    return rows
-
-
-def co2_oper_18(pr):
-    return {
-        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS,
-        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS,
-    }
-
-
-def co2_oper_18(pr):
-    return {
-        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS,
-        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS,
-    }
-
-
 def display_results(results):
     st.success(f"Berechnung erfolgreich!")
 
@@ -471,377 +415,234 @@ def display_results(results):
         unsafe_allow_html=True,
     )
 
-    def _centered_heading(text: str) -> None:
-        st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
+    def _show_kpis():
 
-    col1, col2, col3, col4 = st.columns(4)
+        def _centered_heading(text: str) -> None:
+            st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
-    with col1:
-        _centered_heading("Gesamtkosten")
-        val_baseline = sum(results.baseline.cashflow)
-        val_expansion = sum(results.expansion.cashflow)
-        val_max = max(val_baseline, val_expansion)
-        data = pd.DataFrame(index=['baseline', 'expansion'],
-                            data={'value': [val_baseline / val_max,
-                                            val_expansion / val_max],
-                                  'phase': ['Baseline',
-                                            'Expansion'],
-                                  'value_display': [val_baseline,
-                                                    val_expansion],
-                                  })
+        def _create_comparison_chart(data: pd.DataFrame,
+                                  tooltips: list[alt.Tooltip] | None = None):
+            def _create_ring(
+                    df: pd.DataFrame,
+                    radius: float,
+                    thickness: float,
+                    color: str,
+            ) -> alt.Chart:
+                background = (alt.Chart(pd.DataFrame({"value": [1]}))
+                              .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4,
+                                        tooltip=None)
+                              .encode(theta=alt.Theta("value:Q", stack=True))
+                              )
 
-        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                    alt.Tooltip(shorthand='value_display:Q', title='Gesamtkosten in EUR', format=',.0f'),]
-        ring_baseline, ring_expansion = make_comparison_chart(data=data,
-                                                              tooltips=tooltips)
+                foreground = (
+                    # alt.Chart(pd.DataFrame(data_series))
+                    alt.Chart(df)
+                    .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
+                    .encode(theta=alt.Theta("value:Q", stack=True),
+                            # tooltip=[(alt.Tooltip(f"{col}:N", title=col.replace("_", " "))
+                            #          if col == "Szenario" else
+                            #           alt.Tooltip(f"{col}:Q", title=col.replace("_", " "), format=",.2f"))
+                            #          for col in df.columns if col != "value"]
+                            tooltip=tooltips
+                            )
+                )
+                return background + foreground
 
-        # Center text (single-row dataframe, minimal overhead)
-        diff = val_expansion - val_baseline
-        center_text = alt.Chart(pd.DataFrame(
-            {"text": [f"{diff:+.0f} €"]})).mark_text(
-            size=18,
-            fontWeight="bold",
-            color="green" if diff < 0 else "red",
-            tooltip=None
-        ).encode(
-            text="text:N"
-        )
+            # Create rings
+            ring_baseline = _create_ring(df=data.loc[['baseline']],
+                                       radius=40,
+                                       thickness=20,
+                                       color=COLOR_BL)
+            ring_expansion = _create_ring(df=data.loc[['expansion']],
+                                        radius=65,
+                                        thickness=20,
+                                        color=COLOR_EX)
 
-        st.altair_chart(
-            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-            use_container_width=True
-        )
+            return ring_baseline, ring_expansion
 
-    with col2:
-        _centered_heading("Gesamt-CO₂")
-        val_baseline = sum(results.baseline.co2_flow)
-        val_expansion = sum(results.expansion.co2_flow)
-        val_max = max(val_baseline, val_expansion)
-        data = pd.DataFrame(index=['baseline', 'expansion'],
-                            data={'value': [val_baseline / val_max,
-                                            val_expansion / val_max],
-                                  'phase': ['Baseline',
-                                            'Expansion'],
-                                  'value_display': [val_baseline,
-                                                    val_expansion],
-                                  })
+        col1, col2, col3, col4 = st.columns(4)
 
-        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                    alt.Tooltip(shorthand='value_display:Q', title='CO2-Emissionen in t', format=',.0f'),]
-        ring_baseline, ring_expansion = make_comparison_chart(data=data,
-                                                              tooltips=tooltips)
-
-        # Center text (single-row dataframe, minimal overhead)
-        diff = val_expansion - val_baseline
-        center_text = alt.Chart(pd.DataFrame(
-            {"text": [f"{diff:+.0f} t"]})).mark_text(
-            size=18,
-            fontWeight="bold",
-            color="green" if diff < 0 else "red",
-            tooltip=None
-        ).encode(
-            text="text:N"
-        )
-
-        st.altair_chart(
-            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-            use_container_width=True
-        )
-
-    with col3:
-        _centered_heading("Eigenverbrauchsquote")
-        val_baseline = results.baseline.self_consumption_pct
-        val_expansion = results.expansion.self_consumption_pct
-        data = pd.DataFrame(index=['baseline', 'expansion'],
-                            data={'value': [val_baseline / 100,
-                                            val_expansion / 100],
-                                  'phase': ['Baseline',
-                                            'Expansion'],
-                                  'value_display': [val_baseline,
-                                                    val_expansion],
-                                  })
-
-        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                    alt.Tooltip(shorthand='value_display:Q', title='Eigenverbrauchsquote in %', format=',.2f'),]
-        ring_baseline, ring_expansion = make_comparison_chart(data=data,
-                                                              tooltips=tooltips)
-
-        # Center text (single-row dataframe, minimal overhead)
-        diff = val_expansion - val_baseline
-        center_text = alt.Chart(pd.DataFrame(
-            {"text": [f"{diff:+.0f} %"]})).mark_text(
-            size=18,
-            fontWeight="bold",
-            color="green" if diff > 0 else "red",
-            tooltip=None
-        ).encode(
-            text="text:N"
-        )
-
-        st.altair_chart(
-            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-            use_container_width=True
-        )
-
-    with col4:
-        _centered_heading("Autarkiegrad")
-        val_baseline = results.baseline.self_sufficiency_pct
-        val_expansion = results.expansion.self_sufficiency_pct
-        data = pd.DataFrame(index=['baseline', 'expansion'],
-                            data={'value': [val_baseline / 100,
-                                            val_expansion / 100],
-                                  'phase': ['Baseline',
-                                            'Expansion'],
-                                  'value_display': [val_baseline,
-                                                    val_expansion],
-                                  })
-
-        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                    alt.Tooltip(shorthand='value_display:Q', title='Autarkiegrad in %', format=',.2f'),]
-        ring_baseline, ring_expansion = make_comparison_chart(data=data,
-                                                              tooltips=tooltips)
-
-        # Center text (single-row dataframe, minimal overhead)
-        diff = val_expansion - val_baseline
-        center_text = alt.Chart(pd.DataFrame(
-            {"text": [f"{diff:+.0f} %"]})).mark_text(
-            size=18,
-            fontWeight="bold",
-            color="green" if diff > 0 else "red",
-            tooltip=None
-        ).encode(
-            text="text:N"
-        )
-
-        st.altair_chart(
-            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-            use_container_width=True
-        )
-
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.markdown("#### Kumulierte Kosten")
-        plot_flow(results, attr="cashflow",
-                  y_label="Kumulierte Kosten [EUR]",
-                  unit="EUR",
-                  cumulative=True,
-                  show_table=False)
-    with col2:
-        st.write("")
-        st.write("")
-        st.write("")
-        res = find_flow_intersection(results, attr="cashflow")
-        st.markdown("#### Preisparität")
-        if res is None:
-            st.markdown("Kein Schnittpunkt")
-        elif res["kind"] == "identical":
-            st.markdown("Kurven identisch.")
-        else:
-            yr = res["year_float"]
-            st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
-        st.markdown("#### Kosten-Delta")
-        cost_delta = float(np.cumsum(results.expansion.cashflow)[-1]) - float(np.cumsum(results.baseline.cashflow)[-1])
-        st.markdown(f"{cost_delta:,.0f} EUR nach 18 Jahren")
-
-    with st.expander("#### Verlauf CO₂-Ausstoß"):
-        col1, col2 = st.columns([4, 1])
         with col1:
-            st.markdown("#### Kumulierter CO₂-Ausstoß")
-            plot_flow(results, attr="co2_flow",
-                      y_label="Komuliertes CO₂ [EUR]",
-                      unit="kg-CO₂",
-                      cumulative=True,
-                      show_table=False)
-        with col2:
-            st.write("")
-            st.write("")
-            st.write("")
-            res = find_flow_intersection(results, attr="co2_flow")
-            st.markdown("#### CO₂-Parität")
-            if res is None:
-                st.markdown("Kein Schnittpunkt")
-            elif res["kind"] == "identical":
-                st.markdown("Kurven identisch.")
-            else:
-                yr = res["year_float"]
-                st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
-            st.markdown("#### CO₂-Delta")
-            cost_delta = float(np.cumsum(results.expansion.co2_flow)[-1]) - float(
-                np.cumsum(results.baseline.co2_flow)[-1])
-            st.markdown(f"{cost_delta:,.0f} kg-CO₂ nach 18 Jahren")
+            _centered_heading("Gesamtkosten")
+            val_baseline = sum(results.baseline.cashflow)
+            val_expansion = sum(results.expansion.cashflow)
+            val_max = max(val_baseline, val_expansion)
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value': [val_baseline / val_max,
+                                                val_expansion / val_max],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline,
+                                                        val_expansion],
+                                      })
 
-    with st.expander("Zusammensetzung der Kosten"):
-        rb = results.baseline
-        re = results.expansion
+            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                        alt.Tooltip(shorthand='value_display:Q', title='Gesamtkosten in EUR', format=',.0f'),]
+            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
+                                                                  tooltips=tooltips)
 
-        # --- KOSTEN ---
-        cost_base = build_cost_breakdown_18y(rb, phase="baseline")  # dict
-        cost_exp = build_cost_breakdown_18y(re, phase="expansion")  # dict
-
-        # DataFrame für Tabelle/Chart
-        df_cost = pd.DataFrame({"Baseline": cost_base, "Expansion": cost_exp}).T
-        st.markdown("### Kosten über 18 Jahre Laufzeit")
-
-        # --- Summen berechnen ---
-        total_cost_base = float(sum(map(float, cost_base.values())))
-        total_cost_exp = float(sum(map(float, cost_exp.values())))
-        delta_cost = total_cost_exp - total_cost_base
-
-        c1, c2 = st.columns(2)
-        c1.metric("Gesamtkosten – Baseline", f"{total_cost_base:,.0f} €")
-        delta_cost = total_cost_exp - total_cost_base
-        c2.metric(
-            "Gesamtkosten – Expansion",
-            f"{total_cost_exp:,.0f} €",
-            delta=f"{delta_cost:+,.0f} €",
-            delta_color="inverse"  # + rot, – grün
-        )
-
-        # Stacked-Bar
-        df_cost_long = df_cost.reset_index(names="Scenario").melt(
-            id_vars="Scenario", var_name="Komponente", value_name="EUR"
-        )
-        chart_cost = alt.Chart(df_cost_long).mark_bar().encode(
-            x=alt.X("Scenario:N", title=None),
-            y=alt.Y("EUR:Q", title="EUR"),
-            color=alt.Color(
-                "Komponente:N",
-                title=None,
-                scale=alt.Scale(
-                    domain=["OPEX", "CAPEX Infrastruktur", "CAPEX Fahrzeuge"],
-                    range=[COLOR_EX, COLOR_LIGHTBLUE, COLOR_TUMBLUE]  # OPEX, Infra, Fahrzeuge
-                ),
-                sort=["OPEX", "CAPEX Infrastruktur", "CAPEX Fahrzeuge"]
-            ),
-            tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("EUR:Q", format=",.0f")]
-        ).properties(height=280)
-        st.altair_chart(chart_cost, use_container_width=True)
-
-        with st.expander("OPEX-Breakdown"):
-            rb = results.baseline
-            re = results.expansion
-
-            # Summiere OPEX-Breakdown über die Projektlaufzeit (jährliche Anteile * 18)
-            # Achtung: Deine vehicle-Komponenten sind bereits 18y-aggregiert (aus calc_opex_vehicle),
-            # Strom-Ein-/Verkauf und Peak-Kosten sind jährlich; wir wollen nur Ein-/Verkauf laut Anforderung.
-
-            opex_base = opex18(rb)
-            opex_exp = opex18(re)
-
-            df_opex = pd.DataFrame({"Baseline": opex_base, "Expansion": opex_exp}).T
-            st.dataframe(df_opex.style.format("{:,.0f}"))
-
-        with st.expander("CAPEX-Breakdown"):
-            rb = results.baseline
-            re = results.expansion
-
-            # Helper: sicher aus dem Infra-Breakdown lesen
-            def infra_row(pr, key: str) -> float:
-                return float(getattr(pr, "infra_capex_breakdown", {}).get(key, 0.0))
-
-            # Alle Subfleets sammeln (Baseline ∪ Expansion)
-            veh_rows = sorted(
-                set(getattr(rb, "capex_vehicles_by_subfleet", {}).keys())
-                | set(getattr(re, "capex_vehicles_by_subfleet", {}).keys())
+            # Center text (single-row dataframe, minimal overhead)
+            diff = val_expansion - val_baseline
+            center_text = alt.Chart(pd.DataFrame(
+                {"text": [f"{diff:+.0f} €"]})).mark_text(
+                size=18,
+                fontWeight="bold",
+                color="green" if diff < 0 else "red",
+                tooltip=None
+            ).encode(
+                text="text:N"
             )
 
-            # Tabelle für eine Phase aufbauen
-            def capex_table(pr, veh_rows):
-                rows = {}
-                # Fahrzeuge je Klasse
-                for sf in veh_rows:
-                    rows[f"{sf.upper()}"] = float(
-                        getattr(pr, "capex_vehicles_by_subfleet", {}).get(sf, 0.0)
-                    )
-                # Infrastruktur
-                rows["AC - Charger"] = infra_row(pr, "chargers_ac")
-                rows["DC - Charger"] = infra_row(pr, "chargers_dc")
-                rows["Netzanschluss"] = infra_row(pr, "grid")
-                rows["PV"] = infra_row(pr, "pv")
-                rows["Speicher"] = infra_row(pr, "ess")
-                rows["Standortausbau"] = infra_row(pr, "construction")  # Fixkosten
-                return rows
+            st.altair_chart(
+                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
+                use_container_width=True
+            )
 
-            capex_base = capex_table(rb, veh_rows)
-            capex_exp = capex_table(re, veh_rows)
+        with col2:
+            _centered_heading("Gesamt-CO₂")
+            val_baseline = sum(results.baseline.co2_flow)
+            val_expansion = sum(results.expansion.co2_flow)
+            val_max = max(val_baseline, val_expansion)
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value': [val_baseline / val_max,
+                                                val_expansion / val_max],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline,
+                                                        val_expansion],
+                                      })
 
-            df_capex = pd.DataFrame({"Baseline": capex_base, "Expansion": capex_exp}).T
-            st.dataframe(df_capex.style.format("{:,.0f}"))
+            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                        alt.Tooltip(shorthand='value_display:Q', title='CO2-Emissionen in t', format=',.0f'),]
+            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
+                                                                  tooltips=tooltips)
 
-    with st.expander("Zusammensetzung des CO₂-Ausstoß"):
-        # details co2
-        rb = results.baseline
-        re = results.expansion
+            # Center text (single-row dataframe, minimal overhead)
+            diff = val_expansion - val_baseline
+            center_text = alt.Chart(pd.DataFrame(
+                {"text": [f"{diff:+.0f} t"]})).mark_text(
+                size=18,
+                fontWeight="bold",
+                color="green" if diff < 0 else "red",
+                tooltip=None
+            ).encode(
+                text="text:N"
+            )
 
-        # Dicts mit Komponenten (z.B. Betrieb, Tailpipe, Fahrzeuge, Infrastruktur)
-        co2_base = build_co2_breakdown_18y(rb, phase="baseline")
-        co2_exp = build_co2_breakdown_18y(re, phase="expansion")
+            st.altair_chart(
+                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
+                use_container_width=True
+            )
 
-        df_co2 = pd.DataFrame({"Baseline": co2_base, "Expansion": co2_exp}).T
+        with col3:
+            _centered_heading("Eigenverbrauchsquote")
+            val_baseline = results.baseline.self_consumption_pct
+            val_expansion = results.expansion.self_consumption_pct
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value': [val_baseline / 100,
+                                                val_expansion / 100],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline,
+                                                        val_expansion],
+                                      })
 
-        st.markdown("### CO₂ über 18 Jahre Laufzeit")
+            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                        alt.Tooltip(shorthand='value_display:Q', title='Eigenverbrauchsquote in %', format=',.2f'),]
+            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
+                                                                  tooltips=tooltips)
 
-        # Gesamtsummen über alle Komponenten
-        total_co2_base = float(sum(map(float, co2_base.values())))
-        total_co2_exp = float(sum(map(float, co2_exp.values())))
-        delta_co2 = total_co2_exp - total_co2_base
+            # Center text (single-row dataframe, minimal overhead)
+            diff = val_expansion - val_baseline
+            center_text = alt.Chart(pd.DataFrame(
+                {"text": [f"{diff:+.0f} %"]})).mark_text(
+                size=18,
+                fontWeight="bold",
+                color="green" if diff > 0 else "red",
+                tooltip=None
+            ).encode(
+                text="text:N"
+            )
 
-        c1, c2 = st.columns(2)
-        c1.metric("Gesamt-CO₂ – Baseline", f"{total_co2_base:,.0f} kg CO₂")
-        delta_co2 = total_co2_exp - total_co2_base
-        c2.metric(
-            "Gesamt-CO₂ – Expansion",
-            f"{total_cost_exp:,.0f} kg CO₂",
-            delta=f"{delta_co2:+,.0f} kg CO₂",
-            delta_color="inverse"  # + rot, – grün
-        )
+            st.altair_chart(
+                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
+                use_container_width=True
+            )
 
-        df_co2_long = df_co2.reset_index(names="Scenario").melt(id_vars="Scenario", var_name="Komponente",
-                                                                value_name="kg CO₂")
-        chart_co2 = alt.Chart(df_co2_long).mark_bar().encode(
-            x=alt.X("Scenario:N", title=None),
-            y=alt.Y("kg CO₂:Q", title="kg CO₂"),
-            color=alt.Color("Komponente:N",
-                            title=None,
-                            scale=alt.Scale(domain=["Betrieb", "Fahrzeuge Herstellung", "Infrastruktur Herstellung"],
-                                            range=[COLOR_EX, COLOR_LIGHTBLUE, COLOR_TUMBLUE]  # OPEX, Infra, Fahrzeuge
-                                            ),
-                            sort=["Betrieb", "Fahrzeuge Herstellung", "Infrastruktur Herstellung"]
-                            ),
-            tooltip=[alt.Tooltip("Komponente:N"), alt.Tooltip("kg CO₂:Q", format=",.0f")]
-        ).properties(height=280)
-        st.altair_chart(chart_co2, use_container_width=True)
+        with col4:
+            _centered_heading("Autarkiegrad")
+            val_baseline = results.baseline.self_sufficiency_pct
+            val_expansion = results.expansion.self_sufficiency_pct
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value': [val_baseline / 100,
+                                                val_expansion / 100],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline,
+                                                        val_expansion],
+                                      })
 
-        def co2_vehicles_18(pr):
-            bev = {str(k).lower(): float(v) for k, v in (pr.vehicles_co2_production_breakdown_bev or {}).items()}
-            ice = {str(k).lower(): float(v) for k, v in (pr.vehicles_co2_production_breakdown_icev or {}).items()}
-            keys = sorted(set(bev) | set(ice))
-            return {f"Fahrzeuge – {k.upper()}": (bev.get(k, 0.0) + ice.get(k, 0.0)) * N_VEH_COHORTS for k in keys}
+            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                        alt.Tooltip(shorthand='value_display:Q', title='Autarkiegrad in %', format=',.2f'),]
+            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
+                                                                  tooltips=tooltips)
 
-        VEH_REPL_IDX = [0, 5, 11]
-        N_VEH_COHORTS = sum(1 for i in VEH_REPL_IDX if i < TIME_PRJ_YRS)  # -> 3 bei 18 Jahren
+            # Center text (single-row dataframe, minimal overhead)
+            diff = val_expansion - val_baseline
+            center_text = alt.Chart(pd.DataFrame(
+                {"text": [f"{diff:+.0f} %"]})).mark_text(
+                size=18,
+                fontWeight="bold",
+                color="green" if diff > 0 else "red",
+                tooltip=None
+            ).encode(
+                text="text:N"
+            )
 
-        co2_oper_base = co2_oper_18(rb)
-        co2_oper_exp = co2_oper_18(re)
+            st.altair_chart(
+                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
+                use_container_width=True
+            )
+    _show_kpis()
 
-        df_co2_oper = pd.DataFrame({"Baseline": co2_oper_base, "Expansion": co2_oper_exp}).T
+    st.markdown("#### Gesamtkosten")
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        plot_flow(flow_baseline=results.baseline.cashflow,
+                  flow_expansion=results.expansion.cashflow,
+                  y_label="Kumulierte Kosten in EUR",
+                  )
+    with col2:
+        st.markdown("#### Amortisationszeitraum")
+        if results.period_payback is None:
+            st.markdown("Investition amortisiert sich nicht.")
+        else:
+            st.markdown(f"{results.period_payback:.2f} Jahre")
 
-        with st.expander("CO₂ im Betrieb"):
-            st.dataframe(df_co2_oper.style.format("{:,.0f}"))
-            co2_veh_base = co2_vehicles_18(rb)
-            co2_veh_exp = co2_vehicles_18(re)
+        st.markdown("#### Kosteneinsparung")
+        st.markdown(f"{results.npc_delta:,.0f} EUR nach 18 Jahren")
 
-        with st.expander("CO₂ durch die Herstellung"):
-            df_co2_veh = pd.DataFrame({"Baseline": co2_veh_base, "Expansion": co2_veh_exp}).T
-            st.markdown("Fahrzeuge")
-            st.dataframe(df_co2_veh.style.format("{:,.0f}"))
-
-            co2_infra_base = co2_infra_18(rb)
-            co2_infra_exp = co2_infra_18(re)
-
-            df_co2_infra = pd.DataFrame({"Baseline": co2_infra_base, "Expansion": co2_infra_exp}).T
-            st.markdown("Infrastruktur")
-            st.dataframe(df_co2_infra.style.format("{:,.0f}"))
+    with st.expander("#### Verlauf CO₂-Ausstoß"):
+        st.markdown("#### Kumulierter CO₂-Ausstoß")
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            plot_flow(results.baseline.co2_flow,
+                      results.expansion.co2_flow,
+                      y_label="Kumulierte CO₂-Emissionen in t",
+                      )
+        with col2:
+            st.markdown("#### CO₂-Parität")
+            # if res is None:
+            #     st.markdown("Kein Schnittpunkt")
+            # elif res["kind"] == "identical":
+            #     st.markdown("Kurven identisch.")
+            # else:
+            #     yr = res["year_float"]
+            #     st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
+            # st.markdown("#### CO₂-Delta")
+            # cost_delta = float(np.cumsum(results.expansion.co2_flow)[-1]) - float(
+            #     np.cumsum(results.baseline.co2_flow)[-1])
+            # st.markdown(f"{cost_delta:,.0f} kg-CO₂ nach 18 Jahren")
 
 
 def display_empty_results():
@@ -856,80 +657,40 @@ def display_empty_results():
 
 
 def plot_flow(
-    results,
-    attr: str = "cashflow",         # "cashflow" or "co2_flow"
-    y_label: str | None = None,
-    unit: str = "EUR",
-    cumulative: bool = True,
-    show_table: bool = False,
-    value_format: str = ",.0f",
-    show_intersection: bool = True,
+        flow_baseline,
+        flow_expansion,
+        y_label: str,
 ):
-    # 1) Daten ziehen
-    base_arr = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
-    exp_arr  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
 
-    # 2) Längen angleichen
-    n_years = int(max(len(base_arr), len(exp_arr)))
-    pad = lambda a: np.pad(a, (0, n_years - len(a)), mode="constant") if len(a) < n_years else a
-    base_arr = pad(base_arr)
-    exp_arr  = pad(exp_arr)
-    years = np.arange(1, n_years + 1, dtype=float)
+    years = np.arange(1, TIME_PRJ_YRS + 1, dtype=int)
 
-    # 3) Kumuliert oder jährlich
-    y_base = np.cumsum(base_arr) if cumulative else base_arr
-    y_exp  = np.cumsum(exp_arr)  if cumulative else exp_arr
+    y_baseline = np.cumsum(flow_baseline)
+    y_expansion  = np.cumsum(flow_expansion)
 
-    # 4) DataFrame
-    df = pd.DataFrame({"Year": years, "Baseline": y_base, "Expansion": y_exp})
-    df_long = df.melt(id_vars="Year", var_name="Scenario", value_name="Value")
+    df = pd.DataFrame({"year": years, "Baseline": y_baseline, "Expansion": y_expansion})
+    df_long = df.melt(id_vars="year", var_name="scenario", value_name="value")
 
-    # 5) Achsendomänen robust
-    y_min = float(min(np.nanmin(y_base), np.nanmin(y_exp), 0.0))
-    y_max = float(max(np.nanmax(y_base), np.nanmax(y_exp), 0.0))
-    if y_max == y_min:
-        y_min, y_max = 0.0, 1.0
-
-    # 6) Label-Defaults
-    if y_label is None:
-        base_lbl = "Kumuliert" if cumulative else "Jährlich"
-        y_label = f"{base_lbl} [{unit}]"
-
-    # 7) Basis-Linienchart (OHNE configure_*)
     line = (
         alt.Chart(df_long)
         .mark_line(point=True)
         .encode(
-            x=alt.X("Year:Q", axis=alt.Axis(title="Jahre")),
-            y=alt.Y("Value:Q", axis=alt.Axis(title=y_label), scale=alt.Scale(domain=[y_min, y_max])),
+            x=alt.X("year:Q", axis=alt.Axis(title="Jahr", values=years, format=".0f")),
+            y=alt.Y("value:Q", axis=alt.Axis(title=y_label)),
             color=alt.Color(
-                "Scenario:N",
+                "scenario:N",
                 legend=None,
                 scale=alt.Scale(domain=["Baseline", "Expansion"], range=[COLOR_BL, COLOR_EX]),
             ),
             tooltip=[
-                alt.Tooltip("Year:Q", title="Jahr", format=".2f"),
-                alt.Tooltip("Scenario:N", title="Szenario"),
-                alt.Tooltip("Value:Q", title=f"Wert [{unit}]", format=value_format),
+                alt.Tooltip("scenario:N", title="Szenario"),
+                alt.Tooltip("year:Q", title="Jahr", format=".0f"),
+                alt.Tooltip("value:Q", title=y_label, format=",.0f"),
             ],
         )
         .properties(height=360)
     )
 
-    # 8) Optional: Schnittpunkt als eigener Layer
     layers = [line]
-    if show_intersection:
-        res = find_flow_intersection(results, attr=attr)
-        if isinstance(res, dict) and res.get("value") is not None:
-            x_pt = float(res["year_float"])
-            y_pt = float(res["value"])
-            point_df = pd.DataFrame([{"Year": x_pt, "Value": y_pt}])
-            point_layer = (
-                alt.Chart(point_df)
-                .mark_point(size=120, filled=True)
-                .encode(x="Year:Q", y="Value:Q")
-            )
-            layers.append(point_layer)
 
     # 9) Jetzt Layer zusammenführen UND DANN konfigurieren
     chart = alt.layer(*layers).configure_axis(
@@ -944,181 +705,6 @@ def plot_flow(
 
     st.altair_chart(chart, use_container_width=True)
 
-    # 10) Optional Tabelle
-    if show_table:
-        st.dataframe(df.style.format({"Baseline": value_format, "Expansion": value_format}))
-
-def find_flow_intersection(results, attr: str = "cashflow"):
-    """
-    Find the intersection of the cumulative curves (Baseline vs. Expansion)
-    for the given array attribute (e.g., 'cashflow' or 'co2_flow').
-
-    Returns:
-      - dict describing the intersection:
-          kind: 'exact' | 'interp' | 'identical'
-          year_float: 1-indexed year as float (can be between two years)
-          value: value at the intersection (same for both curves)
-        or
-      - None if there is no intersection.
-    """
-    base = np.asarray(getattr(results.baseline, attr, np.array([])), dtype=float)
-    exp  = np.asarray(getattr(results.expansion, attr, np.array([])), dtype=float)
-
-    if base.size == 0 or exp.size == 0:
-        return None
-
-    # Pad to same length
-    n = int(max(len(base), len(exp)))
-    pad = lambda a: np.pad(a, (0, n - len(a)), mode="constant") if len(a) < n else a
-    base = pad(base)
-    exp  = pad(exp)
-
-    base_cum = np.cumsum(base)
-    exp_cum  = np.cumsum(exp)
-    diff = exp_cum - base_cum
-
-    # Identical curves
-    if np.allclose(diff, 0.0, atol=1e-12):
-        return {
-            "kind": "identical",
-            "year_float": None,
-            "value": None,
-            "message": "Curves are identical across the entire horizon."
-        }
-
-    # Exact intersection at a support point
-    for i in range(n):
-        if np.isclose(diff[i], 0.0, atol=1e-12):
-            return {
-                "kind": "exact",
-                "year_float": i + 1.0,  # 1-indexed
-                "value": float(base_cum[i]),
-                "index": i
-            }
-
-    # Sign change => intersection between two years (linear interpolation)
-    for i in range(1, n):
-        if diff[i-1] * diff[i] < 0:
-            t = (-diff[i-1]) / (diff[i] - diff[i-1])  # 0..1 within the interval
-            year_float = (i - 1) + t + 1.0            # 1-indexed
-            value = float(base_cum[i-1] + t * (base_cum[i] - base_cum[i-1]))
-            return {
-                "kind": "interp",
-                "year_float": year_float,
-                "value": value,
-                "between_years": (i, i+1),            # 1-indexed
-                "t": float(t)
-            }
-
-    # No intersection (one curve stays above/below the other)
-    return None
-
-def make_comparison_chart(data: pd.DataFrame,
-                          tooltips: list[alt.Tooltip] | None = None):
-    def _make_ring(
-            df: pd.DataFrame,
-            radius: float,
-            thickness: float,
-            color: str,
-        ) -> alt.Chart:
-
-        background =  (alt.Chart(pd.DataFrame({"value": [1]}))
-                       .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4, tooltip=None)
-                       .encode(theta=alt.Theta("value:Q", stack=True))
-                       )
-
-        foreground = (
-            # alt.Chart(pd.DataFrame(data_series))
-            alt.Chart(df)
-            .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
-            .encode(theta=alt.Theta("value:Q", stack=True),
-                    # tooltip=[(alt.Tooltip(f"{col}:N", title=col.replace("_", " "))
-                    #          if col == "Szenario" else
-                    #           alt.Tooltip(f"{col}:Q", title=col.replace("_", " "), format=",.2f"))
-                    #          for col in df.columns if col != "value"]
-                    tooltip = tooltips
-        )
-        )
-        return background + foreground
-
-    # Create rings
-    ring_baseline = _make_ring(df=data.loc[['baseline']],
-                               radius=40,
-                               thickness=20,
-                               color=COLOR_BL)
-    ring_expansion = _make_ring(df=data.loc[['expansion']],
-                                radius=65,
-                                thickness=20,
-                                color=COLOR_EX)
-
-    return ring_baseline, ring_expansion
-
-def _num_waves() -> int:
-    return sum(1 for i in VEH_YEARS_IDX if i < TIME_PRJ_YRS)
-
-def build_cost_breakdown_18y(pr, phase: str) -> dict[str, float]:
-    """
-    Baut die 18-Jahres-Kosten so auf, wie der cashflow gefüllt wird:
-    - Jährliches OPEX: (opex_grid + opex_vehicle) * Jahre
-    - CAPEX Fahrzeuge: capex_vehicles_eur je Welle (0/5/11)
-    - CAPEX Infra: in Expansion Jahr 0 voll (grid+pv+chargers), ESS in Jahr 0 und 8
-    """
-
-    # jährliches OPEX (genau wie im cashflow addiert)
-    opex_total_18 = (float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)) * TIME_PRJ_YRS
-
-    # Fahrzeuge CAPEX: bereits netto (Salvage schon im capex eingepreist)
-    capex_veh_all_waves = float(pr.capex_vehicles_eur) * _num_waves()
-
-    # Infrastruktur CAPEX-Timings (nur Expansion)
-    if phase.lower() == "expansion":
-        capex_infra_y0 = (
-            float(pr.infra_capex_breakdown.get("grid", 0.0))
-          + float(pr.infra_capex_breakdown.get("pv", 0.0))
-          + float(pr.infra_capex_breakdown.get("chargers", 0.0))
-        )
-        # ESS in Jahr 0 und 8 (sofern im Projektzeitraum)
-        ess_once = float(pr.infra_capex_breakdown.get("ess", 0.0))
-        ess_count = (1 if TIME_PRJ_YRS > 0 else 0) + (1 if TIME_PRJ_YRS > 8 else 0)
-        capex_infra_total = capex_infra_y0 + ess_once * ess_count
-    else:
-        capex_infra_total = 0.0
-
-    # Für Balken aufschlüsseln (optional)
-    return {
-        "OPEX": opex_total_18,
-        "CAPEX Fahrzeuge": capex_veh_all_waves,
-        "CAPEX Infrastruktur": capex_infra_total,
-    }
-
-def build_co2_breakdown_18y(pr, phase: str) -> dict[str, float]:
-    """
-    Baut die 18-Jahres-CO2-Summen so auf, wie co2_flow gefüllt wird:
-    - Betrieb: co2_yrl_kg * Jahre  (Grid + Tailpipe)
-    - Fahrzeuge Herstellung: pro Welle (0/5/11)
-    - Infrastruktur Herstellung: in Expansion Jahr 0 (grid+pv+chargers), ESS in Jahr 0 und 8
-    """
-
-    co2_oper_18 = float(pr.co2_yrl_kg) * TIME_PRJ_YRS
-    co2_veh_prod_all_waves = float(pr.vehicles_co2_production_total_kg) * _num_waves()
-
-    if phase.lower() == "expansion":
-        co2_infra_y0 = (
-            float(pr.infra_co2_breakdown.get("grid", 0.0))
-          + float(pr.infra_co2_breakdown.get("pv", 0.0))
-          + float(pr.infra_co2_breakdown.get("chargers", 0.0))
-        )
-        ess_once = float(pr.infra_co2_breakdown.get("ess", 0.0))
-        ess_count = (1 if TIME_PRJ_YRS > 0 else 0) + (1 if TIME_PRJ_YRS > 8 else 0)
-        co2_infra_total = co2_infra_y0 + ess_once * ess_count
-    else:
-        co2_infra_total = 0.0
-
-    return {
-        "Betrieb": co2_oper_18,
-        "Fahrzeuge Herstellung": co2_veh_prod_all_waves,
-        "Infrastruktur Herstellung": co2_infra_total,
-    }
 
 def run_frontend():
     # define page settings
@@ -1142,7 +728,7 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = backend.run_backend(settings=settings)
+            results = backend.run_backend(input=settings)
             display_results(results)
 
         except GridPowerExceededError as e:
