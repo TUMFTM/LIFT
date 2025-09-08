@@ -246,13 +246,25 @@ class BackendResults:
     expansion: PhaseResults
 
     roi_rel: float = 0.0
-    period_payback: float = 0.0
 
     @property
     def npc_delta(self) -> float:
-        return self.expansion.cashflow.sum() - self.baseline.cashflow.sum()
+        return self.baseline.cashflow.sum() - self.expansion.cashflow.sum()
 
-TIME_PRJ_YRS: Final[int] = 18
+    @property
+    def payback_period_yrs(self) -> float:
+        diff = np.cumsum(self.baseline.cashflow) - np.cumsum(self.expansion.cashflow)
+        idx = np.flatnonzero(np.diff(np.sign(diff)))
+
+        if idx.size == 0 or diff[0] > 0:
+            return None  # No intersection
+
+        i = idx[0]
+        y0, y1 = diff[i], diff[i + 1]
+
+        # Linear interpolation to find x where y1 == y2
+        return (i - y0 / (y1 - y0)) + 1
+
 
 @dataclass(frozen=True)
 class DefaultLocation:

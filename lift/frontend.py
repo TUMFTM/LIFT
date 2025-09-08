@@ -614,10 +614,10 @@ def display_results(results):
                   )
     with col2:
         st.markdown("#### Amortisationszeitraum")
-        if results.period_payback is None:
+        if results.payback_period_yrs is None:
             st.markdown("Investition amortisiert sich nicht.")
         else:
-            st.markdown(f"{results.period_payback:.2f} Jahre")
+            st.markdown(f"{results.payback_period_yrs:.2f} Jahre")
 
         st.markdown("#### Kosteneinsparung")
         st.markdown(f"{results.npc_delta:,.0f} EUR nach 18 Jahren")
@@ -728,7 +728,7 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = backend.run_backend(input=settings)
+            results = backend.run_backend(inputdata=settings)
             display_results(results)
 
         except GridPowerExceededError as e:

@@ -449,6 +449,7 @@ def calc_phase_results(logs: Logs,
     co2['grid_yrl'] = (result_sim.energy_grid_buy_wh - result_sim.energy_grid_sell_wh) * CO2_SPEC_KG_PER_WH
 
     cashflow = np.zeros(TIME_PRJ_YRS) + np.random.random()  # ToDo: fix
+    cashflow[0] += np.random.random() * 5
     co2_flow = np.zeros(TIME_PRJ_YRS) + 1
 
     return PhaseResults(simulation=result_sim,
@@ -459,45 +460,43 @@ def calc_phase_results(logs: Logs,
                         )
 
 
-def run_backend(input: Input) -> BackendResults:
+def run_backend(inputdata: Input) -> BackendResults:
     # start time tracking
     start_time = time()
 
     # get log data for the simulation
-    logs = Logs(pv_spec=get_log_pv(coordinates=input.location.coordinates),
-                dem=get_log_dem(slp=input.location.slp.lower(),
-                                consumption_yrl_wh=input.location.consumption_yrl_wh,
+    logs = Logs(pv_spec=get_log_pv(coordinates=inputdata.location.coordinates),
+                dem=get_log_dem(slp=inputdata.location.slp.lower(),
+                                consumption_yrl_wh=inputdata.location.consumption_yrl_wh,
                                 ),
                 # ToDo: get input parameters from settings
                 fleet={vehicle_type: get_log_subfleet(vehicle_type=vehicle_type)
-                       for vehicle_type, subfleet in input.subfleets.items()},
+                       for vehicle_type, subfleet in inputdata.subfleets.items()},
                 )
 
     results_baseline = calc_phase_results(logs=logs,
-                                          capacities=input.location.get_capacities('baseline'),
-                                          economics=input.economic,
+                                          capacities=inputdata.location.get_capacities('baseline'),
+                                          economics=inputdata.economic,
                                           subfleets={sf.name: sf.get_phase_input(phase='baseline')
-                                                     for sf in input.subfleets.values()},
+                                                     for sf in inputdata.subfleets.values()},
                                           chargers={chg.name: chg.get_phase_input(phase='baseline')
-                                                     for chg in input.chargers.values()},
+                                                    for chg in inputdata.chargers.values()},
                                           phase="baseline",
-                                          location=input.location,
+                                          location=inputdata.location,
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
-                                           capacities=input.location.get_capacities('expansion'),
-                                           economics=input.economic,
+                                           capacities=inputdata.location.get_capacities('expansion'),
+                                           economics=inputdata.economic,
                                            subfleets={sf.name: sf.get_phase_input(phase='expansion')
-                                                      for sf in input.subfleets.values()},
+                                                      for sf in inputdata.subfleets.values()},
                                            chargers={chg.name: chg.get_phase_input(phase='expansion')
-                                                     for chg in input.chargers.values()},
+                                                     for chg in inputdata.chargers.values()},
                                            phase="expansion",
-                                           location=input.location,
+                                           location=inputdata.location,
                                            )
 
     roi_rel = 0.0  #ToDo: calculate!
-    period_payback_rel = 0.0  #ToDo: calculate!
-    npc_delta = 0.0  #ToDo: calculate!
 
     # stop time tracking
     print(f'Backend calculation completed in {time() - start_time:.2f} seconds.')
@@ -505,12 +504,11 @@ def run_backend(input: Input) -> BackendResults:
     return BackendResults(baseline=results_baseline,
                           expansion=results_expansion,
                           roi_rel=roi_rel,
-                          period_payback=period_payback_rel,
                           )
 
 
 if __name__ == "__main__":
     settings_default = Input()
-    result = run_backend(input=settings_default)
+    result = run_backend(inputdata=settings_default)
     print(result.baseline.simulation)
     print(result.expansion.simulation)

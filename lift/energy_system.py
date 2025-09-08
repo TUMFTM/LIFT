@@ -8,7 +8,7 @@ import streamlit as st
 
 
 from definitions import DTI, FREQ_HOURS
-from interfaces import GridPowerExceededError, SOCError, SimInputSubfleet
+from interfaces import GridPowerExceededError, SOCError, SimInputSubfleet, SimInputCharger
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
@@ -184,7 +184,7 @@ class Fleet(DemandBlock):
     pwr_lim_w: float
     log: pd.DataFrame
     subfleets: dict[str, SimInputSubfleet]
-    chargers: dict[str, int]
+    chargers: dict[str, SimInputCharger]
 
     def __post_init__(self):
         self.fleet_units = {f"{subfleet.name}_{i}": FleetUnit(
@@ -193,13 +193,13 @@ class Fleet(DemandBlock):
             consumption_w=self.log[subfleet.name].loc[:, (f'{subfleet.name}{i}', 'consumption')].values,
             capacity_wh=subfleet.capacity_wh,
             charger=subfleet.charger,
-            pwr_max_w=subfleet.pwr_chg_max_w,
+            pwr_max_w=min(subfleet.pwr_chg_max_w, self.chargers[subfleet.charger].pwr_max_w),
         ) for subfleet in self.subfleets.values()
             for i in range(subfleet.num)}
 
     @property
     def demand_w(self) -> float:
-        chargers = self.chargers.copy()
+        chargers = {chg_name: chg.num for chg_name, chg in self.chargers.items()}
         # get a list of all fleet units and their demand and sort that by priority level
         pwr_available_w = self.pwr_lim_w
         pwr_chg_fleet_w = 0.0
@@ -275,6 +275,8 @@ class FleetUnit(DemandBlock):
 
     @property
     def time_flexibility(self) -> float:
+        if self.pwr_max_w == 0:  # division by 0 causes error
+            return np.inf  # no charging possible, so lowest priority
         return float(self.soc - self.soc_min[self.idx]) * self.capacity_wh / self.pwr_max_w
 
     @property
