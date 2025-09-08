@@ -117,6 +117,8 @@ STYLES = f"""
     </style>
     """
 
+SHARE_COLUMN_INPUT = [3, 7]
+
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
 VEH_YEARS_IDX = [0, 5, 11]
@@ -153,7 +155,7 @@ def _get_params_location() -> LocationSettings:
 
     with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
         st.markdown("**Stromverbrauch Standort**")
-        col1, col2 = st.columns(col_share)
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             options = ['H0', 'H0_dyn',
                        'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
@@ -176,7 +178,7 @@ def _get_params_location() -> LocationSettings:
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
         st.markdown("**Netzanschluss**")
         # ToDo: distinguish static and dynamic load management
-        col1, col2 = st.columns(col_share)
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             preexisting = st.number_input(label="Vorhanden (kW)",
                                           key="grid_preexisting",
@@ -197,7 +199,7 @@ def _get_params_location() -> LocationSettings:
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
         st.markdown("**PV-Anlage**")
-        col1, col2 = st.columns(col_share)
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             preexisting = st.number_input(label="Vorhanden (kWp)",
                                           key="pv_preexisting",
@@ -218,7 +220,7 @@ def _get_params_location() -> LocationSettings:
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
         st.markdown("**Stationärspeicher**")
-        col1, col2 = st.columns(col_share)
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             preexisting = st.number_input(label="Vorhanden (kWh)",
                                           key="ess_preexisting",
@@ -295,7 +297,7 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                                 step=1,
                                                 )
 
-        col1, col2 = st.columns([3, 7])
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             charger = st.selectbox(label="Ladepunkt",
                                    key=f'charger_{subfleet.name}',
@@ -350,7 +352,7 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                              icon=charger.icon,
                              expanded=False):
 
-        col1, col2 = st.columns([3, 7])
+        col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
             num_preexisting = st.number_input(label="Vorhandene",
                                               key=f'chg_{charger.name.lower()}_preexisting',
