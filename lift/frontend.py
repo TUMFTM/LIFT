@@ -15,13 +15,13 @@ from definitions import SubFleetDefinition, ChargerDefinition, SUBFLEETS, CHARGE
 from interfaces import (
     GridPowerExceededError,
     SOCError,
-    LocationSettings,
-    SubFleetSettings,
-    ChargerSettings,
-    EconomicSettings,
-    Settings,
+    InputLocation,
+    InputSubfleet,
+    InputCharger,
+    InputEconomic,
+    Input,
     Coordinates,
-    Size,
+    ExistExpansionValue,
     DEFAULTS
 )
 
@@ -123,10 +123,7 @@ horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>
 
 VEH_YEARS_IDX = [0, 5, 11]
 
-def _get_params_location() -> LocationSettings:
-
-    col_share = [3, 7]
-
+def _get_params_location() -> InputLocation:
     with st.sidebar.expander(label="**Position**", icon="🗺️"):
 
         if "location" not in st.session_state:
@@ -194,8 +191,8 @@ def _get_params_location() -> LocationSettings:
                                   value=0,
                                   step=10,
                                   )
-        grid_capacity_w = Size(preexisting=preexisting * 1E3,
-                                 expansion=expansion * 1E3)
+        grid_capacity_w = ExistExpansionValue(preexisting=preexisting * 1E3,
+                                              expansion=expansion * 1E3)
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
         st.markdown("**PV-Anlage**")
@@ -215,8 +212,8 @@ def _get_params_location() -> LocationSettings:
                                   value=0,
                                   step=5,
                                   )
-        pv_capacity_wp = Size(preexisting=preexisting * 1E3,
-                              expansion=expansion * 1E3)
+        pv_capacity_wp = ExistExpansionValue(preexisting=preexisting * 1E3,
+                                             expansion=expansion * 1E3)
         st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
         st.markdown("**Stationärspeicher**")
@@ -236,22 +233,22 @@ def _get_params_location() -> LocationSettings:
                                   value=0,
                                   step=5,
                                   )
-        ess_capacity_wh = Size(preexisting=preexisting * 1E3,
-                               expansion=expansion * 1E3)
+        ess_capacity_wh = ExistExpansionValue(preexisting=preexisting * 1E3,
+                                              expansion=expansion * 1E3)
 
-    return LocationSettings(coordinates=st.session_state['location'],
-                            slp=slp,
-                            consumption_yrl_wh=consumption_yrl_wh,
-                            grid_capacity_w=grid_capacity_w,
-                            pv_capacity_wp=pv_capacity_wp,
-                            ess_capacity_wh=ess_capacity_wh,
-                            )
+    return InputLocation(coordinates=st.session_state['location'],
+                         slp=slp,
+                         consumption_yrl_wh=consumption_yrl_wh,
+                         grid_capacity_w=grid_capacity_w,
+                         pv_capacity_wp=pv_capacity_wp,
+                         ess_capacity_wh=ess_capacity_wh,
+                         )
 
 
-def _get_params_economic() -> EconomicSettings:
+def _get_params_economic() -> InputEconomic:
     with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                              icon="💶"):
-        return EconomicSettings(
+        return InputEconomic(
             fix_cost_construction=st.slider("Fixkosten Standortausbau (EUR)", 0, 1000000, 0, 5000),
             opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_buy_eur_per_wh, 0.01) * 1E-3,
             opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00, DEFAULTS.economics.opex_spec_grid_sell_eur_per_wh, 0.01) * 1E-3,
@@ -267,7 +264,7 @@ def _get_params_economic() -> EconomicSettings:
         )
 
 
-def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
+def _get_params_subfleet(subfleet: SubFleetDefinition) -> InputSubfleet:
     with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
                              icon=subfleet.icon,
                              expanded=False):
@@ -281,21 +278,21 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
 
         col1, col2 = st.columns(2)
         with col1:
-            num_bev_preexisting = st.number_input("Vorhandene E-Fahrzeuge",
-                                                  key=f'num_bev_preexisting_{subfleet.name}',
-                                                  min_value=0,
-                                                  max_value=num_total,
-                                                  value=0,
-                                                  step=1,
-                                                  )
+            preexisting = st.number_input("Vorhandene E-Fahrzeuge",
+                                          key=f'num_bev_preexisting_{subfleet.name}',
+                                          min_value=0,
+                                          max_value=num_total,
+                                          value=0,
+                                          step=1,
+                                          )
         with col2:
-            num_bev_expansion = st.number_input("Zusätzliche E-Fahrzeuge",
-                                                key=f'num_bev_expansion_{subfleet.name}',
-                                                min_value=0,
-                                                max_value=num_total - num_bev_preexisting,
-                                                value=0,
-                                                step=1,
-                                                )
+            expansion = st.number_input("Zusätzliche E-Fahrzeuge",
+                                        key=f'num_bev_expansion_{subfleet.name}',
+                                        min_value=0,
+                                        max_value=num_total - preexisting,
+                                        value=0,
+                                        step=1,
+                                        )
 
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
@@ -326,43 +323,36 @@ def _get_params_subfleet(subfleet: SubFleetDefinition) -> SubFleetSettings:
                                    **subfleet.settings_toll_share.dict,
                                    )
 
-    return SubFleetSettings(
+    return InputSubfleet(
         name=subfleet.name,
         num_total=num_total,
-        num_bev_preexisting=num_bev_preexisting,
-        num_bev_expansion=num_bev_expansion,
+        num_bev=ExistExpansionValue(preexisting=preexisting,
+                                    expansion=expansion),
         battery_capacity_wh=subfleet.battery_capactiy_wh,
         capex_bev_eur=capex_bev_eur,
         capex_icev_eur=capex_icev_eur,
         toll_share_pct=toll_share_pct,
         charger=charger,
         pwr_max_w=pwr_max_w,
-
-        # dist_max_daily_km=dist_max_km,
-        # depot_time_h=depot_avg_h,
-        # load_avg_t=load_avg_t,
-        # weight_empty_bev_kg=subfleet.weight_empty_bev,
-        # weight_empty_icev_kg=subfleet.weight_empty_icev,
     )
 
 
-
-def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
+def _get_params_charger(charger: ChargerDefinition) -> InputCharger:
     with st.sidebar.expander(label=f'**{charger.name}-Ladepunkte**',
                              icon=charger.icon,
                              expanded=False):
 
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         with col1:
-            num_preexisting = st.number_input(label="Vorhandene",
-                                              key=f'chg_{charger.name.lower()}_preexisting',
-                                              **charger.settings_preexisting.dict
-                                              )
+            preexisting = st.number_input(label="Vorhandene",
+                                          key=f'chg_{charger.name.lower()}_preexisting',
+                                          **charger.settings_preexisting.dict
+                                          )
         with col2:
-            num_expansion = st.slider(label="Zusätzliche",
-                                      key=f'chg_{charger.name.lower()}_expansion',
-                                      **charger.settings_expansion.dict,
-                                      )
+            expansion = st.slider(label="Zusätzliche",
+                                  key=f'chg_{charger.name.lower()}_expansion',
+                                  **charger.settings_expansion.dict,
+                                  )
 
         pwr_max_w = st.slider(label="Maximale Ladeleistung (kW)",
                               key=f'chg_{charger.name.lower()}_pwr',
@@ -374,14 +364,14 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                          **charger.settings_cost_per_unit_eur.dict
                                          )
 
-        return ChargerSettings(name=charger.name,
-                               num_preexisting=num_preexisting,
-                               num_expansion=num_expansion,
-                               pwr_max_w=pwr_max_w,
-                               cost_per_charger_eur=cost_per_charger_eur)
+        return InputCharger(name=charger.name,
+                            num=ExistExpansionValue(preexisting=preexisting,
+                                                    expansion=expansion),
+                            pwr_max_w=pwr_max_w,
+                            cost_per_charger_eur=cost_per_charger_eur)
 
 
-def create_and_get_sidebar() -> Settings:
+def create_and_get_sidebar() -> Input:
     col1, col2 = st.sidebar.columns([6, 4])
     with col1:
         auto_refresh = st.toggle("**Automatisch aktualisieren**",
@@ -413,11 +403,11 @@ def create_and_get_sidebar() -> Settings:
     for charger in CHARGERS.values():
         charger_settings[charger.name] = _get_params_charger(charger)
 
-    return Settings(location=location_settings,
-                    subfleets=fleet_settings,
-                    chargers=charger_settings,
-                    economic=economic_settings
-                    )
+    return Input(location=location_settings,
+                 subfleets=fleet_settings,
+                 chargers=charger_settings,
+                 economic=economic_settings
+                 )
 
 
 def opex18(pr):

@@ -23,17 +23,17 @@ from energy_system import (FixedDemand,
                            StationaryStorage)
 
 from interfaces import (Coordinates,
+                        Input,
+                        InputLocation,
+                        InputCharger,
+                        InputSubfleet,
+                        InputEconomic,
                         Logs,
                         Capacities,
-                        Settings,
                         SubfleetSimSettings,
-                        EconomicSettings,
                         SimulationResults,
                         PhaseResults,
                         BackendResults,
-                        LocationSettings,
-                        ChargerSettings,
-                        SubFleetSettings
                         )
 
 if TYPE_CHECKING:
@@ -141,8 +141,8 @@ def simulate(logs: Logs,
 
 def calc_opex_vehicle(
     logs: "Logs",
-    subfleet_settings: Dict[str, "SubFleetSettings"],
-    economics: "EconomicSettings",
+    subfleet_settings: Dict[str, "InputSubfleet"],
+    economics: "InputEconomic",
     phase: Literal["baseline", "expansion"],
     vehicle_charger: Dict[str, Dict[str, Optional[str]]] = None,
 ) -> Tuple[
@@ -154,7 +154,7 @@ def calc_opex_vehicle(
         vehicle_charger = {}
         for vt, sf in subfleet_settings.items():
             total = int(sf.num_total)
-            bev_count = int(sf.num_bev_preexisting + (sf.num_bev_expansion if phase == "expansion" else 0))
+            bev_count = int(sf.num_bev.preexisting + (sf.num_bev.expansion if phase == "expansion" else 0))
             vt_map: Dict[str, Optional[str]] = {}
             for i in range(total):
                 veh_id = f"{vt}{i}"
@@ -236,9 +236,9 @@ def calc_opex_vehicle(
 
 
 def calc_infrastructure_capex(
-    location: "LocationSettings",
-    charger_settings: Dict[str, "ChargerSettings"],
-    economics: "EconomicSettings",
+    location: "InputLocation",
+    charger_settings: Dict[str, "InputCharger"],
+    economics: "InputEconomic",
     phase: Literal["baseline", "expansion"],
 ) -> Tuple[float, Dict[str, float], float, Dict[str, float]]:
     """
@@ -293,7 +293,7 @@ def calc_infrastructure_capex(
 
     # Charger CAPEX: expansion number * cost per charger
     capex_chargers = float(sum(
-        float(cs.num_expansion) * float(cs.cost_per_charger_eur)
+        float(cs.num.expansion) * float(cs.cost_per_charger_eur)
         for cs in charger_settings.values()
     ))
 
@@ -304,8 +304,8 @@ def calc_infrastructure_capex(
     for name, cs in charger_settings.items():
         key = str(name).strip().lower()  # "ac" / "dc"
         meta = CHARGERS.get(key)
-        capex = float(cs.num_expansion) * float(cs.cost_per_charger_eur)
-        co2 = float(cs.num_expansion) * float(meta.settings_CO2_per_unit)
+        capex = float(cs.num.expansion) * float(cs.cost_per_charger_eur)
+        co2 = float(cs.num.expansion) * float(meta.settings_CO2_per_unit)
         if key == "ac":
             capex_chargers_ac += capex
             co2_chargers_ac += co2
@@ -338,8 +338,8 @@ def calc_infrastructure_capex(
 
 
 def calc_vehicle_capex_split(
-    subfleet_settings: dict[str, "SubFleetSettings"],
-    economics: "EconomicSettings",
+    subfleet_settings: dict[str, "InputSubfleet"],
+    economics: "InputEconomic",
     phase: Literal["baseline", "expansion"],
 ) -> Tuple[
     float, float, Dict[str, float], Dict[str, float],   # CAPEX totals & breakdowns
@@ -347,8 +347,8 @@ def calc_vehicle_capex_split(
 ]:
     """
     CAPEX-Split (BEV/ICEV) + Herstellungs-CO2 (embodied) für die gewählte Phase.
-    - baseline:   BEV = num_bev_preexisting; ICEV = num_total - BEV
-    - expansion:  BEV = num_bev_preexisting + num_bev_expansion; ICEV = num_total - BEV
+    - baseline:   BEV = num_bev.preexisting; ICEV = num_total - BEV
+    - expansion:  BEV = num_bev.preexisting + num_bev.expansion; ICEV = num_total - BEV
                   (Flottengröße bleibt konstant)
     Rückgabe:
       capex_bev_total_eur, capex_icev_total_eur, capex_bev_by_sf, capex_icev_by_sf,
@@ -373,9 +373,9 @@ def calc_vehicle_capex_split(
 
         # Fahrzeuganzahl je Phase (alle Fahrzeuge der Flotte)
         if phase == "baseline":
-            bev_cnt  = int(sf.num_bev_preexisting)
+            bev_cnt  = int(sf.num_bev.preexisting)
         else:  # expansion
-            bev_cnt  = int(sf.num_bev_preexisting + sf.num_bev_expansion)
+            bev_cnt  = int(sf.num_bev.preexisting + sf.num_bev.expansion)
 
         icev_cnt = max(int(sf.num_total) - bev_cnt, 0)
 
@@ -411,14 +411,14 @@ def calc_vehicle_capex_split(
 
 def calc_phase_results(logs: Logs,
                        capacities: Capacities,
-                       economics: EconomicSettings,
+                       economics: InputEconomic,
                        subfleets: dict[str, SubfleetSimSettings],
                        chargers: dict[str, int],
                        *,
                        phase: str,
-                       location: LocationSettings,
-                       charger_settings: dict[str, ChargerSettings],
-                       subfleet_settings: dict[str, SubFleetSettings],
+                       location: InputLocation,
+                       charger_settings: dict[str, InputCharger],
+                       subfleet_settings: dict[str, InputSubfleet],
                        ) -> PhaseResults:
     result_sim = simulate(
         logs=logs,
@@ -610,7 +610,7 @@ def calc_phase_results(logs: Logs,
                         )
 
 
-def run_backend(settings: Settings) -> BackendResults:
+def run_backend(settings: Input) -> BackendResults:
     # start time tracking
     start_time = time()
 
@@ -633,11 +633,11 @@ def run_backend(settings: Settings) -> BackendResults:
                                        for subfleet in settings.subfleets.values()}
 
     chargers_baseline = {
-        str(t).strip().lower(): int(c.num_preexisting)
+        str(t).strip().lower(): int(c.num.preexisting)
         for t, c in settings.chargers.items()
     }
     chargers_expansion = {
-        str(t).strip().lower(): int(c.num_preexisting + c.num_expansion)
+        str(t).strip().lower(): int(c.num.total)
         for t, c in settings.chargers.items()
     }
 
@@ -679,7 +679,7 @@ def run_backend(settings: Settings) -> BackendResults:
 
 
 if __name__ == "__main__":
-    settings_default = Settings()
+    settings_default = Input()
     result = run_backend(settings=settings_default)
     print(result.baseline.simulation)
     print(result.expansion.simulation)

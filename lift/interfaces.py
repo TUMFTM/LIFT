@@ -31,7 +31,8 @@ class Coordinates:
     def as_tuple(self) -> tuple[float, float]:
         return self.latitude, self.longitude
 
-    def _decimal_to_dms(self, decimal_deg: float) -> tuple[int, int, float]:
+    @staticmethod
+    def _decimal_to_dms(decimal_deg: float) -> tuple[int, int, float]:
         degrees = int(abs(decimal_deg))
         minutes_full = (abs(decimal_deg) - degrees) * 60
         minutes = int(minutes_full)
@@ -48,20 +49,13 @@ class Coordinates:
 
 
 @dataclass
-class Size:
+class ExistExpansionValue:
     preexisting: float
     expansion: float
 
     @property
     def total(self) -> float:
         return self.preexisting + self.expansion
-
-
-@dataclass
-class Logs:
-    pv_spec: np.typing.NDArray[np.floating]
-    dem: np.typing.NDArray[np.floating]
-    fleet: dict[str, pd.DataFrame]
 
 
 @dataclass
@@ -72,20 +66,20 @@ class Capacities:
 
 
 @dataclass
-class LocationSettings:
+class InputLocation:
     coordinates: Coordinates = field(default_factory=Coordinates)
 
     slp: str = 'h0'
     consumption_yrl_wh: float = 10000000.0
 
-    grid_capacity_w: Size = field(default_factory=lambda: Size(preexisting=10E3,
-                                                               expansion=50E3))
+    grid_capacity_w: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10E3,
+                                                                                             expansion=50E3))
 
-    pv_capacity_wp: Size = field(default_factory=lambda: Size(preexisting=10E3,
-                                                              expansion=20E3))
+    pv_capacity_wp: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10E3,
+                                                                                            expansion=20E3))
 
-    ess_capacity_wh: Size = field(default_factory=lambda: Size(preexisting=0E3,
-                                                               expansion=50E3))
+    ess_capacity_wh: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0E3,
+                                                                                             expansion=50E3))
 
     def get_capacities(self,
                        phase: str) -> Capacities:
@@ -101,11 +95,11 @@ class LocationSettings:
 
 
 @dataclass
-class SubFleetSettings:
+class InputSubfleet:
     name: str = 'hlt'
     num_total: int = 5
-    num_bev_preexisting: int = 1
-    num_bev_expansion: int = 4
+    num_bev: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=1,
+                                                                                     expansion=4))
     battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
@@ -114,26 +108,20 @@ class SubFleetSettings:
     charger: str = 'ac'
     pwr_max_w: float = 11E3
 
-    # dist_max_daily_km: float
-    # depot_time_h: float
-    # load_avg_t: float
-    # weight_empty_bev_kg: float
-    # weight_empty_icev_kg: float
-
     def get_subfleet_sim_settings_baseline(self,
-                                  charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
+                                           charger_settings: dict[str, 'InputCharger']) -> SubfleetSimSettings:
         key = str(self.charger).strip().lower()
         return SubfleetSimSettings(name=self.name,
-                                   num=self.num_bev_preexisting,
+                                   num=int(self.num_bev.preexisting),
                                    pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
                                    charger=key,
                                    capacity_wh=self.battery_capacity_wh)
 
     def get_subfleet_sim_settings_expansion(self,
-                                            charger_settings: dict[str, 'ChargerSettings']) -> SubfleetSimSettings:
+                                            charger_settings: dict[str, 'InputCharger']) -> SubfleetSimSettings:
         key = str(self.charger).strip().lower()
         return SubfleetSimSettings(name=self.name,
-                                   num=self.num_bev_preexisting + self.num_bev_expansion,
+                                   num=int(self.num_bev.total),
                                    pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
                                    charger=key,
                                    capacity_wh=self.battery_capacity_wh)
@@ -141,16 +129,16 @@ class SubFleetSettings:
 
 
 @dataclass
-class ChargerSettings:
+class InputCharger:
     name: str = 'ac'
-    num_preexisting: int = 0
-    num_expansion: int = 4
+    num: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0,
+                                                                                 expansion=4))
     pwr_max_w: float = 11E3
     cost_per_charger_eur: float = 3000.0
 
 
 @dataclass
-class EconomicSettings:
+class InputEconomic:
     opex_spec_grid_buy_eur_per_wh: float = 30E-5
     opex_spec_grid_sell_eur_per_wh: float = -6E-5
     opex_spec_grid_peak_eur_per_wp: float = 150E-3
@@ -166,15 +154,21 @@ class EconomicSettings:
     working_days_yrl: int = 220
     fix_cost_construction: int = 10000
 
+@dataclass
+class Input:
+    location: InputLocation = field(default_factory=InputLocation)
+    subfleets: dict[str, InputSubfleet] = field(default_factory=lambda: dict(hlt=InputSubfleet(name='hlt'),
+                                                                             hst=InputSubfleet(name='hst'), ))
+    chargers: dict[str, InputCharger] = field(default_factory=lambda: dict(ac=InputCharger(name='ac'),
+                                                                           dc=InputCharger(name='dc'), ))
+    economic: InputEconomic = field(default_factory=InputEconomic)
+
 
 @dataclass
-class Settings:
-    location: LocationSettings = field(default_factory=LocationSettings)
-    subfleets: dict[str, SubFleetSettings] = field(default_factory=lambda: dict(hlt=SubFleetSettings(name='hlt'),
-                                                                                hst=SubFleetSettings(name='hst'), ))
-    chargers: dict[str, ChargerSettings] = field(default_factory=lambda: dict(ac=ChargerSettings(name='ac'),
-                                                                              dc=ChargerSettings(name='dc'),))
-    economic: EconomicSettings = field(default_factory=EconomicSettings)
+class Logs:
+    pv_spec: np.typing.NDArray[np.floating]
+    dem: np.typing.NDArray[np.floating]
+    fleet: dict[str, pd.DataFrame]
 
 
 @dataclass
