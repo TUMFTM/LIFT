@@ -471,36 +471,51 @@ def display_results(results):
         unsafe_allow_html=True,
     )
 
-    col1, col2, col3, col4 = st.columns(4)
-    def centered_h4(text: str) -> None:
+    def _centered_heading(text: str) -> None:
         st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
-        centered_h4("Gesamtkosten")
+        _centered_heading("Gesamtkosten")
         st.altair_chart(
             make_comparison_chart_discrete_values(
-                float(np.cumsum(results.baseline.cashflow)[-1]),
-                float(np.cumsum(results.expansion.cashflow)[-1]),
+                sum(results.baseline.cashflow),
+                sum(results.expansion.cashflow),
                 unit="EUR",
                 abs_title="Kosten"
             ),
             use_container_width=True
         )
 
+        # st.altair_chart(
+        #     make_comparison_bars_discrete_values(sum(results.baseline.cashflow)),
+        #                                          sum(results.expansion.cashflow)),
+        #                                          unit="EUR", abs_title="Gesamtkosten", abs_format=",.0f"),
+        #     use_container_width=True
+        # )
+
     with col2:
-        centered_h4("Gesamt-CO₂")
+        _centered_heading("Gesamt-CO₂")
         st.altair_chart(
             make_comparison_chart_discrete_values(
-                float(np.cumsum(results.baseline.co2_flow)[-1]),
-                float(np.cumsum(results.expansion.co2_flow)[-1]),
+                sum(results.baseline.co2_flow),
+                sum(results.expansion.co2_flow),
                 unit="kg-CO₂",
                 abs_title="Emissionen"
             ),
             use_container_width=True
         )
 
+        # st.altair_chart(
+        #     make_comparison_bars_discrete_values(sum(results.baseline.co2_flow)),
+        #                                          sum(results.expansion.co2_flow)),
+        #                                          unit="kg-CO2", abs_title="CO₂ gesamt", abs_format=",.0f"),
+        #     use_container_width=True
+        # )
+
     with col3:
-        centered_h4("Eigenverbrauchsquote")
+        _centered_heading("Eigenverbrauchsquote")
         st.altair_chart(
             make_comparison_chart(
                 results.baseline.self_consumption_pct / 100,
@@ -510,50 +525,7 @@ def display_results(results):
         )
 
     with col4:
-        centered_h4("Autarkiegrad")
-        st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_sufficiency_pct / 100,
-                results.expansion.self_sufficiency_pct / 100
-            ),
-            use_container_width=True
-        )
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    def centered_h4(text: str) -> None:
-        st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
-
-    with col1:
-        centered_h4("Gesamtkosten")
-        st.altair_chart(
-            make_comparison_bars_discrete_values(float(np.cumsum(results.baseline.cashflow)[-1]),
-                float(np.cumsum(results.expansion.cashflow)[-1]),
-                                                 unit="EUR", abs_title="Gesamtkosten", abs_format=",.0f"),
-            use_container_width=True
-        )
-
-    with col2:
-        centered_h4("Gesamt-CO₂")
-        st.altair_chart(
-            make_comparison_bars_discrete_values(float(np.cumsum(results.baseline.co2_flow)[-1]),
-                float(np.cumsum(results.expansion.co2_flow)[-1]),
-                                                 unit="kg-CO2", abs_title="CO₂ gesamt", abs_format=",.0f"),
-            use_container_width=True
-        )
-
-    with col3:
-        centered_h4("Eigenverbrauchsquote")
-        st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_consumption_pct / 100,
-                results.expansion.self_consumption_pct / 100
-            ),
-            use_container_width=True
-        )
-
-    with col4:
-        centered_h4("Autarkiegrad")
+        _centered_heading("Autarkiegrad")
         st.altair_chart(
             make_comparison_chart(
                 results.baseline.self_sufficiency_pct / 100,
@@ -1008,8 +980,8 @@ def make_comparison_chart(val_baseline,
                           ):
 
     # Create rings
-    baseline_ring = make_ring('Baseline', val_baseline, 40, 30, COLOR_BL)
-    expansion_ring = make_ring('Expansion', val_expansion, 80, 30, COLOR_EX)
+    baseline_ring = make_ring('Baseline', val_baseline, 40, 20, COLOR_BL)
+    expansion_ring = make_ring('Expansion', val_expansion, 65, 20, COLOR_EX)
 
     # Center text (single-row dataframe, minimal overhead)
     center_text = alt.Chart(pd.DataFrame({"text": [f"{(val_expansion - val_baseline) * 100:+.1f} %"]})).mark_text(
@@ -1021,7 +993,7 @@ def make_comparison_chart(val_baseline,
         text="text:N"
     )
     # Combine chart
-    chart = (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
+    chart = (baseline_ring + expansion_ring + center_text).properties(width=200, height=200)
 
     return chart
 
@@ -1044,11 +1016,11 @@ def make_comparison_chart_discrete_values(
     co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
 
     baseline_ring = make_ring(
-        phase="Baseline", value=base_ratio, radius=40, thickness=30, color=COLOR_BL,
+        phase="Baseline", value=base_ratio, radius=40, thickness=20, color=COLOR_BL,
         abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
     )
     expansion_ring = make_ring(
-        phase="Expansion", value=exp_ratio, radius=80, thickness=30, color=COLOR_EX,
+        phase="Expansion", value=exp_ratio, radius=65, thickness=20, color=COLOR_EX,
         abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
     )
 
@@ -1064,7 +1036,7 @@ def make_comparison_chart_discrete_values(
         .encode(text="text:N")
     )
 
-    return (baseline_ring + expansion_ring + center_text).properties(width=300, height=300)
+    return (baseline_ring + expansion_ring + center_text).properties(width=200, height=200)
 
 def make_comparison_bars_discrete_values(
     val_baseline: float,
