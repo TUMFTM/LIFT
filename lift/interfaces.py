@@ -113,7 +113,7 @@ class InputSubfleet:
         key = str(self.charger).strip().lower()
         return SubfleetSimSettings(name=self.name,
                                    num=int(self.num_bev.preexisting),
-                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
+                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[key].pwr_max_w),
                                    charger=key,
                                    capacity_wh=self.battery_capacity_wh)
 
@@ -122,10 +122,9 @@ class InputSubfleet:
         key = str(self.charger).strip().lower()
         return SubfleetSimSettings(name=self.name,
                                    num=int(self.num_bev.total),
-                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[self.charger].pwr_max_w),
+                                   pwr_chg_max_w=min(self.pwr_max_w, charger_settings[key].pwr_max_w),
                                    charger=key,
                                    capacity_wh=self.battery_capacity_wh)
-
 
 
 @dataclass
