@@ -478,59 +478,143 @@ def display_results(results):
 
     with col1:
         _centered_heading("Gesamtkosten")
-        st.altair_chart(
-            make_comparison_chart_discrete_values(
-                sum(results.baseline.cashflow),
-                sum(results.expansion.cashflow),
-                unit="EUR",
-                abs_title="Kosten"
-            ),
-            use_container_width=True
+        val_baseline = sum(results.baseline.cashflow)
+        val_expansion = sum(results.expansion.cashflow)
+        val_max = max(val_baseline, val_expansion)
+        data = pd.DataFrame(index=['baseline', 'expansion'],
+                            data={'value': [val_baseline / val_max,
+                                            val_expansion / val_max],
+                                  'phase': ['Baseline',
+                                            'Expansion'],
+                                  'value_display': [val_baseline,
+                                                    val_expansion],
+                                  })
+
+        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                    alt.Tooltip(shorthand='value_display:Q', title='Gesamtkosten in EUR', format=',.0f'),]
+        ring_baseline, ring_expansion = make_comparison_chart(data=data,
+                                                              tooltips=tooltips)
+
+        # Center text (single-row dataframe, minimal overhead)
+        diff = val_expansion - val_baseline
+        center_text = alt.Chart(pd.DataFrame(
+            {"text": [f"{diff:+.0f} €"]})).mark_text(
+            size=18,
+            fontWeight="bold",
+            color="green" if diff < 0 else "red",
+            tooltip=None
+        ).encode(
+            text="text:N"
         )
 
-        # st.altair_chart(
-        #     make_comparison_bars_discrete_values(sum(results.baseline.cashflow)),
-        #                                          sum(results.expansion.cashflow)),
-        #                                          unit="EUR", abs_title="Gesamtkosten", abs_format=",.0f"),
-        #     use_container_width=True
-        # )
+        st.altair_chart(
+            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
+            use_container_width=True
+        )
 
     with col2:
         _centered_heading("Gesamt-CO₂")
+        val_baseline = sum(results.baseline.co2_flow)
+        val_expansion = sum(results.expansion.co2_flow)
+        val_max = max(val_baseline, val_expansion)
+        data = pd.DataFrame(index=['baseline', 'expansion'],
+                            data={'value': [val_baseline / val_max,
+                                            val_expansion / val_max],
+                                  'phase': ['Baseline',
+                                            'Expansion'],
+                                  'value_display': [val_baseline,
+                                                    val_expansion],
+                                  })
+
+        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                    alt.Tooltip(shorthand='value_display:Q', title='CO2-Emissionen in t', format=',.0f'),]
+        ring_baseline, ring_expansion = make_comparison_chart(data=data,
+                                                              tooltips=tooltips)
+
+        # Center text (single-row dataframe, minimal overhead)
+        diff = val_expansion - val_baseline
+        center_text = alt.Chart(pd.DataFrame(
+            {"text": [f"{diff:+.0f} t"]})).mark_text(
+            size=18,
+            fontWeight="bold",
+            color="green" if diff < 0 else "red",
+            tooltip=None
+        ).encode(
+            text="text:N"
+        )
+
         st.altair_chart(
-            make_comparison_chart_discrete_values(
-                sum(results.baseline.co2_flow),
-                sum(results.expansion.co2_flow),
-                unit="kg-CO₂",
-                abs_title="Emissionen"
-            ),
+            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
             use_container_width=True
         )
 
-        # st.altair_chart(
-        #     make_comparison_bars_discrete_values(sum(results.baseline.co2_flow)),
-        #                                          sum(results.expansion.co2_flow)),
-        #                                          unit="kg-CO2", abs_title="CO₂ gesamt", abs_format=",.0f"),
-        #     use_container_width=True
-        # )
-
     with col3:
         _centered_heading("Eigenverbrauchsquote")
+        val_baseline = results.baseline.self_consumption_pct
+        val_expansion = results.expansion.self_consumption_pct
+        data = pd.DataFrame(index=['baseline', 'expansion'],
+                            data={'value': [val_baseline / 100,
+                                            val_expansion / 100],
+                                  'phase': ['Baseline',
+                                            'Expansion'],
+                                  'value_display': [val_baseline,
+                                                    val_expansion],
+                                  })
+
+        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                    alt.Tooltip(shorthand='value_display:Q', title='Eigenverbrauchsquote in %', format=',.2f'),]
+        ring_baseline, ring_expansion = make_comparison_chart(data=data,
+                                                              tooltips=tooltips)
+
+        # Center text (single-row dataframe, minimal overhead)
+        diff = val_expansion - val_baseline
+        center_text = alt.Chart(pd.DataFrame(
+            {"text": [f"{diff:+.0f} %"]})).mark_text(
+            size=18,
+            fontWeight="bold",
+            color="green" if diff > 0 else "red",
+            tooltip=None
+        ).encode(
+            text="text:N"
+        )
+
         st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_consumption_pct / 100,
-                results.expansion.self_consumption_pct / 100
-            ),
+            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
             use_container_width=True
         )
 
     with col4:
         _centered_heading("Autarkiegrad")
+        val_baseline = results.baseline.self_sufficiency_pct
+        val_expansion = results.expansion.self_sufficiency_pct
+        data = pd.DataFrame(index=['baseline', 'expansion'],
+                            data={'value': [val_baseline / 100,
+                                            val_expansion / 100],
+                                  'phase': ['Baseline',
+                                            'Expansion'],
+                                  'value_display': [val_baseline,
+                                                    val_expansion],
+                                  })
+
+        tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                    alt.Tooltip(shorthand='value_display:Q', title='Autarkiegrad in %', format=',.2f'),]
+        ring_baseline, ring_expansion = make_comparison_chart(data=data,
+                                                              tooltips=tooltips)
+
+        # Center text (single-row dataframe, minimal overhead)
+        diff = val_expansion - val_baseline
+        center_text = alt.Chart(pd.DataFrame(
+            {"text": [f"{diff:+.0f} %"]})).mark_text(
+            size=18,
+            fontWeight="bold",
+            color="green" if diff > 0 else "red",
+            tooltip=None
+        ).encode(
+            text="text:N"
+        )
+
         st.altair_chart(
-            make_comparison_chart(
-                results.baseline.self_sufficiency_pct / 100,
-                results.expansion.self_sufficiency_pct / 100
-            ),
+            (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
             use_container_width=True
         )
 
@@ -929,195 +1013,45 @@ def find_flow_intersection(results, attr: str = "cashflow"):
     # No intersection (one curve stays above/below the other)
     return None
 
-def make_ring(
-    phase: str,
-    value: float,
-    radius: float,
-    thickness: float,
-    color: str,
-    abs_total: float | None = None,
-    abs_title: str = "Absolut",
-    abs_format: str | None = ",.0f",
-    unit: str = "",
-    co2_eur_per_t: float | None = None,   # <- NEW: show CO₂ costs if unit is CO2 and this is set
-) -> alt.Chart:
-    """Draw a ring with percent in the middle; tooltips can include absolute values and optional CO₂ costs."""
-    bg = (
-        alt.Chart(pd.DataFrame({"value": [1]}))
-        .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4, tooltip=None)
-        .encode(theta=alt.Theta("value:Q", stack=True))
-    )
+def make_comparison_chart(data: pd.DataFrame,
+                          tooltips: list[alt.Tooltip] | None = None):
+    def _make_ring(
+            df: pd.DataFrame,
+            radius: float,
+            thickness: float,
+            color: str,
+        ) -> alt.Chart:
 
-    # Build data for tooltip
-    data = {"value": [value], "phase": [phase], "percent": [value * 100]}
-    if abs_total is not None:
-        abs_val = value * abs_total
-        data["abs_val"] = [abs_val]
-        # If this is CO2, compute cost = kg / 1000 * EUR/t
-        if unit and "co2" in unit.lower().replace("-", "").replace(" ", "") and co2_eur_per_t is not None:
-            data["co2_cost_eur"] = [abs_val / 1000.0 * float(co2_eur_per_t)]
+        background =  (alt.Chart(pd.DataFrame({"value": [1]}))
+                       .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4, tooltip=None)
+                       .encode(theta=alt.Theta("value:Q", stack=True))
+                       )
 
-    # Tooltips
-    tooltips = [
-        alt.Tooltip("phase:N",   title="Szenario"),
-        alt.Tooltip("percent:Q", title="Anteil", format=".1f"),
-    ]
-    if abs_total is not None:
-        title_abs = abs_title + (f" [{unit}]" if unit else "")
-        tooltips.append(alt.Tooltip("abs_val:Q", title=title_abs, format=(abs_format or ",.0f")))
-        if "co2_cost_eur" in data:
-            tooltips.append(alt.Tooltip("co2_cost_eur:Q", title="CO₂-Kosten [EUR]", format=",.0f"))
-
-    fg = (
-        alt.Chart(pd.DataFrame(data))
-        .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
-        .encode(theta=alt.Theta("value:Q", stack=True), tooltip=tooltips)
-    )
-    return bg + fg
-
-def make_comparison_chart(val_baseline,
-                          val_expansion,
-                          ):
+        foreground = (
+            # alt.Chart(pd.DataFrame(data_series))
+            alt.Chart(df)
+            .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
+            .encode(theta=alt.Theta("value:Q", stack=True),
+                    # tooltip=[(alt.Tooltip(f"{col}:N", title=col.replace("_", " "))
+                    #          if col == "Szenario" else
+                    #           alt.Tooltip(f"{col}:Q", title=col.replace("_", " "), format=",.2f"))
+                    #          for col in df.columns if col != "value"]
+                    tooltip = tooltips
+        )
+        )
+        return background + foreground
 
     # Create rings
-    baseline_ring = make_ring('Baseline', val_baseline, 40, 20, COLOR_BL)
-    expansion_ring = make_ring('Expansion', val_expansion, 65, 20, COLOR_EX)
+    ring_baseline = _make_ring(df=data.loc[['baseline']],
+                               radius=40,
+                               thickness=20,
+                               color=COLOR_BL)
+    ring_expansion = _make_ring(df=data.loc[['expansion']],
+                                radius=65,
+                                thickness=20,
+                                color=COLOR_EX)
 
-    # Center text (single-row dataframe, minimal overhead)
-    center_text = alt.Chart(pd.DataFrame({"text": [f"{(val_expansion - val_baseline) * 100:+.1f} %"]})).mark_text(
-        size=20,
-        fontWeight="bold",
-        color="green" if val_expansion > val_baseline else "red",
-        tooltip=None
-    ).encode(
-        text="text:N"
-    )
-    # Combine chart
-    chart = (baseline_ring + expansion_ring + center_text).properties(width=200, height=200)
-
-    return chart
-
-def make_comparison_chart_discrete_values(
-        val_baseline: float,
-        val_expansion: float,
-        unit: str | None = None,
-        abs_title: str = "Absolut",
-        abs_format: str | None = None,
-    ) -> alt.Chart:
-
-    max_val = max(float(val_baseline), float(val_expansion), 1e-9)
-    base_ratio = float(val_baseline) / max_val
-    exp_ratio  = float(val_expansion) / max_val
-
-    if abs_format is None:
-        abs_format = ",.0f"
-
-    # Use 55 EUR/t only for CO2 units
-    co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
-
-    baseline_ring = make_ring(
-        phase="Baseline", value=base_ratio, radius=40, thickness=20, color=COLOR_BL,
-        abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
-    )
-    expansion_ring = make_ring(
-        phase="Expansion", value=exp_ratio, radius=65, thickness=20, color=COLOR_EX,
-        abs_total=max_val, abs_title=abs_title, abs_format=abs_format, unit=(unit or ""), co2_eur_per_t=co2_price
-    )
-
-    # Center text = relative change vs baseline in %
-    if val_baseline > 0:
-        diff_pct = (val_expansion / val_baseline - 1.0) * 100.0
-    else:
-        diff_pct = 0.0
-
-    center_text = (
-        alt.Chart(pd.DataFrame({"text": [f"{diff_pct:+.1f} %"]}))
-        .mark_text(size=20, fontWeight="bold", color="green" if val_expansion < val_baseline else "red", tooltip=None)
-        .encode(text="text:N")
-    )
-
-    return (baseline_ring + expansion_ring + center_text).properties(width=200, height=200)
-
-def make_comparison_bars_discrete_values(
-    val_baseline: float,
-    val_expansion: float,
-    unit: str | None = None,
-    abs_title: str = "Absolut",
-    abs_format: str | None = None,
-    width: int = 250,          # an deine Ring-Charts anpassen
-    height: int = 250,         # dito
-    top_px: int = 22,                 # vertikale Textposition
-    bar_size: int = 40,               # Balkendicke in Pixeln (kleiner => dünner)
-) -> alt.Chart:
-
-
-    # Normalisieren (0..1)
-    max_val = max(float(val_baseline), float(val_expansion), 1e-9)
-    base_ratio = float(val_baseline) / max_val
-    exp_ratio  = float(val_expansion) / max_val
-
-    if abs_format is None:
-        abs_format = ",.0f"
-
-    # CO2-Preis nur, wenn Einheit CO2 enthält
-    co2_price = 55.0 if (unit and "co2" in unit.lower().replace("-", "").replace(" ", "")) else None
-
-    df = pd.DataFrame({
-        "Scenario": ["Baseline", "Expansion"],
-        "Value":    [base_ratio,  exp_ratio],
-        "Percent":  [base_ratio*100, exp_ratio*100],
-        "Abs":      [float(val_baseline), float(val_expansion)],
-    })
-    if co2_price is not None:
-        df["CO2_cost"] = (df["Abs"] / 1000.0) * co2_price  # kg → t → € pro t
-
-    color_scale = alt.Scale(domain=["Baseline", "Expansion"],
-                            range=[COLOR_BL, COLOR_EX])
-
-    tooltips = [
-        alt.Tooltip("Scenario:N", title="Szenario"),
-        alt.Tooltip("Percent:Q",  title="Anteil", format=".1f"),
-        alt.Tooltip("Abs:Q",      title=abs_title + (f" [{unit}]" if unit else ""), format=abs_format),
-    ]
-    if co2_price is not None:
-        tooltips.append(alt.Tooltip("CO2_cost:Q", title="CO₂-Kosten [€]", format=",.0f"))
-
-    # Vertikale Balken; Abstand zwischen Kategorien via paddingInner/Outer,
-    # Balkendicke via mark_bar(size=...)
-    bars = (
-        alt.Chart(df)
-        .mark_bar(size=bar_size, cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
-        .encode(
-            x=alt.X(
-                "Scenario:N",
-                axis=None,
-                sort=["Baseline", "Expansion"],
-                scale=alt.Scale(paddingInner=0, paddingOuter=0)  # kein zusätzlicher Außenabstand
-            ),
-            y=alt.Y("Value:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
-            color=alt.Color("Scenario:N", legend=None, scale=color_scale),
-            tooltip=tooltips,
-        )
-        .properties(width=width, height=height)
-    )
-
-    # Δ in %
-    diff_pct = (val_expansion / val_baseline - 1.0) * 100.0 if val_baseline > 0 else 0.0
-    is_improvement = (val_expansion < val_baseline)
-    text_color = "green" if is_improvement else "red"
-
-    # Position: grün = mittig, rot = weiter links
-    x_pos = (width / 2.0)
-
-    center_text = (
-        alt.Chart(pd.DataFrame({"label": [f"{diff_pct:+.1f} %"]}))
-        .mark_text(fontWeight="bold", size=20, color=text_color)
-        .encode(x=alt.value(x_pos), y=alt.value(top_px), text="label:N")
-    )
-
-    return (bars + center_text).configure_view(strokeWidth=0).properties(
-        padding={"top": 0, "left": 0, "right": 0, "bottom": 0}
-    )
+    return ring_baseline, ring_expansion
 
 def _num_waves() -> int:
     return sum(1 for i in VEH_YEARS_IDX if i < TIME_PRJ_YRS)
