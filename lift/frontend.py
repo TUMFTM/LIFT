@@ -25,17 +25,9 @@ from interfaces import (
     DEFAULTS
 )
 
-# define page settings
-st.set_page_config(
-    page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
-    page_icon="🚚",
-    layout="wide"
-)
-
-
 # Load specified project colors from colors.toml
 @st.cache_data
-def get_colors() -> Tuple[str, str, str]:
+def get_colors() -> Tuple[str, str, str, str]:
     # Get custom colors from config.toml
     with importlib.resources.files("lift").joinpath(".streamlit/colors.toml").open("r") as f:
         config = toml.load(f)
@@ -45,7 +37,7 @@ def get_colors() -> Tuple[str, str, str]:
 COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
 
-footer_css = f"""
+styles = f"""
     <style>
         /* Style for fixed footer */
         .footer {{
@@ -70,64 +62,60 @@ footer_css = f"""
         .footer a:hover {{
             text-decoration: underline;
         }}
+        
+        /* Define style for sidebar */
+        [data-testid="stSidebar"] {{
+            min-width: 450px;
+            max-width: 500px;
+            width: 450px;
+        }}
+        [data-testid="stSidebarContent"] {{
+            padding-right: 20px;
+        }}
+        div[data-testid="stSidebar"] button {{
+            width: 100% !important;
+        }}
+
+        /* remove anchor link icons from headlines */
+        /* 1) Markdown-headlines (#, ##, ### ...) */
+        [data-testid="stMarkdownContainer"] h1 > a,
+        [data-testid="stMarkdownContainer"] h2 > a,
+        [data-testid="stMarkdownContainer"] h3 > a,
+        [data-testid="stMarkdownContainer"] h4 > a,
+        [data-testid="stMarkdownContainer"] h5 > a,
+        [data-testid="stMarkdownContainer"] h6 > a,
+        [data-testid="stMarkdownContainer"] h1 svg,
+        [data-testid="stMarkdownContainer"] h2 svg,
+        [data-testid="stMarkdownContainer"] h3 svg,
+        [data-testid="stMarkdownContainer"] h4 svg,
+        [data-testid="stMarkdownContainer"] h5 svg,
+        [data-testid="stMarkdownContainer"] h6 svg {{
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }}
+
+        /* 2) component headlines (st.header/subheader/title) */
+        [data-testid="stHeading"] a,
+        [data-testid="stHeading"] svg,
+        [data-testid="stHeadingWithAnchor"] a,
+        [data-testid="stHeadingWithAnchor"] svg {{
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }}
+            
+        /* Remove top padding/margin of main page and set top area to be transparent*/
+        header.stAppHeader {{
+            background-color: transparent;
+        }}
+        section.stMain .block-container {{
+            padding-top: 0rem;
+            z-index: 1;
+        }}
+        
     </style>
-"""
-
-sidebar_style = """
-        <style>
-            [data-testid="stSidebar"] {
-                min-width: 450px;
-                max-width: 500px;
-                width: 450px;
-            }
-            [data-testid="stSidebarContent"] {
-                padding-right: 20px;
-            }
-            div[data-testid="stSidebar"] button {
-                width: 100% !important;
-            }
-        </style>
-        """
-st.markdown("""
-<style>
-/* 1) Markdown-headlines (#, ##, ### ...) */
-[data-testid="stMarkdownContainer"] h1 > a,
-[data-testid="stMarkdownContainer"] h2 > a,
-[data-testid="stMarkdownContainer"] h3 > a,
-[data-testid="stMarkdownContainer"] h4 > a,
-[data-testid="stMarkdownContainer"] h5 > a,
-[data-testid="stMarkdownContainer"] h6 > a,
-[data-testid="stMarkdownContainer"] h1 svg,
-[data-testid="stMarkdownContainer"] h2 svg,
-[data-testid="stMarkdownContainer"] h3 svg,
-[data-testid="stMarkdownContainer"] h4 svg,
-[data-testid="stMarkdownContainer"] h5 svg,
-[data-testid="stMarkdownContainer"] h6 svg {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* 2) component headlines (st.header/subheader/title) */
-[data-testid="stHeading"] a,
-[data-testid="stHeading"] svg,
-[data-testid="stHeadingWithAnchor"] a,
-[data-testid="stHeadingWithAnchor"] svg {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-header.stAppHeader {
-    background-color: transparent;
-}
-section.stMain .block-container {
-    padding-top: 0rem;
-    z-index: 1;
-}
-
-</style>
-""", unsafe_allow_html=True)
+    """
 
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
@@ -391,7 +379,7 @@ def _get_params_charger(charger: ChargerDefinition) -> ChargerSettings:
                                cost_per_charger_eur=cost_per_charger_eur)
 
 
-def get_input_params() -> Settings:
+def create_and_get_sidebar() -> Settings:
     col1, col2 = st.sidebar.columns([6, 4])
     with col1:
         auto_refresh = st.toggle("**Automatisch aktualisieren**",
@@ -429,14 +417,12 @@ def get_input_params() -> Settings:
                     economic=economic_settings
                     )
 
-years = TIME_PRJ_YRS
-
 
 def opex18(pr):
     od = pr.opex_breakdown  # erwartet Dict mit Keys wie unten
     return {
-        "Stromeinkauf": float(od.get("Stromeinkauf", 0.0)) * years,
-        "Stromverkauf": float(od.get("Stromverkauf", 0.0)) * years,  # negativ = Erlös
+        "Stromeinkauf": float(od.get("Stromeinkauf", 0.0)) * TIME_PRJ_YRS,
+        "Stromverkauf": float(od.get("Stromverkauf", 0.0)) * TIME_PRJ_YRS,  # negativ = Erlös
         "Diesel": float(od.get("Diesel", 0.0)),  # schon 18y aggregiert
         "Maut": float(od.get("Maut", 0.0)),
         "Wartung": float(od.get("Wartung", 0.0)),
@@ -452,7 +438,7 @@ def infra_row(pr, key):
 def co2_infra_18(pr):
     bd = pr.infra_co2_breakdown or {}
     # ESS wird in deinem Flow in Jahr 0 und Jahr 8 angesetzt → multipliziere bei 18 Jahren mit 2
-    ess_cycles = 1 + (1 if (years > 8 and float(bd.get("ess", 0.0)) > 0.0) else 0)
+    ess_cycles = 1 + (1 if (TIME_PRJ_YRS > 8 and float(bd.get("ess", 0.0)) > 0.0) else 0)
 
     rows = {}
     # Charger: AC/DC, falls vorhanden – sonst "gesamt"
@@ -473,15 +459,15 @@ def co2_infra_18(pr):
 
 def co2_oper_18(pr):
     return {
-        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * years,
-        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * years,
+        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS,
+        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS,
     }
 
 
 def co2_oper_18(pr):
     return {
-        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * years,
-        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * years,
+        "Strom (Betrieb)": float(pr.co2_grid_yrl_kg) * TIME_PRJ_YRS,
+        "Tailpipe (Betrieb)": float(pr.co2_tailpipe_yrl_kg) * TIME_PRJ_YRS,
     }
 
 
@@ -642,8 +628,8 @@ def display_results(results):
         re = results.expansion
 
         # --- KOSTEN ---
-        cost_base = build_cost_breakdown_18y(rb, phase="baseline", project_years=TIME_PRJ_YRS)  # dict
-        cost_exp = build_cost_breakdown_18y(re, phase="expansion", project_years=TIME_PRJ_YRS)  # dict
+        cost_base = build_cost_breakdown_18y(rb, phase="baseline")  # dict
+        cost_exp = build_cost_breakdown_18y(re, phase="expansion")  # dict
 
         # DataFrame für Tabelle/Chart
         df_cost = pd.DataFrame({"Baseline": cost_base, "Expansion": cost_exp}).T
@@ -691,7 +677,6 @@ def display_results(results):
             # Summiere OPEX-Breakdown über die Projektlaufzeit (jährliche Anteile * 18)
             # Achtung: Deine vehicle-Komponenten sind bereits 18y-aggregiert (aus calc_opex_vehicle),
             # Strom-Ein-/Verkauf und Peak-Kosten sind jährlich; wir wollen nur Ein-/Verkauf laut Anforderung.
-            years = TIME_PRJ_YRS
 
             opex_base = opex18(rb)
             opex_exp = opex18(re)
@@ -742,8 +727,8 @@ def display_results(results):
         re = results.expansion
 
         # Dicts mit Komponenten (z.B. Betrieb, Tailpipe, Fahrzeuge, Infrastruktur)
-        co2_base = build_co2_breakdown_18y(rb, phase="baseline", project_years=TIME_PRJ_YRS)
-        co2_exp = build_co2_breakdown_18y(re, phase="expansion", project_years=TIME_PRJ_YRS)
+        co2_base = build_co2_breakdown_18y(rb, phase="baseline")
+        co2_exp = build_co2_breakdown_18y(re, phase="expansion")
 
         df_co2 = pd.DataFrame({"Baseline": co2_base, "Expansion": co2_exp}).T
 
@@ -787,7 +772,7 @@ def display_results(results):
             return {f"Fahrzeuge – {k.upper()}": (bev.get(k, 0.0) + ice.get(k, 0.0)) * N_VEH_COHORTS for k in keys}
 
         VEH_REPL_IDX = [0, 5, 11]
-        N_VEH_COHORTS = sum(1 for i in VEH_REPL_IDX if i < years)  # -> 3 bei 18 Jahren
+        N_VEH_COHORTS = sum(1 for i in VEH_REPL_IDX if i < TIME_PRJ_YRS)  # -> 3 bei 18 Jahren
 
         co2_oper_base = co2_oper_18(rb)
         co2_oper_exp = co2_oper_18(re)
@@ -1171,23 +1156,22 @@ def make_comparison_bars_discrete_values(
         padding={"top": 0, "left": 0, "right": 0, "bottom": 0}
     )
 
-def _num_waves(project_years: int) -> int:
-    return sum(1 for i in VEH_YEARS_IDX if i < project_years)
+def _num_waves() -> int:
+    return sum(1 for i in VEH_YEARS_IDX if i < TIME_PRJ_YRS)
 
-def build_cost_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, float]:
+def build_cost_breakdown_18y(pr, phase: str) -> dict[str, float]:
     """
     Baut die 18-Jahres-Kosten so auf, wie der cashflow gefüllt wird:
     - Jährliches OPEX: (opex_grid + opex_vehicle) * Jahre
     - CAPEX Fahrzeuge: capex_vehicles_eur je Welle (0/5/11)
     - CAPEX Infra: in Expansion Jahr 0 voll (grid+pv+chargers), ESS in Jahr 0 und 8
     """
-    waves = _num_waves(project_years)
 
     # jährliches OPEX (genau wie im cashflow addiert)
-    opex_total_18 = (float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)) * project_years
+    opex_total_18 = (float(pr.opex_grid_eur) + float(pr.opex_vehicle_electric_secondary)) * TIME_PRJ_YRS
 
     # Fahrzeuge CAPEX: bereits netto (Salvage schon im capex eingepreist)
-    capex_veh_all_waves = float(pr.capex_vehicles_eur) * waves
+    capex_veh_all_waves = float(pr.capex_vehicles_eur) * _num_waves()
 
     # Infrastruktur CAPEX-Timings (nur Expansion)
     if phase.lower() == "expansion":
@@ -1198,7 +1182,7 @@ def build_cost_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, fl
         )
         # ESS in Jahr 0 und 8 (sofern im Projektzeitraum)
         ess_once = float(pr.infra_capex_breakdown.get("ess", 0.0))
-        ess_count = (1 if project_years > 0 else 0) + (1 if project_years > 8 else 0)
+        ess_count = (1 if TIME_PRJ_YRS > 0 else 0) + (1 if TIME_PRJ_YRS > 8 else 0)
         capex_infra_total = capex_infra_y0 + ess_once * ess_count
     else:
         capex_infra_total = 0.0
@@ -1210,17 +1194,16 @@ def build_cost_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, fl
         "CAPEX Infrastruktur": capex_infra_total,
     }
 
-def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, float]:
+def build_co2_breakdown_18y(pr, phase: str) -> dict[str, float]:
     """
     Baut die 18-Jahres-CO2-Summen so auf, wie co2_flow gefüllt wird:
     - Betrieb: co2_yrl_kg * Jahre  (Grid + Tailpipe)
     - Fahrzeuge Herstellung: pro Welle (0/5/11)
     - Infrastruktur Herstellung: in Expansion Jahr 0 (grid+pv+chargers), ESS in Jahr 0 und 8
     """
-    waves = _num_waves(project_years)
 
-    co2_oper_18 = float(pr.co2_yrl_kg) * project_years
-    co2_veh_prod_all_waves = float(pr.vehicles_co2_production_total_kg) * waves
+    co2_oper_18 = float(pr.co2_yrl_kg) * TIME_PRJ_YRS
+    co2_veh_prod_all_waves = float(pr.vehicles_co2_production_total_kg) * _num_waves()
 
     if phase.lower() == "expansion":
         co2_infra_y0 = (
@@ -1229,7 +1212,7 @@ def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, flo
           + float(pr.infra_co2_breakdown.get("chargers", 0.0))
         )
         ess_once = float(pr.infra_co2_breakdown.get("ess", 0.0))
-        ess_count = (1 if project_years > 0 else 0) + (1 if project_years > 8 else 0)
+        ess_count = (1 if TIME_PRJ_YRS > 0 else 0) + (1 if TIME_PRJ_YRS > 8 else 0)
         co2_infra_total = co2_infra_y0 + ess_once * ess_count
     else:
         co2_infra_total = 0.0
@@ -1241,16 +1224,22 @@ def build_co2_breakdown_18y(pr, phase: str, project_years: int) -> dict[str, flo
     }
 
 def run_frontend():
+    # define page settings
+    st.set_page_config(
+        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
+        page_icon="🚚",
+        layout="wide"
+    )
+
     # css styles for sidebar
-    st.markdown(sidebar_style, unsafe_allow_html=True)
-    st.markdown(footer_css, unsafe_allow_html=True)
+    st.markdown(styles, unsafe_allow_html=True)
 
     # initialize session state for backend run
     if "run_backend" not in st.session_state:
         st.session_state["run_backend"] = False
 
     # create sidebar and get input parameters from sidebar
-    settings = get_input_params()
+    settings = create_and_get_sidebar()
 
     st.title("LIFT - Logistics Infrastructure & Fleet Transformation")
 
@@ -1258,7 +1247,6 @@ def run_frontend():
         try:
             results = backend.run_backend(settings=settings)
             display_results(results)
-
 
         except GridPowerExceededError as e:
             st.error(f"""\
