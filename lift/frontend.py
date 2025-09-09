@@ -407,8 +407,6 @@ def create_sidebar_and_get_input() -> Inputs:
                   )
 
 def display_results(results):
-    st.success(f"Berechnung erfolgreich!")
-
     st.markdown(
         f"### <span style='color:{COLOR_BL}'>Baseline</span> vs. "
         f"<span style='color:{COLOR_EX}'>Expansion</span>",
@@ -421,7 +419,7 @@ def display_results(results):
             st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
         def _create_comparison_chart(data: pd.DataFrame,
-                                  tooltips: list[alt.Tooltip] | None = None):
+                                     tooltips: list[alt.Tooltip] | None = None):
             def _create_ring(
                     df: pd.DataFrame,
                     radius: float,
@@ -464,8 +462,8 @@ def display_results(results):
 
         with col1:
             _centered_heading("Gesamtkosten")
-            val_baseline = sum(results.baseline.cashflow)
-            val_expansion = sum(results.expansion.cashflow)
+            val_baseline = results.baseline.cashflow.sum()
+            val_expansion = results.expansion.cashflow.sum()
             val_max = max(val_baseline, val_expansion)
             data = pd.DataFrame(index=['baseline', 'expansion'],
                                 data={'value': [val_baseline / val_max,
@@ -500,8 +498,8 @@ def display_results(results):
 
         with col2:
             _centered_heading("Gesamt-CO₂")
-            val_baseline = sum(results.baseline.co2_flow)
-            val_expansion = sum(results.expansion.co2_flow)
+            val_baseline = results.baseline.co2_flow.sum()
+            val_expansion = results.expansion.co2_flow.sum()
             val_max = max(val_baseline, val_expansion)
             data = pd.DataFrame(index=['baseline', 'expansion'],
                                 data={'value': [val_baseline / val_max,
@@ -613,7 +611,7 @@ def display_results(results):
                   y_label="Kumulierte Kosten in EUR",
                   )
     with col2:
-        st.markdown("#### Amortisationszeitraum")
+        st.markdown("#### Amortisationsdauer")
         if results.payback_period_yrs is None:
             st.markdown("Investition amortisiert sich nicht.")
         else:
@@ -662,7 +660,7 @@ def plot_flow(
         y_label: str,
 ):
 
-    years = np.arange(1, TIME_PRJ_YRS + 1, dtype=int)
+    years = np.arange(TIME_PRJ_YRS, dtype=int) + 1
 
     y_baseline = np.cumsum(flow_baseline)
     y_expansion  = np.cumsum(flow_expansion)
