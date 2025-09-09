@@ -11,7 +11,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import backend
-from definitions import SubFleetDefinition, ChargerDefinition, SUBFLEETS, CHARGERS, TIME_PRJ_YRS
+from definitions import SubFleetDefinition, ChargerDefinition, DEF_SUBFLEETS, DEF_CHARGERS, TIME_PRJ_YRS
 from interfaces import (
     GridPowerExceededError,
     SOCError,
@@ -19,7 +19,7 @@ from interfaces import (
     InputSubfleet,
     InputCharger,
     InputEconomic,
-    Input,
+    Inputs,
     Coordinates,
     ExistExpansionValue,
     DEFAULTS
@@ -121,7 +121,7 @@ SHARE_COLUMN_INPUT = [3, 7]
 
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
-def create_sidebar_and_get_input() -> Input:
+def create_sidebar_and_get_input() -> Inputs:
     # get simulation settings
     def _get_sim_settings():
         col1, col2 = st.sidebar.columns([6, 4])
@@ -326,9 +326,9 @@ def create_sidebar_and_get_input() -> Input:
             with col1:
                 charger_type = st.selectbox(label="Ladepunkt",
                                             key=f'charger_{subfleet.name}',
-                                            options=[x.name for x in CHARGERS.values()])
+                                            options=[x.name for x in DEF_CHARGERS.values()])
             with col2:
-                max_value = CHARGERS[charger_type.lower()].settings_pwr_max.max_value
+                max_value = DEF_CHARGERS[charger_type.lower()].settings_pwr_max.max_value
                 pwr_max_w = st.slider(label="max. Ladeleistung (kW)",
                                       key=f'pwr_max_{subfleet.name}',
                                       min_value=0,
@@ -363,7 +363,7 @@ def create_sidebar_and_get_input() -> Input:
             charger=charger_type,
             pwr_max_w=pwr_max_w,
         )
-    input_fleet = {sf_name: _get_params_subfleet(sf_def) for sf_name, sf_def in SUBFLEETS.items()}
+    input_fleet = {sf_name: _get_params_subfleet(sf_def) for sf_name, sf_def in DEF_SUBFLEETS.items()}
 
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
@@ -398,13 +398,13 @@ def create_sidebar_and_get_input() -> Input:
                                                         expansion=expansion),
                                 pwr_max_w=pwr_max_w,
                                 cost_per_charger_eur=cost_per_charger_eur)
-    input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in CHARGERS.items()}
+    input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
 
-    return Input(location=input_location,
-                 subfleets=input_fleet,
-                 chargers=input_charger,
-                 economic=input_economic
-                 )
+    return Inputs(location=input_location,
+                  subfleets=input_fleet,
+                  chargers=input_charger,
+                  economic=input_economic
+                  )
 
 def display_results(results):
     st.success(f"Berechnung erfolgreich!")
@@ -728,7 +728,7 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = backend.run_backend(inputdata=settings)
+            results = backend.run_backend(inputs=settings)
             display_results(results)
 
         except GridPowerExceededError as e:
@@ -753,12 +753,20 @@ def run_frontend():
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
     st.markdown('<div class="footer">'
-                '<b>© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten  |  '
-                'Demo Version  |  '
+                '<b>© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
+                '  |  '
+                'Demo Version'
+                '  |  '
+                '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
+                'target="_blank" '  # open in new tab
+                'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+                '>GitLab</a>'
+                '  |  '
                 '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
                 'target="_blank" '  # open in new tab
                 'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-                '>Impressum</b></a></div>', unsafe_allow_html=True)
+                '>Impressum</a>'
+                '</b></div>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

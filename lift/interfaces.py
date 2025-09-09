@@ -51,6 +51,10 @@ class ExistExpansionValue:
     def total(self) -> float:
         return self.preexisting + self.expansion
 
+    def get_value(self,
+                  phase: Literal['baseline', 'expansion']) -> float:
+        return self.preexisting if phase == 'baseline' else self.total
+
 
 @dataclass
 class Capacities:
@@ -202,7 +206,7 @@ class InputEconomic:
     fix_cost_construction: int = 10000
 
 @dataclass
-class Input:
+class Inputs:
     location: InputLocation = field(default_factory=InputLocation)
     subfleets: dict[str, InputSubfleet] = field(default_factory=lambda: dict(hlt=InputSubfleet(name='hlt'),
                                                                              hst=InputSubfleet(name='hst'), ))
@@ -245,8 +249,6 @@ class BackendResults:
     baseline: PhaseResults
     expansion: PhaseResults
 
-    roi_rel: float = 0.0
-
     @property
     def npc_delta(self) -> float:
         return self.baseline.cashflow.sum() - self.expansion.cashflow.sum()
@@ -265,21 +267,26 @@ class BackendResults:
         # Linear interpolation to find x where y1 == y2
         return (i - y0 / (y1 - y0)) + 1
 
+    @property
+    def roi_rel(self) -> float:
+        # ToDo: calculate!
+        return 0.0
+
 
 @dataclass(frozen=True)
 class DefaultLocation:
     consumption_building_yrl_mwh: int = 26 # jährlicher Gebäude-Stromverbrauch [Mh]
     slp: str = 'G0'  # Loadprofile
-    grid_connection_kwh: int = 1000
-    existing_pv_kwp: int = 100
-    existing_ess_kwh: int = 100
+    grid_connection_kwh: float = 1000
+    existing_pv_kwp: float = 0
+    existing_ess_kwh: float = 0
 
 @dataclass(frozen=True)
 class DefaultEconomics:
     salvage_bev_pct: int = 29  # in %
     salvage_icev_pct: int = 26
-    opex_spec_grid_buy_eur_per_wh: float = 0.20
-    opex_spec_grid_sell_eur_per_wh: float = 0.10
+    opex_spec_grid_buy_eur_per_wh: float = 0.23
+    opex_spec_grid_sell_eur_per_wh: float = 0.06
     opex_spec_grid_peak_eur_per_wp: int = 150
     mntex_bev_eur_km: float = 0.13
     mntex_icev_eur_km: float = 0.18

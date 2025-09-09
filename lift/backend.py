@@ -5,14 +5,17 @@ import pvlib
 import streamlit as st
 from time import time
 from typing import TYPE_CHECKING, Literal, Tuple, Dict, Optional
-from definitions import FREQ_HOURS, CHARGERS, SUBFLEETS
+from definitions import FREQ_HOURS, DEF_CHARGERS, DEF_SUBFLEETS
 
 import numpy as np
 
 from definitions import (DTI,
-                         CO2_SPEC_KG_PER_WH,
-                         OPEX_SPEC_CO2_PER_KG,
                          TIME_PRJ_YRS,
+                         DEF_PV,
+                         DEF_ESS,
+                         DEF_GRID,
+                         DEF_CHARGERS,
+                         DEF_SUBFLEETS
                          )
 
 from energy_system import (FixedDemand,
@@ -23,7 +26,7 @@ from energy_system import (FixedDemand,
                            StationaryStorage)
 
 from interfaces import (Coordinates,
-                        Input,
+                        Inputs,
                         InputLocation,
                         SimInputCharger,
                         PhaseInputCharger,
@@ -40,6 +43,8 @@ from interfaces import (Coordinates,
                         PhaseResults,
                         BackendResults,
                         )
+
+
 
 if TYPE_CHECKING:
     pass
@@ -183,8 +188,8 @@ def calc_opex_vehicle(
 
     for vt, sf in subfleet_settings.items():
         # ---> Verbrauch je Subfleet aus SUBFLEETS holen
-        vt_key = vt if vt in SUBFLEETS else vt.lower()
-        meta = SUBFLEETS.get(vt_key)
+        vt_key = vt if vt in DEF_SUBFLEETS else vt.lower()
+        meta = DEF_SUBFLEETS.get(vt_key)
 
         fuel_l_per_100km = float(meta.consumption_icev)
         fuel_eur_per_km  = fuel_price_eur_l * (fuel_l_per_100km / 100.0)
@@ -307,7 +312,7 @@ def calc_infrastructure_capex(
 
     for name, cs in charger_settings.items():
         key = str(name).strip().lower()  # "ac" / "dc"
-        meta = CHARGERS.get(key)
+        meta = DEF_CHARGERS.get(key)
         capex = float(cs.num.expansion) * float(cs.cost_per_charger_eur)
         co2 = float(cs.num.expansion) * float(meta.settings_CO2_per_unit)
         if key == "ac":
@@ -372,8 +377,8 @@ def calc_vehicle_capex_split(
     co2_bd_icev: Dict[str, float] = {}
 
     for vt, sf in subfleet_settings.items():
-        vt_key = vt if vt in SUBFLEETS else vt.lower()
-        meta = SUBFLEETS[vt_key]
+        vt_key = vt if vt in DEF_SUBFLEETS else vt.lower()
+        meta = DEF_SUBFLEETS[vt_key]
 
         # Fahrzeuganzahl je Phase (alle Fahrzeuge der Flotte)
         if phase == "baseline":
@@ -393,8 +398,8 @@ def calc_vehicle_capex_split(
         icev_total_capex += capex_icev_sf
 
         # --- CO2 (Herstellung/embodied) ---
-        co2_bev_sf_kg  = float(bev_cnt)  * float(meta.co2_production_bev)
-        co2_icev_sf_kg = float(icev_cnt) * float(meta.co2_production_icev)
+        co2_bev_sf_kg  = float(bev_cnt)  * float(meta.capem_bev)
+        co2_icev_sf_kg = float(icev_cnt) * float(meta.capem_icev)
 
         co2_bd_bev[vt_key]  = co2_bev_sf_kg
         co2_bd_icev[vt_key] = co2_icev_sf_kg
@@ -422,9 +427,6 @@ def calc_phase_results(logs: Logs,
                        location: InputLocation,
                        ) -> PhaseResults:
 
-    cost = dict()
-    co2 = dict()
-
     result_sim = simulate(
         logs=logs,
         capacities=capacities,
@@ -442,15 +444,91 @@ def calc_phase_results(logs: Logs,
         # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
         self_consumption_pct = 100 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh) * 100
 
-    cost['grid_yrl'] = (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
-                     result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
+    cashflow_capex = np.zeros(TIME_PRJ_YRS)
+    cashflow_opex = np.zeros(TIME_PRJ_YRS)
+    cashflow_capem = np.zeros(TIME_PRJ_YRS)
+    cashflow_opem = np.zeros(TIME_PRJ_YRS)
 
+    def calc_replacements(ls: float) -> np.typing.NDArray:
+        years = np.arange(TIME_PRJ_YRS)
+
+        # Replacement years: start + 0, lifespan, 2*lifespan, ...
+        replacement_years = np.arange(0, TIME_PRJ_YRS, ls)
+        # ToDo: exclude first year if required
+        # ToDo: add salvage value if required
+
+        repl = np.isin(years, replacement_years).astype(int)
+
+        return repl
+
+    # fix cost
+    cashflow_capex[0] += economics.fix_cost_construction if phase == 'expansion' else 0
+
+    # grid
+    replacements = calc_replacements(ls=DEF_GRID['ls'])
+    cashflow_capex += capacities.grid_w * DEF_GRID['capex_spec'] * replacements
+    cashflow_opex += (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
+                      result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
+    cashflow_opex += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
+
+    cashflow_capem += capacities.grid_w * DEF_GRID['capem_spec'] * replacements
     # ToDo: check whether net balance is correct here
-    co2['grid_yrl'] = (result_sim.energy_grid_buy_wh - result_sim.energy_grid_sell_wh) * CO2_SPEC_KG_PER_WH
+    cashflow_opem += (result_sim.energy_grid_buy_wh - result_sim.energy_grid_sell_wh) * DEF_GRID['opem_spec']
 
-    cashflow = np.zeros(TIME_PRJ_YRS) + np.random.random()  # ToDo: fix
-    cashflow[0] += np.random.random() * 5
-    co2_flow = np.zeros(TIME_PRJ_YRS) + 1
+    # pv
+    replacements = calc_replacements(ls=DEF_PV['ls'])
+    cashflow_capex += capacities.pv_wp * DEF_PV['capex_spec'] * replacements
+    cashflow_capem += capacities.pv_wp * DEF_PV['capem_spec'] * replacements
+
+    # ess
+    replacements = calc_replacements(ls=DEF_ESS['ls'])
+    cashflow_capex += capacities.ess_wh * DEF_ESS['capex_spec'] * replacements
+    cashflow_capem += capacities.ess_wh * DEF_ESS['capem_spec'] * replacements
+
+    # vehicles
+    for sf_def in DEF_SUBFLEETS.values():
+        sf_in = subfleets[sf_def.name]
+        replacements = calc_replacements(ls=sf_def.ls)
+        num_bev = sf_in.num_bev
+        num_icev = sf_in.num_total - sf_in.num_bev
+
+        log = logs.fleet[sf_in.name]
+        vehicles = list(log.columns.get_level_values(0).unique())
+        bevs = vehicles[0:num_bev]
+        icevs = vehicles[num_bev:num_bev + num_icev]
+
+        cashflow_capex += (num_bev * sf_in.capex_bev_eur * replacements +
+                           num_icev * sf_in.capex_icev_eur * replacements)
+        cashflow_capem += (num_bev * sf_def.capem_bev * replacements +
+                           num_icev * sf_def.capem_icev * replacements)
+
+        # bev
+        dist_bev = log.loc[:, pd.IndexSlice[bevs, 'dist']].to_numpy().sum() if bevs else 0
+        cashflow_opex += (economics.insurance_pct / 100 * sf_in.capex_bev_eur +  # insurance
+                          dist_bev * (
+                                  economics.mntex_bev_eur_km +  # maintenance
+                                  sf_def.toll_eur_per_km_bev * sf_in.toll_share_pct / 100  # toll
+                          ))
+
+        # icev
+        dist_icev = log.loc[:, pd.IndexSlice[icevs, 'dist']].to_numpy().sum() if icevs else 0
+        cashflow_opex += (economics.insurance_pct / 100 * sf_in.capex_icev_eur +  # insurance
+                          dist_icev * (
+                                  economics.mntex_icev_eur_km +  # maintenance
+                                  sf_def.toll_eur_per_km_icev * sf_in.toll_share_pct / 100 +  # toll
+                                  economics.fuel_price_eur_liter * sf_def.consumption_icev / 100  # fuel
+                          ))
+
+    # chargers
+    for chg_def in DEF_CHARGERS.values():
+        chg_in = chargers[chg_def.name]
+        replacements = calc_replacements(ls=chg_def.ls)
+        cashflow_capex += chg_in.cost_per_charger_eur * chg_in.num * replacements
+        cashflow_capem += chg_def.capem * chg_in.num * replacements
+
+    cashflow = cashflow_capex + cashflow_opex
+    co2_flow = cashflow_capem + cashflow_opem
+
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency_pct=self_sufficiency_pct,
@@ -460,55 +538,52 @@ def calc_phase_results(logs: Logs,
                         )
 
 
-def run_backend(inputdata: Input) -> BackendResults:
+def run_backend(inputs: Inputs) -> BackendResults:
     # start time tracking
     start_time = time()
 
     # get log data for the simulation
-    logs = Logs(pv_spec=get_log_pv(coordinates=inputdata.location.coordinates),
-                dem=get_log_dem(slp=inputdata.location.slp.lower(),
-                                consumption_yrl_wh=inputdata.location.consumption_yrl_wh,
+    logs = Logs(pv_spec=get_log_pv(coordinates=inputs.location.coordinates),
+                dem=get_log_dem(slp=inputs.location.slp.lower(),
+                                consumption_yrl_wh=inputs.location.consumption_yrl_wh,
                                 ),
                 # ToDo: get input parameters from settings
                 fleet={vehicle_type: get_log_subfleet(vehicle_type=vehicle_type)
-                       for vehicle_type, subfleet in inputdata.subfleets.items()},
+                       for vehicle_type, subfleet in inputs.subfleets.items()},
                 )
 
     results_baseline = calc_phase_results(logs=logs,
-                                          capacities=inputdata.location.get_capacities('baseline'),
-                                          economics=inputdata.economic,
+                                          capacities=inputs.location.get_capacities('baseline'),
+                                          economics=inputs.economic,
                                           subfleets={sf.name: sf.get_phase_input(phase='baseline')
-                                                     for sf in inputdata.subfleets.values()},
+                                                     for sf in inputs.subfleets.values()},
                                           chargers={chg.name: chg.get_phase_input(phase='baseline')
-                                                    for chg in inputdata.chargers.values()},
+                                                    for chg in inputs.chargers.values()},
                                           phase="baseline",
-                                          location=inputdata.location,
+                                          location=inputs.location,
                                           )
 
     results_expansion = calc_phase_results(logs=logs,
-                                           capacities=inputdata.location.get_capacities('expansion'),
-                                           economics=inputdata.economic,
+                                           capacities=inputs.location.get_capacities('expansion'),
+                                           economics=inputs.economic,
                                            subfleets={sf.name: sf.get_phase_input(phase='expansion')
-                                                      for sf in inputdata.subfleets.values()},
+                                                      for sf in inputs.subfleets.values()},
                                            chargers={chg.name: chg.get_phase_input(phase='expansion')
-                                                     for chg in inputdata.chargers.values()},
+                                                     for chg in inputs.chargers.values()},
                                            phase="expansion",
-                                           location=inputdata.location,
+                                           location=inputs.location,
                                            )
-
-    roi_rel = 0.0  #ToDo: calculate!
 
     # stop time tracking
     print(f'Backend calculation completed in {time() - start_time:.2f} seconds.')
 
     return BackendResults(baseline=results_baseline,
                           expansion=results_expansion,
-                          roi_rel=roi_rel,
                           )
 
 
 if __name__ == "__main__":
-    settings_default = Input()
-    result = run_backend(inputdata=settings_default)
+    settings_default = Inputs()
+    result = run_backend(inputs=settings_default)
     print(result.baseline.simulation)
     print(result.expansion.simulation)
