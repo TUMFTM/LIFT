@@ -672,27 +672,36 @@ def plot_flow(
 
     line = (
         alt.Chart(df_long)
-        .mark_line(point=True)
+        .mark_line(point={"filled": True, "size": 50}, interpolate="linear")
         .encode(
-            x=alt.X("year:Q", axis=alt.Axis(title="Jahr", values=years, format=".0f")),
-            y=alt.Y("value:Q", axis=alt.Axis(title=y_label)),
-            color=alt.Color(
-                "scenario:N",
-                legend=None,
-                scale=alt.Scale(domain=["Baseline", "Expansion"], range=[COLOR_BL, COLOR_EX]),
-            ),
-            tooltip=[
-                alt.Tooltip("scenario:N", title="Szenario"),
-                alt.Tooltip("year:Q", title="Jahr", format=".0f"),
-                alt.Tooltip("value:Q", title=y_label, format=",.0f"),
-            ],
+            x=alt.X(shorthand="year:Q",
+                    axis=alt.Axis(title="Jahr", values=years, format=".0f"),
+                    scale=alt.Scale(domain=[float(years.min()), float(years.max())], nice=False),
+                    ),
+            y=alt.Y(shorthand="value:Q",
+                    axis=alt.Axis(title=y_label)
+                    ),
+            color=alt.Color(shorthand="scenario:N",
+                            legend=None,
+                            scale=alt.Scale(domain=["Baseline", "Expansion"],
+                                            range=[COLOR_BL, COLOR_EX]),
+                            ),
+            tooltip=[alt.Tooltip(shorthand="scenario:N",
+                                 title="Szenario"),
+                     alt.Tooltip(shorthand="year:Q",
+                                 title="Jahr",
+                                 format=".0f"),
+                     alt.Tooltip(shorthand="value:Q",
+                                 title=y_label,
+                                 format=",.0f"),
+                     ],
         )
         .properties(height=360)
     )
 
     layers = [line]
+    # ToDo: For any annotations use additional layers (intersection, delta values, etc.)
 
-    # 9) Jetzt Layer zusammenführen UND DANN konfigurieren
     chart = alt.layer(*layers).configure_axis(
         labelColor="black",
         titleColor="black",
@@ -753,7 +762,8 @@ def run_frontend():
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
     st.markdown('<div class="footer">'
-                '<b>© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
+                '<b>'
+                '© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
                 '  |  '
                 'Demo Version'
                 '  |  '

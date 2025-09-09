@@ -109,7 +109,6 @@ class PhaseInputSubfleet:
     battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
-    dist_avg_daily_km: float = 100.0
     toll_share_pct: float = 30.0
     charger: str = 'ac'
     pwr_max_w: float = 11E3
@@ -118,9 +117,10 @@ class PhaseInputSubfleet:
         # ToDo: property + st.cache?
         return SimInputSubfleet(name=self.name,
                                 num=self.num_bev,
-                                pwr_chg_max_w=self.pwr_max_w,
+                                capacity_wh=self.battery_capacity_wh,
                                 charger=self.charger,
-                                capacity_wh=self.battery_capacity_wh)
+                                pwr_chg_max_w=self.pwr_max_w,
+                                )
 
 
 @dataclass
@@ -132,7 +132,6 @@ class InputSubfleet:
     battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
-    dist_avg_daily_km: float = 100.0
     toll_share_pct: float = 30.0
     charger: str = 'ac'
     pwr_max_w: float = 11E3
@@ -145,7 +144,6 @@ class InputSubfleet:
                                   battery_capacity_wh=self.battery_capacity_wh,
                                   capex_bev_eur=self.capex_bev_eur,
                                   capex_icev_eur=self.capex_icev_eur,
-                                  dist_avg_daily_km=self.dist_avg_daily_km,
                                   toll_share_pct=self.toll_share_pct,
                                   charger=self.charger,
                                   pwr_max_w=self.pwr_max_w,
@@ -187,6 +185,23 @@ class InputCharger:
                                  cost_per_charger_eur=self.cost_per_charger_eur,
                                  )
 
+@dataclass
+class PhaseInputEconomic:
+    opex_spec_grid_buy_eur_per_wh: float = 30E-5
+    opex_spec_grid_sell_eur_per_wh: float = -6E-5
+    opex_spec_grid_peak_eur_per_wp: float = 150E-3
+    fuel_price_eur_liter: float = 1.7
+    toll_icev_eur_km: float = 0.1
+    toll_bev_eur_km: float = 0.0
+    driver_wage_eur_h: float = 20.0
+    mntex_bev_eur_km: float = 0.05
+    mntex_icev_eur_km: float = 0.1
+    insurance_pct: float = 20.0
+    salvage_bev_pct: float = 40.0
+    salvage_icev_pct: float = 40.0
+    working_days_yrl: int = 220
+    fix_cost_construction: int = 10000
+
 
 @dataclass
 class InputEconomic:
@@ -204,6 +219,25 @@ class InputEconomic:
     salvage_icev_pct: float = 40.0
     working_days_yrl: int = 220
     fix_cost_construction: int = 10000
+
+    def get_phase_input(self,
+                        phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomic':
+        return PhaseInputEconomic(
+            opex_spec_grid_buy_eur_per_wh=self.opex_spec_grid_buy_eur_per_wh,
+            opex_spec_grid_sell_eur_per_wh=self.opex_spec_grid_sell_eur_per_wh,
+            opex_spec_grid_peak_eur_per_wp=self.opex_spec_grid_peak_eur_per_wp,
+            fuel_price_eur_liter=self.fuel_price_eur_liter,
+            toll_icev_eur_km=self.toll_icev_eur_km,
+            toll_bev_eur_km=self.toll_bev_eur_km,
+            driver_wage_eur_h=self.driver_wage_eur_h,
+            mntex_bev_eur_km=self.mntex_bev_eur_km,
+            mntex_icev_eur_km=self.mntex_icev_eur_km,
+            insurance_pct=self.insurance_pct,
+            salvage_bev_pct=self.salvage_bev_pct,
+            salvage_icev_pct=self.salvage_icev_pct,
+            working_days_yrl=self.working_days_yrl,
+            fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
+        )
 
 @dataclass
 class Inputs:

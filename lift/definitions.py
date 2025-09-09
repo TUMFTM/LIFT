@@ -68,7 +68,7 @@ DEF_SUBFLEETS = {
         weight_empty_bev=18000,
         weight_empty_icev=16600,
         toll_eur_per_km_bev=0.0,  # ToDo: add correct value
-        toll_eur_per_km_icev=0.0,  # ToDo: add correct value
+        toll_eur_per_km_icev=1.0,  # ToDo: add correct value
         consumption_icev=27.0,
         ls=6,
     ),
@@ -88,7 +88,7 @@ DEF_SUBFLEETS = {
         weight_empty_bev=10400,
         weight_empty_icev=9000,
         toll_eur_per_km_bev=0.0,  # ToDo: add correct value
-        toll_eur_per_km_icev=0.0,  # ToDo: add correct value
+        toll_eur_per_km_icev=1.0,  # ToDo: add correct value
         consumption_icev=23.0,
         ls=6,
     ),
@@ -108,7 +108,7 @@ DEF_SUBFLEETS = {
         weight_empty_bev=5400,
         weight_empty_icev=5400,
         toll_eur_per_km_bev=0.0,  # ToDo: add correct value
-        toll_eur_per_km_icev=0.0,  # ToDo: add correct value
+        toll_eur_per_km_icev=1.0,  # ToDo: add correct value
         consumption_icev=19.0,
         ls=6,
     ),
@@ -128,7 +128,7 @@ DEF_SUBFLEETS = {
         weight_empty_bev=2500,
         weight_empty_icev=2300,
         toll_eur_per_km_bev=0.0,  # ToDo: add correct value
-        toll_eur_per_km_icev=0.0,  # ToDo: add correct value
+        toll_eur_per_km_icev=1.0,  # ToDo: add correct value
         consumption_icev=15.0,
         ls=6,
     ),
