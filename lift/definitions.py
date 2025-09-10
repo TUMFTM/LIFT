@@ -212,7 +212,6 @@ DEF_SUBFLEETS = {
     ),
 }
 
-# ToDo: SettingsSlider, SettingsNumeric, SettingsSelect
 # ToDo: add Classes DEF_LOCATION, DEF_ECONOMICS
 DEF_CHARGERS = {
     "ac": ChargerDefinition(

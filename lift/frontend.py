@@ -411,6 +411,7 @@ def display_results(results):
 
         col1, col2, col3, col4 = st.columns(4)
 
+        # ToDo: use bar chart for cost and co2
         with col1:
             _centered_heading("Gesamtkosten")
             val_baseline = results.baseline.cashflow.sum()
@@ -581,17 +582,6 @@ def display_results(results):
                       )
         with col2:
             st.markdown("#### CO₂-Parität")
-            # if res is None:
-            #     st.markdown("Kein Schnittpunkt")
-            # elif res["kind"] == "identical":
-            #     st.markdown("Kurven identisch.")
-            # else:
-            #     yr = res["year_float"]
-            #     st.markdown(f"Schnittpunkt bei {yr:.2f} Jahren")
-            # st.markdown("#### CO₂-Delta")
-            # cost_delta = float(np.cumsum(results.expansion.co2_flow)[-1]) - float(
-            #     np.cumsum(results.baseline.co2_flow)[-1])
-            # st.markdown(f"{cost_delta:,.0f} kg-CO₂ nach 18 Jahren")
 
 
 def display_empty_results():

@@ -111,7 +111,6 @@ class PhaseInputSubfleet:
     pwr_max_w: float = 11E3
 
     def get_sim_input(self) -> SimInputSubfleet:
-        # ToDo: property + st.cache?
         return SimInputSubfleet(name=self.name,
                                 num=self.num_bev,
                                 capacity_wh=self.battery_capacity_wh,
