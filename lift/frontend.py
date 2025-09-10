@@ -700,21 +700,23 @@ def run_frontend():
 
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
+    sep = '<span style="margin: 0 20px;"> | </span>'
     st.markdown('<div class="footer">'
                 '<b>'
                 '© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
-                '  |  '
+                f'{sep}'
                 'Demo Version'
-                '  |  '
+                f'{sep}'
                 '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
                 'target="_blank" '  # open in new tab
                 'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
                 '>GitLab</a>'
-                '  |  '
+                f'{sep}'
                 '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
                 'target="_blank" '  # open in new tab
                 'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
                 '>Impressum</a>'
+                '<span style="margin: 0 10px;"> </span>'
                 '</b></div>', unsafe_allow_html=True)
 
 
