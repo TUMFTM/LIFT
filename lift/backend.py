@@ -5,7 +5,6 @@ import pvlib
 import streamlit as st
 from time import time
 from typing import TYPE_CHECKING, Literal, Tuple, Dict, Optional
-from definitions import FREQ_HOURS, DEF_CHARGERS, DEF_SUBFLEETS
 
 import numpy as np
 
@@ -15,7 +14,8 @@ from definitions import (DTI,
                          DEF_ESS,
                          DEF_GRID,
                          DEF_CHARGERS,
-                         DEF_SUBFLEETS
+                         DEF_SUBFLEETS,
+                         CO2_PER_LITER_DIESEL_KG,
                          )
 
 from energy_system import (FixedDemand,
@@ -27,20 +27,16 @@ from energy_system import (FixedDemand,
 
 from interfaces import (Coordinates,
                         Inputs,
-                        InputLocation,
                         PhaseInputCharger,
-                        InputCharger,
                         PhaseInputSubfleet,
-                        InputSubfleet,
-                        InputEconomic,
                         PhaseInputEconomic,
                         Logs,
                         Capacities,
                         SimInputSubfleet,
                         SimInputCharger,
-                        ResultSimulation,
+                        SimResults,
                         PhaseResults,
-                        BackendResults,
+                        TotalResults,
                         )
 
 if TYPE_CHECKING:
@@ -97,7 +93,7 @@ def simulate(logs: Logs,
              capacities: Capacities,
              subfleets: dict[str, SimInputSubfleet],
              chargers: dict[str, SimInputCharger],
-             ) -> ResultSimulation:
+             ) -> SimResults:
 
     dem = FixedDemand(log=logs.dem)
     fleet = Fleet(pwr_lim_w=np.inf,
@@ -133,14 +129,14 @@ def simulate(logs: Logs,
         for block in blocks_supply:
             pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
 
-    return ResultSimulation(energy_pv_pot_wh=pv.energy_pot_wh,
-                            energy_pv_curt_wh=grid.energy_curt_wh,
-                            energy_grid_buy_wh=grid.energy_buy_wh,
-                            energy_grid_sell_wh=grid.energy_sell_wh,
-                            pwr_grid_peak_w=grid.pwr_peak_w,
-                            energy_dem_wh=dem.energy_wh,
-                            energy_fleet_wh=fleet.energy_wh,
-                            )
+    return SimResults(energy_pv_pot_wh=pv.energy_pot_wh,
+                      energy_pv_curt_wh=grid.energy_curt_wh,
+                      energy_grid_buy_wh=grid.energy_buy_wh,
+                      energy_grid_sell_wh=grid.energy_sell_wh,
+                      pwr_grid_peak_w=grid.pwr_peak_w,
+                      energy_dem_wh=dem.energy_wh,
+                      energy_fleet_wh=fleet.energy_wh,
+                      )
 
 
 def calc_phase_results(logs: Logs,
@@ -227,20 +223,21 @@ def calc_phase_results(logs: Logs,
 
         # bev
         dist_bev = log.loc[:, pd.IndexSlice[bevs, 'dist']].to_numpy().sum() if bevs else 0
-        cashflow_opex += (economics.insurance_pct / 100 * sf_in.capex_bev_eur +  # insurance
+        cashflow_opex += (economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
                           dist_bev * (
-                                  economics.mntex_bev_eur_km +  # maintenance
-                                  sf_def.toll_eur_per_km_bev * sf_in.toll_share_pct / 100  # toll
+                                  sf_def.mntex_eur_km_bev +  # maintenance
+                                  sf_def.toll_eur_per_km_bev * sf_in.toll_frac  # toll
                           ))
 
         # icev
         dist_icev = log.loc[:, pd.IndexSlice[icevs, 'dist']].to_numpy().sum() if icevs else 0
-        cashflow_opex += (economics.insurance_pct / 100 * sf_in.capex_icev_eur +  # insurance
+        cashflow_opex += (economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
                           dist_icev * (
-                                  economics.mntex_icev_eur_km +  # maintenance
-                                  sf_def.toll_eur_per_km_icev * sf_in.toll_share_pct / 100 +  # toll
+                                  sf_def.mntex_eur_km_icev +  # maintenance
+                                  sf_def.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
                                   economics.fuel_price_eur_liter * sf_def.consumption_icev / 100  # fuel
                           ))
+        cashflow_opem += dist_icev * sf_def.consumption_icev / 100 * CO2_PER_LITER_DIESEL_KG
 
     # chargers
     for chg_def in DEF_CHARGERS.values():
@@ -260,7 +257,7 @@ def calc_phase_results(logs: Logs,
                         )
 
 
-def run_backend(inputs: Inputs) -> BackendResults:
+def run_backend(inputs: Inputs) -> TotalResults:
     # start time tracking
     start_time = time()
 
@@ -287,9 +284,9 @@ def run_backend(inputs: Inputs) -> BackendResults:
     # stop time tracking
     print(f'Backend calculation completed in {time() - start_time:.2f} seconds.')
 
-    return BackendResults(baseline=results['baseline'],
-                          expansion=results['expansion'],
-                          )
+    return TotalResults(baseline=results['baseline'],
+                        expansion=results['expansion'],
+                        )
 
 
 if __name__ == "__main__":

@@ -11,7 +11,12 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import backend
-from definitions import SubFleetDefinition, ChargerDefinition, DEF_SUBFLEETS, DEF_CHARGERS, TIME_PRJ_YRS
+from definitions import (SubFleetDefinition,
+                         ChargerDefinition,
+                         DEF_SUBFLEETS,
+                         DEF_CHARGERS,
+                         DEF_ENERGY_SYSTEM,
+                         TIME_PRJ_YRS)
 from interfaces import (
     GridPowerExceededError,
     SOCError,
@@ -125,16 +130,14 @@ def create_sidebar_and_get_input() -> Inputs:
     # get simulation settings
     def _get_sim_settings():
         col1, col2 = st.sidebar.columns([6, 4])
-        with col1:
-            auto_refresh = st.toggle("**Automatisch aktualisieren**",
-                                     value=False)
-        with col2:
-            if auto_refresh:
+        auto_refresh = col1.toggle("**Automatisch aktualisieren**",
+                                 value=False)
+        if auto_refresh:
+            st.session_state["run_backend"] = True
+        else:
+            button_calc_results = col2.button("**Berechnen**", icon="🚀")
+            if button_calc_results:
                 st.session_state["run_backend"] = True
-            else:
-                button_calc_results = st.button("**Berechnen**", icon="🚀")
-                if button_calc_results:
-                    st.session_state["run_backend"] = True
     _get_sim_settings()
 
     # get depot parameters
@@ -167,91 +170,60 @@ def create_sidebar_and_get_input() -> Inputs:
             st_folium(m, height=350, width='5%', key="map", on_change=callback)
             st.markdown(f"Position: {st.session_state['location'].as_dms_str}")
 
-        with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
+        with st.sidebar.expander(label="**Energiesystem**",
+                                 icon="💡"):
             st.markdown("**Stromverbrauch Standort**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                options = ['H0', 'H0_dyn',
-                           'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
-                           'L0', 'L1', 'L2']
-                slp = st.selectbox(
-                    label="Lastprofil",
-                    options=options,
-                    index=options.index(DEFAULTS.location.slp),  # 'G0' als Default
-                    key="slp",
-                )
-            with col2:
-                consumption_yrl_wh = st.slider(label="Jahresstromverbrauch (MWh)",
-                                               key="consumption_yrl_wh",
-                                               min_value=10,
-                                               max_value=1000,
-                                               value=DEFAULTS.location.consumption_building_yrl_mwh,
-                                               step=10,
-                                               ) * 1E6  # convert to Wh
+            slp = DEF_ENERGY_SYSTEM.settings_dem_profile.get_input(label="Lastprofil",
+                                                                   key="slp",
+                                                                   domain=col1)
+
+            consumption_yrl_wh = DEF_ENERGY_SYSTEM.settings_dem_yr.get_input(label="Jahresstromverbrauch (MWh)",
+                                                                             key="consumption_yrl_wh",
+                                                                             domain=col2)
 
             st.markdown(horizontal_line_style, unsafe_allow_html=True)
+
             st.markdown("**Netzanschluss**")
             # ToDo: distinguish static and dynamic load management
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                preexisting = st.number_input(label="Vorhanden (kW)",
-                                              key="grid_preexisting",
-                                              min_value=0,
-                                              max_value=10000,
-                                              value=DEFAULTS.location.grid_connection_kwh,
-                                              )
-            with col2:
-                expansion = st.slider(label="Zusätzlich (kW)",
-                                      key="grid_expansion",
-                                      min_value=0,
-                                      max_value=10000,
-                                      value=0,
-                                      step=10,
-                                      )
-            grid_capacity_w = ExistExpansionValue(preexisting=preexisting * 1E3,
-                                                  expansion=expansion * 1E3)
+            grid_capacity_w = ExistExpansionValue(
+                preexisting = DEF_ENERGY_SYSTEM.settings_grid_preexisting.get_input(label="Vorhanden (kW)",
+                                                                                    key="grid_preexisting",
+                                                                                    domain=col1),
+                expansion=DEF_ENERGY_SYSTEM.settings_grid_expansion.get_input(label="Zusätzlich (kW)",
+                                                                              key="grid_expansion",
+                                                                              domain=col2,
+                                                                              )
+            )
+
             st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
             st.markdown("**PV-Anlage**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                preexisting = st.number_input(label="Vorhanden (kWp)",
-                                              key="pv_preexisting",
-                                              min_value=0,
-                                              max_value=1000,
-                                              value=DEFAULTS.location.existing_pv_kwp,
-                                              )
-            with col2:
-                expansion = st.slider(label="Zusätzlich (kWp)",
-                                      key="pv_expansion",
-                                      min_value=0,
-                                      max_value=1000,
-                                      value=0,
-                                      step=5,
-                                      )
-            pv_capacity_wp = ExistExpansionValue(preexisting=preexisting * 1E3,
-                                                 expansion=expansion * 1E3)
+            pv_capacity_wp = ExistExpansionValue(
+                preexisting=DEF_ENERGY_SYSTEM.settings_pv_preexisting.get_input(label="Vorhanden (kWp)",
+                                                                                key="pv_preexisting",
+                                                                                domain=col1),
+                expansion=DEF_ENERGY_SYSTEM.settings_pv_expansion.get_input(label="Zusätzlich (kWp)",
+                                                                            key="pv_expansion",
+                                                                            domain=col2,
+                                                                            ),
+            )
+
             st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
             st.markdown("**Stationärspeicher**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                preexisting = st.number_input(label="Vorhanden (kWh)",
-                                              key="ess_preexisting",
-                                              min_value=0,
-                                              max_value=1000,
-                                              value=DEFAULTS.location.existing_ess_kwh,
-                                              )
-            with col2:
-                expansion = st.slider(label="Zusätzlich (kWh)",
-                                      key="ess_expansion",
-                                      min_value=0,
-                                      max_value=1000,
-                                      value=0,
-                                      step=5,
-                                      )
-            ess_capacity_wh = ExistExpansionValue(preexisting=preexisting * 1E3,
-                                                  expansion=expansion * 1E3)
+            ess_capacity_wh = ExistExpansionValue(
+                preexisting=DEF_ENERGY_SYSTEM.settings_ess_preexisting.get_input(label="Vorhanden (kWh)",
+                                                                                 key="ess_preexisting",
+                                                                                 domain=col1),
+                expansion=DEF_ENERGY_SYSTEM.settings_ess_expansion.get_input(label="Zusätzlich (kWh)",
+                                                                             key="ess_expansion",
+                                                                             domain=col2,
+                                                                             ),
+            )
 
         return InputLocation(coordinates=st.session_state['location'],
                              slp=slp,
@@ -276,15 +248,8 @@ def create_sidebar_and_get_input() -> Inputs:
                                                          DEFAULTS.economics.opex_spec_grid_peak_eur_per_wp, 1) * 1E-3,
                 fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00,
                                                DEFAULTS.economics.fuel_price_eur_liter, 0.05),
-                toll_icev_eur_km=st.slider("Mautkosten für ICET (EUR/km)", 0.10, 1.00,
-                                           DEFAULTS.economics.toll_icev_eur_km, 0.01),
-                toll_bev_eur_km=DEFAULTS.economics.toll_bev_eur_km,
-                mntex_bev_eur_km=st.slider("Wartung BET (EUR/km)", 0.05, 1.00, DEFAULTS.economics.mntex_bev_eur_km,
-                                           0.01),
-                mntex_icev_eur_km=st.slider("Wartung ICET (EUR/km)", 0.05, 1.00, DEFAULTS.economics.mntex_icev_eur_km,
-                                            0.01),
-                insurance_pct=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0,
-                                        DEFAULTS.economics.insurance_pct, 0.1),
+                insurance_frac=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0,
+                                         DEFAULTS.economics.insurance_frac, 0.1) * 0.01,
                 salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, DEFAULTS.economics.salvage_bev_pct, 1),
                 salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, DEFAULTS.economics.salvage_icev_pct, 1),
             )
@@ -305,51 +270,41 @@ def create_sidebar_and_get_input() -> Inputs:
                                         )
 
             col1, col2 = st.columns(2)
-            with col1:
-                preexisting = st.number_input("Vorhandene E-Fahrzeuge",
-                                              key=f'num_bev_preexisting_{subfleet.name}',
-                                              min_value=0,
-                                              max_value=num_total,
-                                              value=0,
-                                              step=1,
-                                              )
-            with col2:
-                expansion = st.number_input("Zusätzliche E-Fahrzeuge",
-                                            key=f'num_bev_expansion_{subfleet.name}',
+            preexisting = col1.number_input("Vorhandene E-Fahrzeuge",
+                                            key=f'num_bev_preexisting_{subfleet.name}',
                                             min_value=0,
-                                            max_value=num_total - preexisting,
+                                            max_value=num_total,
                                             value=0,
                                             step=1,
                                             )
 
+            expansion = col2.number_input("Zusätzliche E-Fahrzeuge",
+                                          key=f'num_bev_expansion_{subfleet.name}',
+                                          min_value=0,
+                                          max_value=num_total - preexisting,
+                                          value=0,
+                                          step=1,
+                                          )
+
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                charger_type = st.selectbox(label="Ladepunkt",
-                                            key=f'charger_{subfleet.name}',
-                                            options=[x.name for x in DEF_CHARGERS.values()])
-            with col2:
-                max_value = DEF_CHARGERS[charger_type.lower()].settings_pwr_max.max_value
-                pwr_max_w = st.slider(label="max. Ladeleistung (kW)",
-                                      key=f'pwr_max_{subfleet.name}',
-                                      min_value=0,
-                                      max_value=max_value,
-                                      value=max_value,
-                                      ) * 1E3
+            charger_type = col1.selectbox(label="Ladepunkt",
+                                          key=f'charger_{subfleet.name}',
+                                          options=[x.name for x in DEF_CHARGERS.values()])
+            max_value = DEF_CHARGERS[charger_type.lower()].settings_pwr_max.max_value
+            pwr_max_w = col2.slider(label="max. Ladeleistung (kW)",
+                                    key=f'pwr_max_{subfleet.name}',
+                                    min_value=0,
+                                    max_value=max_value,
+                                    value=max_value,
+                                    ) * 1E3
 
-            capex_bev_eur = st.slider(label="Anschaffungspreis BEV (EUR)",
-                                      key=f'capex_bev_{subfleet.name}',
-                                      **subfleet.settings_capex_bev.dict,
-                                      )
+            capex_bev_eur = subfleet.settings_capex_bev.get_input(label="Anschaffungspreis BEV (EUR)",
+                                                                  key=f'capex_bev_{subfleet.name}',)
+            capex_icev_eur = subfleet.settings_capex_icev.get_input(label="Anschaffungspreis ICEV (EUR)",
+                                                                    key=f'capex_icev_{subfleet.name}', )
+            toll_frac = subfleet.settings_toll_share.get_input(label="Anteil mautplichtiger Strecken (%)",
+                                                               key=f'toll_frac_{subfleet.name}',)
 
-            capex_icev_eur = st.slider(label="Anschaffungspreis ICEV (EUR)",
-                                       key=f'capex_icev_{subfleet.name}',
-                                       **subfleet.settings_capex_icev.dict,
-                                       )
-
-            toll_share_pct = st.slider(label="Anteil mautplichtiger Strecken (%)",
-                                       key=f'toll_share_pct_{subfleet.name}',
-                                       **subfleet.settings_toll_share.dict,
-                                       )
 
         return InputSubfleet(
             name=subfleet.name,
@@ -359,7 +314,7 @@ def create_sidebar_and_get_input() -> Inputs:
             battery_capacity_wh=subfleet.battery_capactiy_wh,
             capex_bev_eur=capex_bev_eur,
             capex_icev_eur=capex_icev_eur,
-            toll_share_pct=toll_share_pct,
+            toll_frac=toll_frac,
             charger=charger_type,
             pwr_max_w=pwr_max_w,
         )
@@ -372,30 +327,26 @@ def create_sidebar_and_get_input() -> Inputs:
                                  icon=charger.icon,
                                  expanded=False):
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            with col1:
-                preexisting = st.number_input(label="Vorhandene",
-                                              key=f'chg_{charger.name.lower()}_preexisting',
-                                              **charger.settings_preexisting.dict
-                                              )
-            with col2:
-                expansion = st.slider(label="Zusätzliche",
-                                      key=f'chg_{charger.name.lower()}_expansion',
-                                      **charger.settings_expansion.dict,
-                                      )
+            num = ExistExpansionValue(
+                preexisting=charger.settings_preexisting.get_input(label="Vorhandene",
+                                                                   key=f'chg_{charger.name.lower()}_preexisting',
+                                                                   domain=col1),
+                expansion=charger.settings_expansion.get_input(label="Zusätzliche",
+                                                               key=f'chg_{charger.name.lower()}_expansion',
+                                                               domain=col2,
+                                                               ),
+            )
 
-            pwr_max_w = st.slider(label="Maximale Ladeleistung (kW)",
-                                  key=f'chg_{charger.name.lower()}_pwr',
-                                  **charger.settings_pwr_max.dict
-                                  ) * 1E3
+            pwr_max_w = charger.settings_pwr_max.get_input(label="Maximale Ladeleistung (kW)",
+                                                           key=f'chg_{charger.name.lower()}_pwr',
+                                                           )
 
-            cost_per_charger_eur = st.slider(label="Kosten (EUR pro Ladepunkt)",
-                                             key=f'chg_{charger.name.lower()}_cost',
-                                             **charger.settings_cost_per_unit_eur.dict
-                                             )
+            cost_per_charger_eur = charger.settings_cost_per_unit_eur.get_input(label="Kosten (EUR pro Ladepunkt)",
+                                                                                key=f'chg_{charger.name.lower()}_cost',
+                                                                                )
 
             return InputCharger(name=charger.name,
-                                num=ExistExpansionValue(preexisting=preexisting,
-                                                        expansion=expansion),
+                                num=num,
                                 pwr_max_w=pwr_max_w,
                                 cost_per_charger_eur=cost_per_charger_eur)
     input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}

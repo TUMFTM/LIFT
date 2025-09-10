@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from definitions import TIME_PRJ_YRS
-from typing import Dict, Tuple, List, Literal, Final
+from typing import Dict, Tuple, List, Literal, Final, Optional
 
 
 class GridPowerExceededError(Exception):
@@ -81,9 +81,6 @@ class InputLocation:
 
     def get_capacities(self,
                        phase: str) -> Capacities:
-        if phase not in ['baseline', 'expansion']:
-            raise ValueError(f"Invalid phase: {phase}. Must be 'preexisting' or 'expansion'.")
-
         attr_name = 'preexisting' if phase == 'baseline' else 'total'
 
         return Capacities(grid_w=getattr(self.grid_capacity_w, attr_name),
@@ -109,7 +106,7 @@ class PhaseInputSubfleet:
     battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
-    toll_share_pct: float = 30.0
+    toll_frac: float = 0.3
     charger: str = 'ac'
     pwr_max_w: float = 11E3
 
@@ -132,7 +129,7 @@ class InputSubfleet:
     battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
-    toll_share_pct: float = 30.0
+    toll_frac: float = 0.3
     charger: str = 'ac'
     pwr_max_w: float = 11E3
 
@@ -144,7 +141,7 @@ class InputSubfleet:
                                   battery_capacity_wh=self.battery_capacity_wh,
                                   capex_bev_eur=self.capex_bev_eur,
                                   capex_icev_eur=self.capex_icev_eur,
-                                  toll_share_pct=self.toll_share_pct,
+                                  toll_frac=self.toll_frac,
                                   charger=self.charger,
                                   pwr_max_w=self.pwr_max_w,
                                   )
@@ -191,15 +188,12 @@ class PhaseInputEconomic:
     opex_spec_grid_sell_eur_per_wh: float = -6E-5
     opex_spec_grid_peak_eur_per_wp: float = 150E-3
     fuel_price_eur_liter: float = 1.7
-    toll_icev_eur_km: float = 0.1
-    toll_bev_eur_km: float = 0.0
     driver_wage_eur_h: float = 20.0
     mntex_bev_eur_km: float = 0.05
     mntex_icev_eur_km: float = 0.1
-    insurance_pct: float = 20.0
+    insurance_frac: float = 0.02
     salvage_bev_pct: float = 40.0
     salvage_icev_pct: float = 40.0
-    working_days_yrl: int = 220
     fix_cost_construction: int = 10000
 
 
@@ -209,15 +203,10 @@ class InputEconomic:
     opex_spec_grid_sell_eur_per_wh: float = -6E-5
     opex_spec_grid_peak_eur_per_wp: float = 150E-3
     fuel_price_eur_liter: float = 1.7
-    toll_icev_eur_km: float = 0.1
-    toll_bev_eur_km: float = 0.0
     driver_wage_eur_h: float = 20.0
-    mntex_bev_eur_km: float = 0.05
-    mntex_icev_eur_km: float = 0.1
-    insurance_pct: float = 20.0
+    insurance_frac: float = 0.02
     salvage_bev_pct: float = 40.0
     salvage_icev_pct: float = 40.0
-    working_days_yrl: int = 220
     fix_cost_construction: int = 10000
 
     def get_phase_input(self,
@@ -227,15 +216,10 @@ class InputEconomic:
             opex_spec_grid_sell_eur_per_wh=self.opex_spec_grid_sell_eur_per_wh,
             opex_spec_grid_peak_eur_per_wp=self.opex_spec_grid_peak_eur_per_wp,
             fuel_price_eur_liter=self.fuel_price_eur_liter,
-            toll_icev_eur_km=self.toll_icev_eur_km,
-            toll_bev_eur_km=self.toll_bev_eur_km,
             driver_wage_eur_h=self.driver_wage_eur_h,
-            mntex_bev_eur_km=self.mntex_bev_eur_km,
-            mntex_icev_eur_km=self.mntex_icev_eur_km,
-            insurance_pct=self.insurance_pct,
+            insurance_frac=self.insurance_frac,
             salvage_bev_pct=self.salvage_bev_pct,
             salvage_icev_pct=self.salvage_icev_pct,
-            working_days_yrl=self.working_days_yrl,
             fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
         )
 
@@ -257,7 +241,7 @@ class Logs:
 
 
 @dataclass
-class ResultSimulation:
+class SimResults:
     energy_pv_pot_wh: float = 0.0
     energy_pv_curt_wh: float = 0.0
     energy_grid_buy_wh: float = 0.0
@@ -269,7 +253,7 @@ class ResultSimulation:
 
 @dataclass
 class PhaseResults:
-    simulation : ResultSimulation = field(default_factory=ResultSimulation)
+    simulation : SimResults = field(default_factory=SimResults)
     self_sufficiency_pct: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     self_consumption_pct: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
@@ -279,7 +263,7 @@ class PhaseResults:
 
 
 @dataclass
-class BackendResults:
+class TotalResults:
     baseline: PhaseResults
     expansion: PhaseResults
 
@@ -288,7 +272,7 @@ class BackendResults:
         return self.baseline.cashflow.sum() - self.expansion.cashflow.sum()
 
     @property
-    def payback_period_yrs(self) -> float:
+    def payback_period_yrs(self) -> Optional[float]:
         diff = np.cumsum(self.baseline.cashflow) - np.cumsum(self.expansion.cashflow)
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
@@ -299,21 +283,13 @@ class BackendResults:
         y0, y1 = diff[i], diff[i + 1]
 
         # Linear interpolation to find x where y1 == y2
-        return (i - y0 / (y1 - y0)) + 1
+        return float((i - y0 / (y1 - y0)) + 1)
 
     @property
     def roi_rel(self) -> float:
         # ToDo: calculate!
         return 0.0
 
-
-@dataclass(frozen=True)
-class DefaultLocation:
-    consumption_building_yrl_mwh: int = 26 # jährlicher Gebäude-Stromverbrauch [Mh]
-    slp: str = 'G0'  # Loadprofile
-    grid_connection_kwh: float = 1000
-    existing_pv_kwp: float = 0
-    existing_ess_kwh: float = 0
 
 @dataclass(frozen=True)
 class DefaultEconomics:
@@ -326,20 +302,13 @@ class DefaultEconomics:
     mntex_icev_eur_km: float = 0.18
     toll_bev_eur_km: float = 0.0
     toll_icev_eur_km: float = 0.269
-    insurance_pct: float = 2.0
+    insurance_frac: float = 0.02
     fuel_price_eur_liter: float = 1.56
 
-@dataclass(frozen=True)
-class DefaultChargers:
-    # Beispiel: Stückkosten Defaults
-    ac_cost_per_unit_eur: float = 1000.0
-    dc_cost_per_unit_eur: float = 80000.0
 
 @dataclass(frozen=True)
 class DefaultValues:
-    location: DefaultLocation = DefaultLocation()
     economics: DefaultEconomics = DefaultEconomics()
-    chargers: DefaultChargers = DefaultChargers()
 
 # Eine einzige, zentrale Instanz:
 DEFAULTS = DefaultValues()
