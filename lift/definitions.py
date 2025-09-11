@@ -122,6 +122,18 @@ class EnergySystemDefinition:
     settings_ess_expansion: SettingsSlider
 
 
+@dataclass
+class EconomicsDefinition:
+    settings_fix_cost_construction: SettingsSlider
+    settings_opex_spec_grid_buy: SettingsSlider
+    settings_opex_spec_grid_sell: SettingsSlider
+    settings_opex_spec_grid_peak: SettingsSlider
+    settings_opex_fuel: SettingsSlider
+    settings_insurance_frac: SettingsSlider
+    settings_salvage_bev_frac: SettingsSlider
+    settings_salvage_icev_frac: SettingsSlider
+
+
 DEF_SUBFLEETS = {
     # Leergewicht BET: 18t, Zuladung: 24t
     "hlt": SubFleetDefinition(
@@ -212,7 +224,6 @@ DEF_SUBFLEETS = {
     ),
 }
 
-# ToDo: add Classes DEF_LOCATION, DEF_ECONOMICS
 DEF_CHARGERS = {
     "ac": ChargerDefinition(
         name="AC",
@@ -241,7 +252,7 @@ DEF_ENERGY_SYSTEM = EnergySystemDefinition(
     settings_dem_profile=SettingsSelectBox(options=['H0', 'H0_dyn',
                                                     'G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7',
                                                     'L0', 'L1', 'L2'],
-                                           index=2),  # 2 corresponds to G0
+                                           index=2),  # default value: 2 corresponds to G0
     settings_dem_yr=SettingsSlider(min_value=0, max_value=1000, value=25, step=1, factor=1E6),
     settings_grid_preexisting=SettingsNumberInput(min_value=0, max_value=10000, value=500, factor=1E3),
     settings_grid_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
@@ -249,6 +260,17 @@ DEF_ENERGY_SYSTEM = EnergySystemDefinition(
     settings_pv_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
     settings_ess_preexisting=SettingsNumberInput(min_value=0, max_value=5000, value=0, factor=1E3),
     settings_ess_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
+)
+
+DEF_ECONOMICS = EconomicsDefinition(
+    settings_fix_cost_construction=SettingsSlider(min_value=0.0, max_value=1E6, value=0.0, step=1000.0),
+    settings_opex_spec_grid_buy=SettingsSlider(min_value=0.0, max_value=1.0, value=0.23, step=0.01, format="%0.2f"),
+    settings_opex_spec_grid_sell=SettingsSlider(min_value=0.0, max_value=1.0, value=0.06, step=0.01, format="%0.2f"),
+    settings_opex_spec_grid_peak=SettingsSlider(min_value=0.0, max_value=300.0, value=150.0, step=1.0),
+    settings_opex_fuel=SettingsSlider(min_value=0.0, max_value=3.0, value=1.56, step=0.01, format="%0.2f"),
+    settings_insurance_frac=SettingsSlider(min_value=0.0, max_value=10.0, value=2.0, step=0.1, factor=0.01, format="%0.1f"),
+    settings_salvage_bev_frac=SettingsSlider(min_value=0.0, max_value=100.0, value=20.0, step=1.0, factor=0.01),
+    settings_salvage_icev_frac=SettingsSlider(min_value=0.0, max_value=100.0, value=20.0, step=1.0, factor=0.01),
 )
 
 DTI = pd.date_range(start='2023-01-01', end='2024-01-01 00:00', freq='h', tz='Europe/Berlin', inclusive='left')

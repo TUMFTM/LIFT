@@ -186,9 +186,9 @@ def calc_phase_results(logs: Logs,
     # grid
     replacements = calc_replacements(ls=DEF_GRID['ls'])
     cashflow_capex += capacities.grid_w * DEF_GRID['capex_spec'] * replacements
-    cashflow_opex += (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy_eur_per_wh -
-                      result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell_eur_per_wh)
-    cashflow_opex += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
+    cashflow_opex += (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy -
+                      result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell)
+    cashflow_opex += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak
 
     cashflow_capem += capacities.grid_w * DEF_GRID['capem_spec'] * replacements
     cashflow_opem += result_sim.energy_grid_buy_wh * DEF_GRID['opem_spec']
@@ -234,7 +234,7 @@ def calc_phase_results(logs: Logs,
                           dist_icev * (
                                   sf_def.mntex_eur_km_icev +  # maintenance
                                   sf_def.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
-                                  economics.fuel_price_eur_liter * sf_def.consumption_icev / 100  # fuel
+                                  economics.opex_fuel * sf_def.consumption_icev / 100  # fuel
                           ))
         cashflow_opem += dist_icev * sf_def.consumption_icev / 100 * CO2_PER_LITER_DIESEL_KG
 

@@ -16,6 +16,7 @@ from definitions import (SubFleetDefinition,
                          DEF_SUBFLEETS,
                          DEF_CHARGERS,
                          DEF_ENERGY_SYSTEM,
+                         DEF_ECONOMICS,
                          TIME_PRJ_YRS)
 from interfaces import (
     GridPowerExceededError,
@@ -27,7 +28,6 @@ from interfaces import (
     Inputs,
     Coordinates,
     ExistExpansionValue,
-    DEFAULTS
 )
 
 # Load specified project colors from colors.toml
@@ -240,21 +240,39 @@ def create_sidebar_and_get_input() -> Inputs:
         with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                                  icon="💶"):
             return InputEconomic(
-                fix_cost_construction=st.slider("Fixkosten Standortausbau (EUR)", 0, 1000000, 0, 5000),
-                opex_spec_grid_buy_eur_per_wh=st.slider("Strombezugskosten (EUR/kWh)", 0.00, 1.00,
-                                                        DEFAULTS.economics.opex_spec_grid_buy_eur_per_wh, 0.01) * 1E-3,
-                opex_spec_grid_sell_eur_per_wh=st.slider("Einspeisevergütung (EUR/kWh)", 0.00, 1.00,
-                                                         DEFAULTS.economics.opex_spec_grid_sell_eur_per_wh,
-                                                         0.01) * 1E-3,
-                opex_spec_grid_peak_eur_per_wp=st.slider("Leistungspreis (EUR/kWp)", 0, 300,
-                                                         DEFAULTS.economics.opex_spec_grid_peak_eur_per_wp, 1) * 1E-3,
-                fuel_price_eur_liter=st.slider("Dieselkosten (EUR/l)", 1.00, 2.00,
-                                               DEFAULTS.economics.fuel_price_eur_liter, 0.05),
-                insurance_frac=st.slider("Versicherung (%*Anschaffungspreis)", 0.1, 10.0,
-                                         DEFAULTS.economics.insurance_frac, 0.1) * 0.01,
-                salvage_bev_pct=st.slider("Restwert BET (%)", 10, 80, DEFAULTS.economics.salvage_bev_pct, 1),
-                salvage_icev_pct=st.slider("Restwert ICET (%)", 10, 80, DEFAULTS.economics.salvage_icev_pct, 1),
-            )
+                fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_input(
+                    label="Fixkosten Standortausbau (EUR)",
+                    key="eco_fix_cost_construction",
+                    domain=st),
+                opex_spec_grid_buy=DEF_ECONOMICS.settings_opex_spec_grid_buy.get_input(
+                    label="Strombezugskosten (EUR/kWh)",
+                    key="eco_opex_spec_grid_buy",
+                    domain=st),
+                opex_spec_grid_sell=DEF_ECONOMICS.settings_opex_spec_grid_sell.get_input(
+                    label="Einspeisevergütung (EUR/kWh)",
+                    key="eco_opex_spec_grid_sell",
+                    domain=st),
+                opex_spec_grid_peak=DEF_ECONOMICS.settings_opex_spec_grid_peak.get_input(
+                    label="Leistungspreis (EUR/kWp)",
+                    key="eco_opex_spec_grid_peak",
+                    domain=st),
+                opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_input(
+                    label="Dieselkosten (EUR/l)",
+                    key="eco_opex_fuel",
+                    domain=st),
+                insurance_frac=DEF_ECONOMICS.settings_insurance_frac.get_input(
+                    label="Versicherung (%*Anschaffungspreis)",
+                    key="eco_insurance_frac",
+                    domain=st),
+                salvage_bev_frac=DEF_ECONOMICS.settings_salvage_bev_frac.get_input(
+                    label="Restwert BET (%)",
+                    key="eco_salvage_bev_frac",
+                    domain=st),
+                salvage_icev_frac=DEF_ECONOMICS.settings_salvage_icev_frac.get_input(
+                    label="Restwert ICET (%)",
+                    key="eco_salvage_icev_frac",
+                    domain=st),
+                )
     input_economic = _get_input_economic()
 
     # get fleet parameters

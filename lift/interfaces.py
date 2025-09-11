@@ -183,42 +183,42 @@ class InputCharger:
 
 @dataclass
 class PhaseInputEconomic:
-    opex_spec_grid_buy_eur_per_wh: float = 30E-5
-    opex_spec_grid_sell_eur_per_wh: float = -6E-5
-    opex_spec_grid_peak_eur_per_wp: float = 150E-3
-    fuel_price_eur_liter: float = 1.7
+    opex_spec_grid_buy: float = 30E-5
+    opex_spec_grid_sell: float = -6E-5
+    opex_spec_grid_peak: float = 150E-3
+    opex_fuel: float = 1.7
     driver_wage_eur_h: float = 20.0
     mntex_bev_eur_km: float = 0.05
     mntex_icev_eur_km: float = 0.1
     insurance_frac: float = 0.02
-    salvage_bev_pct: float = 40.0
-    salvage_icev_pct: float = 40.0
+    salvage_bev_frac: float = 40.0
+    salvage_icev_frac: float = 40.0
     fix_cost_construction: int = 10000
 
 
 @dataclass
 class InputEconomic:
-    opex_spec_grid_buy_eur_per_wh: float = 30E-5
-    opex_spec_grid_sell_eur_per_wh: float = -6E-5
-    opex_spec_grid_peak_eur_per_wp: float = 150E-3
-    fuel_price_eur_liter: float = 1.7
+    opex_spec_grid_buy: float = 30E-5
+    opex_spec_grid_sell: float = -6E-5
+    opex_spec_grid_peak: float = 150E-3
+    opex_fuel: float = 1.7
     driver_wage_eur_h: float = 20.0
     insurance_frac: float = 0.02
-    salvage_bev_pct: float = 40.0
-    salvage_icev_pct: float = 40.0
+    salvage_bev_frac: float = 40.0
+    salvage_icev_frac: float = 40.0
     fix_cost_construction: int = 10000
 
     def get_phase_input(self,
                         phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomic':
         return PhaseInputEconomic(
-            opex_spec_grid_buy_eur_per_wh=self.opex_spec_grid_buy_eur_per_wh,
-            opex_spec_grid_sell_eur_per_wh=self.opex_spec_grid_sell_eur_per_wh,
-            opex_spec_grid_peak_eur_per_wp=self.opex_spec_grid_peak_eur_per_wp,
-            fuel_price_eur_liter=self.fuel_price_eur_liter,
+            opex_spec_grid_buy=self.opex_spec_grid_buy,
+            opex_spec_grid_sell=self.opex_spec_grid_sell,
+            opex_spec_grid_peak=self.opex_spec_grid_peak,
+            opex_fuel=self.opex_fuel,
             driver_wage_eur_h=self.driver_wage_eur_h,
             insurance_frac=self.insurance_frac,
-            salvage_bev_pct=self.salvage_bev_pct,
-            salvage_icev_pct=self.salvage_icev_pct,
+            salvage_bev_frac=self.salvage_bev_frac,
+            salvage_icev_frac=self.salvage_icev_frac,
             fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
         )
 
@@ -288,26 +288,3 @@ class TotalResults:
     def roi_rel(self) -> float:
         # ToDo: calculate!
         return 0.0
-
-
-@dataclass(frozen=True)
-class DefaultEconomics:
-    salvage_bev_pct: int = 29  # in %
-    salvage_icev_pct: int = 26
-    opex_spec_grid_buy_eur_per_wh: float = 0.23
-    opex_spec_grid_sell_eur_per_wh: float = 0.06
-    opex_spec_grid_peak_eur_per_wp: int = 150
-    mntex_bev_eur_km: float = 0.13
-    mntex_icev_eur_km: float = 0.18
-    toll_bev_eur_km: float = 0.0
-    toll_icev_eur_km: float = 0.269
-    insurance_frac: float = 0.02
-    fuel_price_eur_liter: float = 1.56
-
-
-@dataclass(frozen=True)
-class DefaultValues:
-    economics: DefaultEconomics = DefaultEconomics()
-
-# Eine einzige, zentrale Instanz:
-DEFAULTS = DefaultValues()
