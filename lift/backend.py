@@ -222,7 +222,7 @@ def calc_phase_results(logs: Logs,
 
         # bev
         dist_bev = log.loc[:, pd.IndexSlice[bevs, 'dist']].to_numpy().sum() if bevs else 0
-        cashflow_opex += (economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
+        cashflow_opex += (num_bev * economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
                           dist_bev * (
                                   sf_def.mntex_eur_km_bev +  # maintenance
                                   sf_def.toll_eur_per_km_bev * sf_in.toll_frac  # toll
@@ -230,7 +230,7 @@ def calc_phase_results(logs: Logs,
 
         # icev
         dist_icev = log.loc[:, pd.IndexSlice[icevs, 'dist']].to_numpy().sum() if icevs else 0
-        cashflow_opex += (economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
+        cashflow_opex += (num_icev * economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
                           dist_icev * (
                                   sf_def.mntex_eur_km_icev +  # maintenance
                                   sf_def.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
@@ -244,6 +244,8 @@ def calc_phase_results(logs: Logs,
         replacements = calc_replacements(ls=chg_def.ls)
         cashflow_capex += chg_in.cost_per_charger_eur * chg_in.num * replacements
         cashflow_capem += chg_def.capem * chg_in.num * replacements
+
+
 
     cashflow = cashflow_capex + cashflow_opex
     co2_flow = cashflow_capem + cashflow_opem
