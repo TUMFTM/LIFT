@@ -139,7 +139,7 @@ DEF_ENERGY_SYSTEM = DefinitionEnergySystem(
 )
 
 DEF_ECONOMICS = DefinitionEconomics(
-    settings_fix_cost_construction=SettingsSlider(min_value=0.0, max_value=1E6, value=0.0, step=1000.0),
+    settings_fix_cost_construction=SettingsSlider(min_value=0.0, max_value=1E6, value=10000.0, step=1000.0),
     settings_opex_spec_grid_buy=SettingsSlider(min_value=0.0, max_value=0.5, value=0.23, step=0.01, factor=1E-3, format="%0.2f"),
     settings_opex_spec_grid_sell=SettingsSlider(min_value=0.0, max_value=0.5, value=0.06, step=0.01, factor=1E-3, format="%0.2f"),
     settings_opex_spec_grid_peak=SettingsSlider(min_value=0.0, max_value=300.0, value=150.0, factor=1E-3, step=1.0),
