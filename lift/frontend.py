@@ -393,7 +393,7 @@ def display_results(results):
                                         "label": [f"{(val_expansion / val_baseline - 1) * 100:+.1f} %"]}))
                 .mark_text(fontWeight="bold",
                            size=18,
-                           color="green" if val_baseline > val_expansion else "red",
+                           color="green" if val_baseline >= val_expansion else "red",
                            align="center",
                            baseline="middle")
                 .encode(
@@ -485,12 +485,11 @@ def display_results(results):
                                           )
 
             # Center text (single-row dataframe, minimal overhead)
-            diff = (val_expansion - val_baseline) * 100
             center_text = alt.Chart(pd.DataFrame(
-                {"text": [f"{diff:+.0f} %"]})).mark_text(
+                {"text": [f"{(val_expansion - val_baseline) * 100:+.0f} %"]})).mark_text(
                 size=18,
                 fontWeight="bold",
-                color="green" if diff > 0 else "red",
+                color="green" if val_expansion >= val_baseline else "red",
                 tooltip=None
             ).encode(
                 text="text:N"
