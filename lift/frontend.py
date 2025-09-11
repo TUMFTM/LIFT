@@ -265,11 +265,11 @@ def create_sidebar_and_get_input() -> Inputs:
                     key="eco_insurance_frac",
                     domain=st),
                 salvage_bev_frac=DEF_ECONOMICS.settings_salvage_bev_frac.get_input(
-                    label="Restwert BET (%)",
+                    label="Restwert BET (%) (In Berechnung noch unberücksichtigt)",
                     key="eco_salvage_bev_frac",
                     domain=st),
                 salvage_icev_frac=DEF_ECONOMICS.settings_salvage_icev_frac.get_input(
-                    label="Restwert ICET (%)",
+                    label="Restwert ICET (%) (In Berechnung noch unberücksichtigt)",
                     key="eco_salvage_icev_frac",
                     domain=st),
                 )
