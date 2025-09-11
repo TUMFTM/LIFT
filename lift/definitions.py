@@ -130,18 +130,18 @@ DEF_ENERGY_SYSTEM = DefinitionEnergySystem(
                                                     'L0', 'L1', 'L2'],
                                            index=2),  # default value: 2 corresponds to G0
     settings_dem_yr=SettingsSlider(min_value=0, max_value=1000, value=25, step=1, factor=1E6),
-    settings_grid_preexisting=SettingsNumberInput(min_value=0, max_value=10000, value=500, factor=1E3),
+    settings_grid_preexisting=SettingsNumberInput(min_value=0, max_value=5000, value=200, factor=1E3),
     settings_grid_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
-    settings_pv_preexisting=SettingsNumberInput(min_value=0, max_value=5000, value=0, factor=1E3),
-    settings_pv_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
-    settings_ess_preexisting=SettingsNumberInput(min_value=0, max_value=5000, value=0, factor=1E3),
-    settings_ess_expansion=SettingsSlider(min_value=0, max_value=5000, value=0, step=1, factor=1E3),
+    settings_pv_preexisting=SettingsNumberInput(min_value=0, max_value=1000, value=0, factor=1E3),
+    settings_pv_expansion=SettingsSlider(min_value=0, max_value=1000, value=0, step=1, factor=1E3),
+    settings_ess_preexisting=SettingsNumberInput(min_value=0, max_value=1000, value=0, factor=1E3),
+    settings_ess_expansion=SettingsSlider(min_value=0, max_value=1000, value=0, step=1, factor=1E3),
 )
 
 DEF_ECONOMICS = DefinitionEconomics(
     settings_fix_cost_construction=SettingsSlider(min_value=0.0, max_value=1E6, value=0.0, step=1000.0),
-    settings_opex_spec_grid_buy=SettingsSlider(min_value=0.0, max_value=1.0, value=0.23, step=0.01, factor=1E-3, format="%0.2f"),
-    settings_opex_spec_grid_sell=SettingsSlider(min_value=0.0, max_value=1.0, value=0.06, step=0.01, factor=1E-3, format="%0.2f"),
+    settings_opex_spec_grid_buy=SettingsSlider(min_value=0.0, max_value=0.5, value=0.23, step=0.01, factor=1E-3, format="%0.2f"),
+    settings_opex_spec_grid_sell=SettingsSlider(min_value=0.0, max_value=0.5, value=0.06, step=0.01, factor=1E-3, format="%0.2f"),
     settings_opex_spec_grid_peak=SettingsSlider(min_value=0.0, max_value=300.0, value=150.0, factor=1E-3, step=1.0),
     settings_opex_fuel=SettingsSlider(min_value=0.0, max_value=3.0, value=1.56, step=0.01, format="%0.2f"),
     settings_insurance_frac=SettingsSlider(min_value=0.0, max_value=10.0, value=2.0, step=0.1, factor=0.01, format="%0.1f"),
