@@ -43,6 +43,14 @@ COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
 PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
 
+@st.cache_data
+def get_version() -> str:
+    try:
+        return f"v{importlib.metadata.version('lift')}"
+    except importlib.metadata.PackageNotFoundError:
+        return "dev"
+VERSION = get_version()
+
 
 STYLES = f"""
     <style>
@@ -699,7 +707,7 @@ def run_frontend():
                 '<b>'
                 '© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
                 f'{sep}'
-                'Demo Version'
+                f'Demo Version {VERSION}'
                 f'{sep}'
                 '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
                 'target="_blank" '  # open in new tab
