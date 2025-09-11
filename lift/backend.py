@@ -191,8 +191,7 @@ def calc_phase_results(logs: Logs,
     cashflow_opex += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak_eur_per_wp
 
     cashflow_capem += capacities.grid_w * DEF_GRID['capem_spec'] * replacements
-    # ToDo: check whether net balance is correct here
-    cashflow_opem += (result_sim.energy_grid_buy_wh - result_sim.energy_grid_sell_wh) * DEF_GRID['opem_spec']
+    cashflow_opem += result_sim.energy_grid_buy_wh * DEF_GRID['opem_spec']
 
     # pv
     replacements = calc_replacements(ls=DEF_PV['ls'])
