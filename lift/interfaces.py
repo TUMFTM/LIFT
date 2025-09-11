@@ -1,9 +1,10 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
+from typing import Literal, Optional
 
-from definitions import TIME_PRJ_YRS
-from typing import Dict, Tuple, List, Literal, Final, Optional
+import streamlit as st
 
 
 class GridPowerExceededError(Exception):
@@ -13,7 +14,133 @@ class SOCError(Exception):
     pass
 
 
+class SettingsInput(ABC):
+    @abstractmethod
+    def get_input(self,
+                  label: str,
+                  key: Optional[str] = None,
+                  domain=st):
+        ...
 
+
+@dataclass
+class SettingsNumeric(SettingsInput):
+    min_value: float
+    max_value: float
+    value: float
+    format: str = "%d"
+    factor: float = 1.0
+
+
+@dataclass
+class SettingsSlider(SettingsNumeric):
+    step: float = 1.0
+
+    def get_input(self,
+                  label: str,
+                  key: Optional[str] = None,
+                  domain=st):
+        return domain.slider(label=label,
+                             key=key,
+                             min_value=self.min_value,
+                             max_value=self.max_value,
+                             value=self.value,
+                             format=self.format,
+                             step=self.step,
+                             ) * self.factor
+
+
+@dataclass
+class SettingsNumberInput(SettingsNumeric):
+    def get_input(self,
+                  label: str,
+                  key: Optional[str] = None,
+                  domain=st):
+        return domain.number_input(label=label,
+                                   key=key,
+                                   min_value=self.min_value,
+                                   max_value=self.max_value,
+                                   value=self.value,
+                                   format=self.format,
+                                   ) * self.factor
+
+
+@dataclass
+class SettingsSelectBox(SettingsInput):
+    options: list[str]
+    index: int
+
+    def get_input(self,
+                  label: str,
+                  key: Optional[str] = None,
+                  domain=st):
+        return domain.selectbox(label=label,
+                                key=key,
+                                options=self.options,
+                                index=self.index,
+                                )
+
+
+@dataclass
+class DefinitionSubfleet:
+    label: str
+    icon: str
+    name: str
+    weight_max_str: str
+    battery_capactiy_wh: float
+    capem_bev: float
+    capem_icev: float
+    weight_empty_bev: float
+    weight_empty_icev: float
+    toll_eur_per_km_bev: float
+    toll_eur_per_km_icev: float
+    mntex_eur_km_bev: float
+    mntex_eur_km_icev: float
+    consumption_icev: float
+    ls: float
+    settings_toll_share: SettingsSlider
+    settings_capex_bev: SettingsSlider
+    settings_capex_icev: SettingsSlider
+
+
+@dataclass
+class DefinitionExpansion:
+    name: str
+    icon: str
+    settings_preexisting: SettingsNumberInput
+    settings_expansion: SettingsSlider
+    settings_cost_per_unit_eur: SettingsSlider
+    capem: float
+
+
+@dataclass
+class DefinitionCharger(DefinitionExpansion):
+    settings_pwr_max: SettingsSlider
+    ls: float
+
+
+@dataclass
+class DefinitionEnergySystem:
+    settings_dem_profile: SettingsSelectBox
+    settings_dem_yr: SettingsSlider
+    settings_grid_preexisting: SettingsNumberInput
+    settings_grid_expansion: SettingsSlider
+    settings_pv_preexisting: SettingsNumberInput
+    settings_pv_expansion: SettingsSlider
+    settings_ess_preexisting: SettingsNumberInput
+    settings_ess_expansion: SettingsSlider
+
+
+@dataclass
+class DefinitionEconomics:
+    settings_fix_cost_construction: SettingsSlider
+    settings_opex_spec_grid_buy: SettingsSlider
+    settings_opex_spec_grid_sell: SettingsSlider
+    settings_opex_spec_grid_peak: SettingsSlider
+    settings_opex_fuel: SettingsSlider
+    settings_insurance_frac: SettingsSlider
+    settings_salvage_bev_frac: SettingsSlider
+    settings_salvage_icev_frac: SettingsSlider
 
 
 @dataclass
@@ -256,9 +383,9 @@ class PhaseResults:
     self_sufficiency: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     self_consumption: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
-                                                     default_factory=lambda: np.zeros(TIME_PRJ_YRS))
+                                                     default_factory=lambda: np.zeros(18))
     co2_flow: np.typing.NDArray[np.floating] = field(init=True,
-                                                     default_factory=lambda: np.zeros(TIME_PRJ_YRS))
+                                                     default_factory=lambda: np.zeros(18))
 
 
 @dataclass

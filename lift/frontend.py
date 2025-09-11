@@ -11,8 +11,8 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import backend
-from definitions import (SubFleetDefinition,
-                         ChargerDefinition,
+from definitions import (DefinitionSubfleet,
+                         DefinitionCharger,
                          DEF_SUBFLEETS,
                          DEF_CHARGERS,
                          DEF_ENERGY_SYSTEM,
@@ -277,7 +277,7 @@ def create_sidebar_and_get_input() -> Inputs:
 
     # get fleet parameters
     st.sidebar.subheader("Flotte")
-    def _get_params_subfleet(subfleet: SubFleetDefinition) -> InputSubfleet:
+    def _get_params_subfleet(subfleet: DefinitionSubfleet) -> InputSubfleet:
         with st.sidebar.expander(label=f'**{subfleet.label}**  \n{subfleet.weight_max_str}',
                                  icon=subfleet.icon,
                                  expanded=False):
@@ -342,7 +342,7 @@ def create_sidebar_and_get_input() -> Inputs:
 
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
-    def _get_params_charger(charger: ChargerDefinition) -> InputCharger:
+    def _get_params_charger(charger: DefinitionCharger) -> InputCharger:
         with st.sidebar.expander(label=f'**{charger.name}-Ladepunkte**',
                                  icon=charger.icon,
                                  expanded=False):
