@@ -137,19 +137,6 @@ SHARE_COLUMN_INPUT = [3, 7]
 horizontal_line_style = "<hr style='margin-top: 0.1rem; margin-bottom: 0.5rem;'>"
 
 def create_sidebar_and_get_input() -> Inputs:
-    # get simulation settings
-    def _get_sim_settings():
-        col1, col2 = st.sidebar.columns([6, 4])
-        auto_refresh = col1.toggle("**Automatisch aktualisieren**",
-                                 value=False)
-        if auto_refresh:
-            st.session_state["run_backend"] = True
-        else:
-            button_calc_results = col2.button("**Berechnen**", icon="🚀")
-            if button_calc_results:
-                st.session_state["run_backend"] = True
-    _get_sim_settings()
-
     # get depot parameters
     st.sidebar.subheader("Allgemeine Parameter")
     # ToDo: combine location and economic parameters in one function
@@ -378,6 +365,21 @@ def create_sidebar_and_get_input() -> Inputs:
                                 pwr_max_w=pwr_max_w,
                                 cost_per_charger_eur=cost_per_charger_eur)
     input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
+
+    # get simulation settings
+    def _get_sim_settings():
+        col1, col2 = st.sidebar.columns([6, 4])
+        st.session_state["auto_refresh"] = col1.toggle("**Automatisch aktualisieren**",
+                                                       value=False)
+
+        if st.session_state["auto_refresh"] or col2.button("**Berechnen**",
+                                                           icon="🚀",
+                                                           key="calc",
+                                                           use_container_width=True):
+            st.session_state["run_backend"] = True
+
+
+    _get_sim_settings()
 
     return Inputs(location=input_location,
                   subfleets=input_fleet,
@@ -668,8 +670,9 @@ def run_frontend():
     st.markdown(STYLES, unsafe_allow_html=True)
 
     # initialize session state for backend run
-    if "run_backend" not in st.session_state:
-        st.session_state["run_backend"] = False
+    for key in ["run_backend", "auto_refresh"]:
+        if key not in st.session_state:
+            st.session_state[key] = False
 
     # create sidebar and get input parameters from sidebar
     settings = create_sidebar_and_get_input()
