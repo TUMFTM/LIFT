@@ -158,10 +158,16 @@ def calc_phase_results(logs: Logs,
         self_sufficiency = 0.0
         self_consumption = 0.0
     else:
-        # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
-        self_sufficiency = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh)
-        # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
-        self_consumption = 1 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh)
+        if result_sim.energy_dem_wh + result_sim.energy_fleet_wh == 0:
+            self_sufficiency = 0.0
+        else:
+            # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
+            self_sufficiency = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh)
+        if result_sim.energy_pv_pot_wh == 0:
+            self_consumption = 0.0
+        else:
+            # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
+            self_consumption = 1 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh)
 
     cashflow_capex = np.zeros(TIME_PRJ_YRS)
     cashflow_opex = np.zeros(TIME_PRJ_YRS)
