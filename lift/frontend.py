@@ -705,7 +705,12 @@ def run_frontend():
     sep = '<span style="margin: 0 20px;"> | </span>'
     st.markdown('<div class="footer">'
                 '<b>'
-                '© 2025 Lehrstuhl für Fahrzeugtechnik, Technische Universität München – Alle Rechte vorbehalten'
+                '© 2025 '
+                '<a href="https://www.mos.ed.tum.de/ftm/" '
+                'target="_blank" '  # open in new tab
+                'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+                '>Lehrstuhl für Fahrzeugtechnik, Technische Universität München</a>'
+                ' – Alle Rechte vorbehalten'
                 f'{sep}'
                 f'Demo Version {VERSION}'
                 f'{sep}'
