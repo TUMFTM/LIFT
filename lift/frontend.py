@@ -398,6 +398,7 @@ def display_results(results):
                     x=alt.X("x:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
                     y=alt.Y("y:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
                     text="label:N",
+                    tooltip=[],
                 )
                 .properties(width=200, height=30)
             )
