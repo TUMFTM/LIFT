@@ -253,8 +253,8 @@ class SimResults:
 @dataclass
 class PhaseResults:
     simulation : SimResults = field(default_factory=SimResults)
-    self_sufficiency_pct: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
-    self_consumption_pct: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
+    self_sufficiency: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
+    self_consumption: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(TIME_PRJ_YRS))
     co2_flow: np.typing.NDArray[np.floating] = field(init=True,

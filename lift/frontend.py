@@ -366,144 +366,123 @@ def display_results(results):
 
     def _show_kpis():
 
-        def _centered_heading(text: str) -> None:
-            st.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
+        def _centered_heading(text: str, domain=st) -> None:
+            domain.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>",
+                            unsafe_allow_html=True)
 
-        def _create_comparison_chart(data: pd.DataFrame,
-                                     tooltips: list[alt.Tooltip] | None = None):
+        def _create_bar_comparison(val_baseline: float,
+                                   val_expansion: float,
+                                   label: str,
+                                   factor_display: float = 1.0,
+                                   ) -> alt.VConcatChart:
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value': [val_baseline,
+                                                val_expansion,
+                                                ],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline * factor_display,
+                                                        val_expansion * factor_display],
+                                      })
+
+            text = (
+                alt.Chart(pd.DataFrame({"x": [0.5],
+                                        "y": [0.5],
+                                        "label": [f"{(val_expansion / val_baseline - 1) * 100:+.1f} %"]}))
+                .mark_text(fontWeight="bold",
+                           size=18,
+                           color="green" if val_baseline > val_expansion else "red",
+                           align="center",
+                           baseline="middle")
+                .encode(
+                    x=alt.X("x:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
+                    y=alt.Y("y:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
+                    text="label:N",
+                )
+                .properties(width=200, height=30)
+            )
+
+            bars = (
+                alt.Chart(data)
+                .mark_bar()
+                .encode(
+                    x=alt.X(shorthand="phase:N",
+                            axis=None,
+                            sort=["Baseline", "Expansion"],
+                            scale=alt.Scale(paddingInner=0.0, paddingOuter=1)
+                            ),
+                    y=alt.Y(shorthand="value:Q",
+                            axis=None,
+                            ),
+                    color=alt.Color(shorthand="phase:N", legend=None,
+                                    scale=alt.Scale(domain=["Baseline", "Expansion"],
+                                                    range=[COLOR_BL, COLOR_EX])),
+                    tooltip=[alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                             alt.Tooltip(shorthand='value_display:Q', title=label, format=',.0f'),
+                             ],
+                )
+            ).properties(width=100, height=130)
+
+            return alt.vconcat(text, bars).configure_view(stroke=None)
+
+        def _create_ring_comparison(val_baseline: float,
+                                    val_expansion: float,
+                                    label: str,
+                                    ) -> alt.LayerChart:
             def _create_ring(
                     df: pd.DataFrame,
                     radius: float,
                     thickness: float,
                     color: str,
-            ) -> alt.Chart:
-                background = (alt.Chart(pd.DataFrame({"value": [1]}))
-                              .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4,
-                                        tooltip=None)
-                              .encode(theta=alt.Theta("value:Q", stack=True))
-                              )
+                    tooltip_list: list,
+            ) -> alt.LayerChart:
+                background = (
+                    alt.Chart(df)
+                    .mark_arc(innerRadius=radius, outerRadius=radius + thickness, color=color, opacity=0.4,
+                              tooltip=None)
+                    .encode(theta=alt.Theta("value_back:Q", stack=True),
+                            tooltip=tooltip_list,
+                            )
+                )
 
                 foreground = (
-                    # alt.Chart(pd.DataFrame(data_series))
                     alt.Chart(df)
                     .mark_arc(innerRadius=radius, outerRadius=radius + thickness, cornerRadius=2, color=color)
-                    .encode(theta=alt.Theta("value:Q", stack=True),
-                            # tooltip=[(alt.Tooltip(f"{col}:N", title=col.replace("_", " "))
-                            #          if col == "Szenario" else
-                            #           alt.Tooltip(f"{col}:Q", title=col.replace("_", " "), format=",.2f"))
-                            #          for col in df.columns if col != "value"]
-                            tooltip=tooltips
+                    .encode(theta=alt.Theta("value_front:Q", stack=True),
+                            tooltip=tooltip_list,
                             )
                 )
                 return background + foreground
 
+            data = pd.DataFrame(index=['baseline', 'expansion'],
+                                data={'value_front': [val_baseline,
+                                                      val_expansion],
+                                      'value_back': [1, 1],
+                                      'phase': ['Baseline',
+                                                'Expansion'],
+                                      'value_display': [val_baseline * 100,
+                                                        val_expansion * 100],
+                                      })
+
+            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
+                        alt.Tooltip(shorthand='value_display:Q', title=label, format=',.2f'), ]
+
             # Create rings
             ring_baseline = _create_ring(df=data.loc[['baseline']],
-                                       radius=40,
-                                       thickness=20,
-                                       color=COLOR_BL)
+                                         radius=40,
+                                         thickness=20,
+                                         color=COLOR_BL,
+                                         tooltip_list=tooltips,
+                                         )
             ring_expansion = _create_ring(df=data.loc[['expansion']],
-                                        radius=65,
-                                        thickness=20,
-                                        color=COLOR_EX)
-
-            return ring_baseline, ring_expansion
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        # ToDo: use bar chart for cost and co2
-        with col1:
-            _centered_heading("Gesamtkosten")
-            val_baseline = results.baseline.cashflow.sum()
-            val_expansion = results.expansion.cashflow.sum()
-            val_max = max(val_baseline, val_expansion)
-            data = pd.DataFrame(index=['baseline', 'expansion'],
-                                data={'value': [val_baseline / val_max,
-                                                val_expansion / val_max],
-                                      'phase': ['Baseline',
-                                                'Expansion'],
-                                      'value_display': [val_baseline,
-                                                        val_expansion],
-                                      })
-
-            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                        alt.Tooltip(shorthand='value_display:Q', title='Gesamtkosten in EUR', format=',.0f'),]
-            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
-                                                                  tooltips=tooltips)
+                                          radius=65,
+                                          thickness=20,
+                                          color=COLOR_EX,
+                                          tooltip_list=tooltips,
+                                          )
 
             # Center text (single-row dataframe, minimal overhead)
-            diff = val_expansion - val_baseline
-            center_text = alt.Chart(pd.DataFrame(
-                {"text": [f"{diff:+.0f} €"]})).mark_text(
-                size=18,
-                fontWeight="bold",
-                color="green" if diff < 0 else "red",
-                tooltip=None
-            ).encode(
-                text="text:N"
-            )
-
-            st.altair_chart(
-                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-                use_container_width=True
-            )
-
-        with col2:
-            _centered_heading("Gesamt-CO₂")
-            val_baseline = results.baseline.co2_flow.sum()
-            val_expansion = results.expansion.co2_flow.sum()
-            val_max = max(val_baseline, val_expansion)
-            data = pd.DataFrame(index=['baseline', 'expansion'],
-                                data={'value': [val_baseline / val_max,
-                                                val_expansion / val_max],
-                                      'phase': ['Baseline',
-                                                'Expansion'],
-                                      'value_display': [val_baseline,
-                                                        val_expansion],
-                                      })
-
-            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                        alt.Tooltip(shorthand='value_display:Q', title='CO2-Emissionen in t', format=',.0f'),]
-            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
-                                                                  tooltips=tooltips)
-
-            # Center text (single-row dataframe, minimal overhead)
-            diff = val_expansion - val_baseline
-            center_text = alt.Chart(pd.DataFrame(
-                {"text": [f"{diff:+.0f} t"]})).mark_text(
-                size=18,
-                fontWeight="bold",
-                color="green" if diff < 0 else "red",
-                tooltip=None
-            ).encode(
-                text="text:N"
-            )
-
-            st.altair_chart(
-                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-                use_container_width=True
-            )
-
-        with col3:
-            _centered_heading("Eigenverbrauchsquote")
-            val_baseline = results.baseline.self_consumption_pct
-            val_expansion = results.expansion.self_consumption_pct
-            data = pd.DataFrame(index=['baseline', 'expansion'],
-                                data={'value': [val_baseline / 100,
-                                                val_expansion / 100],
-                                      'phase': ['Baseline',
-                                                'Expansion'],
-                                      'value_display': [val_baseline,
-                                                        val_expansion],
-                                      })
-
-            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                        alt.Tooltip(shorthand='value_display:Q', title='Eigenverbrauchsquote in %', format=',.2f'),]
-            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
-                                                                  tooltips=tooltips)
-
-            # Center text (single-row dataframe, minimal overhead)
-            diff = val_expansion - val_baseline
+            diff = (val_expansion - val_baseline) * 100
             center_text = alt.Chart(pd.DataFrame(
                 {"text": [f"{diff:+.0f} %"]})).mark_text(
                 size=18,
@@ -514,45 +493,39 @@ def display_results(results):
                 text="text:N"
             )
 
-            st.altair_chart(
-                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-                use_container_width=True
-            )
+            return (ring_baseline + ring_expansion + center_text).properties(width=200, height=200)
 
-        with col4:
-            _centered_heading("Autarkiegrad")
-            val_baseline = results.baseline.self_sufficiency_pct
-            val_expansion = results.expansion.self_sufficiency_pct
-            data = pd.DataFrame(index=['baseline', 'expansion'],
-                                data={'value': [val_baseline / 100,
-                                                val_expansion / 100],
-                                      'phase': ['Baseline',
-                                                'Expansion'],
-                                      'value_display': [val_baseline,
-                                                        val_expansion],
-                                      })
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
 
-            tooltips = [alt.Tooltip(shorthand='phase:N', title='Szenario'),
-                        alt.Tooltip(shorthand='value_display:Q', title='Autarkiegrad in %', format=',.2f'),]
-            ring_baseline, ring_expansion = _create_comparison_chart(data=data,
-                                                                  tooltips=tooltips)
+        _centered_heading(text="Kosten", domain=col1)
+        col1.altair_chart(_create_bar_comparison(val_baseline=results.baseline.cashflow.sum(),
+                                               val_expansion=results.expansion.cashflow.sum(),
+                                               label="Gesamtkosten in EUR",
+                                               ),
+                        use_container_width=True)
 
-            # Center text (single-row dataframe, minimal overhead)
-            diff = val_expansion - val_baseline
-            center_text = alt.Chart(pd.DataFrame(
-                {"text": [f"{diff:+.0f} %"]})).mark_text(
-                size=18,
-                fontWeight="bold",
-                color="green" if diff > 0 else "red",
-                tooltip=None
-            ).encode(
-                text="text:N"
-            )
+        _centered_heading(text="CO₂-Emissionen", domain=col2)
+        col2.altair_chart(_create_bar_comparison(val_baseline=results.baseline.co2_flow.sum(),
+                                                 val_expansion=results.expansion.co2_flow.sum(),
+                                                 label="CO2-Emissionen in t",
+                                                 factor_display=1E-3,  # convert from kg to t
+                                                 ),
+                          use_container_width=True)
 
-            st.altair_chart(
-                (ring_baseline + ring_expansion + center_text).properties(width=200, height=200),
-                use_container_width=True
-            )
+        _centered_heading(text="Eigenverbrauchsquote", domain=col3)
+        col3.altair_chart(_create_ring_comparison(val_baseline=results.baseline.self_consumption,
+                                                  val_expansion=results.expansion.self_consumption,
+                                                  label="Eigenverbrauchsquote in %",
+                                                  ),
+                          use_container_width=True)
+
+        _centered_heading(text="Autarkiegrad", domain=col4)
+        col4.altair_chart(_create_ring_comparison(val_baseline=results.baseline.self_sufficiency,
+                                                  val_expansion=results.expansion.self_sufficiency,
+                                                  label="Autarkiegrad in %",
+                                                  ),
+                          use_container_width=True)
+
     _show_kpis()
 
     st.markdown("#### Gesamtkosten")
