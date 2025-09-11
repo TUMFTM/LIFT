@@ -41,6 +41,8 @@ def get_colors() -> Tuple[str, str, str, str]:
 
 COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
+PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
+
 
 STYLES = f"""
     <style>
@@ -500,31 +502,32 @@ def display_results(results):
 
         _centered_heading(text="Kosten", domain=col1)
         col1.altair_chart(_create_bar_comparison(val_baseline=results.baseline.cashflow.sum(),
-                                               val_expansion=results.expansion.cashflow.sum(),
-                                               label="Gesamtkosten in EUR",
-                                               ),
-                        use_container_width=True)
+                                                 val_expansion=results.expansion.cashflow.sum(),
+                                                 label="Gesamtkosten in EUR",
+                                                 ).properties(**PLOT_CONFIG),
+                          use_container_width=True,
+                          )
 
         _centered_heading(text="CO₂-Emissionen", domain=col2)
         col2.altair_chart(_create_bar_comparison(val_baseline=results.baseline.co2_flow.sum(),
                                                  val_expansion=results.expansion.co2_flow.sum(),
                                                  label="CO2-Emissionen in t",
                                                  factor_display=1E-3,  # convert from kg to t
-                                                 ),
+                                                 ).properties(**PLOT_CONFIG),
                           use_container_width=True)
 
         _centered_heading(text="Eigenverbrauchsquote", domain=col3)
         col3.altair_chart(_create_ring_comparison(val_baseline=results.baseline.self_consumption,
                                                   val_expansion=results.expansion.self_consumption,
                                                   label="Eigenverbrauchsquote in %",
-                                                  ),
+                                                  ).properties(**PLOT_CONFIG),
                           use_container_width=True)
 
         _centered_heading(text="Autarkiegrad", domain=col4)
         col4.altair_chart(_create_ring_comparison(val_baseline=results.baseline.self_sufficiency,
                                                   val_expansion=results.expansion.self_sufficiency,
                                                   label="Autarkiegrad in %",
-                                                  ),
+                                                  ).properties(**PLOT_CONFIG),
                           use_container_width=True)
 
     _show_kpis()
