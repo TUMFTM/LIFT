@@ -22,7 +22,6 @@ from lift.definitions import (
 from .energy_system import (
     FixedDemand,
     Fleet,
-    FleetUnit,
     GridConnection,
     PVSource,
     StationaryStorage,

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 import streamlit as st
+from typing import TYPE_CHECKING
 
 
 from lift.definitions import (
@@ -12,7 +13,14 @@ from lift.definitions import (
     FREQ_HOURS,
 )
 
-from .interfaces import GridPowerExceededError, SOCError, SimInputSubfleet, SimInputCharger
+from .interfaces import GridPowerExceededError, SOCError
+
+
+if TYPE_CHECKING:
+    from .interfaces import (
+        SimInputSubfleet,
+        SimInputCharger,
+    )
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
