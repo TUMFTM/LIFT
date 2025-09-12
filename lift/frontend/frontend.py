@@ -1,7 +1,7 @@
 import importlib.resources
 import toml
 import traceback
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import altair as alt
 import folium
@@ -21,8 +21,6 @@ from lift.definitions import (
 )
 
 from lift.backend.interfaces import (
-    DefinitionSubfleet,
-    DefinitionCharger,
     GridPowerExceededError,
     SOCError,
     InputLocation,
@@ -33,6 +31,14 @@ from lift.backend.interfaces import (
     Coordinates,
     ExistExpansionValue,
 )
+
+
+if TYPE_CHECKING:
+    from lift.backend.interfaces import (
+        DefinitionSubfleet,
+        DefinitionCharger,
+    )
+
 
 # Load specified project colors from colors.toml
 @st.cache_data
