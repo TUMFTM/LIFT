@@ -10,15 +10,19 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-import backend
-from definitions import (DefinitionSubfleet,
-                         DefinitionCharger,
-                         DEF_SUBFLEETS,
-                         DEF_CHARGERS,
-                         DEF_ENERGY_SYSTEM,
-                         DEF_ECONOMICS,
-                         TIME_PRJ_YRS)
-from interfaces import (
+from lift.backend import backend
+
+from lift.definitions.definitions import (
+    DefinitionSubfleet,
+    DefinitionCharger,
+    DEF_SUBFLEETS,
+    DEF_CHARGERS,
+    DEF_ENERGY_SYSTEM,
+    DEF_ECONOMICS,
+    TIME_PRJ_YRS,
+)
+
+from lift.backend.interfaces import (
     GridPowerExceededError,
     SOCError,
     InputLocation,

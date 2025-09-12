@@ -7,8 +7,12 @@ import pandas as pd
 import streamlit as st
 
 
-from definitions import DTI, FREQ_HOURS
-from interfaces import GridPowerExceededError, SOCError, SimInputSubfleet, SimInputCharger
+from lift.definitions.definitions import (
+    DTI,
+    FREQ_HOURS,
+)
+
+from .interfaces import GridPowerExceededError, SOCError, SimInputSubfleet, SimInputCharger
 
 EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 

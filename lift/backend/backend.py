@@ -4,40 +4,44 @@ import pandas as pd
 import pvlib
 import streamlit as st
 from time import time
-from typing import TYPE_CHECKING, Literal, Tuple, Dict, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from definitions import (DTI,
-                         TIME_PRJ_YRS,
-                         DEF_PV,
-                         DEF_ESS,
-                         DEF_GRID,
-                         DEF_CHARGERS,
-                         DEF_SUBFLEETS,
-                         CO2_PER_LITER_DIESEL_KG,
-                         )
+from lift.definitions.definitions import (
+    DTI,
+    TIME_PRJ_YRS,
+    DEF_PV,
+    DEF_ESS,
+    DEF_GRID,
+    DEF_CHARGERS,
+    DEF_SUBFLEETS,
+    CO2_PER_LITER_DIESEL_KG,
+)
 
-from energy_system import (FixedDemand,
-                           Fleet,
-                           FleetUnit,
-                           GridConnection,
-                           PVSource,
-                           StationaryStorage)
+from .energy_system import (
+    FixedDemand,
+    Fleet,
+    FleetUnit,
+    GridConnection,
+    PVSource,
+    StationaryStorage,
+)
 
-from interfaces import (Coordinates,
-                        Inputs,
-                        PhaseInputCharger,
-                        PhaseInputSubfleet,
-                        PhaseInputEconomic,
-                        Logs,
-                        Capacities,
-                        SimInputSubfleet,
-                        SimInputCharger,
-                        SimResults,
-                        PhaseResults,
-                        TotalResults,
-                        )
+from .interfaces import (
+    Coordinates,
+    Inputs,
+    PhaseInputCharger,
+    PhaseInputSubfleet,
+    PhaseInputEconomic,
+    Logs,
+    Capacities,
+    SimInputSubfleet,
+    SimInputCharger,
+    SimResults,
+    PhaseResults,
+    TotalResults,
+)
 
 if TYPE_CHECKING:
     pass

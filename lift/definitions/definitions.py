@@ -1,13 +1,14 @@
 import pandas as pd
 
-from interfaces import (SettingsNumberInput,
-                        SettingsSlider,
-                        SettingsSelectBox,
-                        DefinitionSubfleet,
-                        DefinitionCharger,
-                        DefinitionEnergySystem,
-                        DefinitionEconomics,
-                        )
+from lift.backend.interfaces import (
+    SettingsNumberInput,
+    SettingsSlider,
+    SettingsSelectBox,
+    DefinitionSubfleet,
+    DefinitionCharger,
+    DefinitionEnergySystem,
+    DefinitionEconomics,
+)
 
 
 DEF_SUBFLEETS = {
