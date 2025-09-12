@@ -686,7 +686,7 @@ def run_frontend():
 
         except GridPowerExceededError as e:
             st.error(f"""\
-            **Fehler in der Simulation**  
+            **Netzanschlussfehler**  
             **Der Netzanschluss kann die benötigte Leistung nicht bereitstellen**  
             -> Auftretende Lastspitzen können durch einen größeren Netzanschluss oder 
             mittels PV-Anlage und stationärem Speicher abgedeckt werden.  
@@ -694,9 +694,22 @@ def run_frontend():
             Interne Fehlermeldung: {e}
             """)
         except SOCError as e:
-            st.error(f"Fehler beim Ladezustand: {e}")
+            st.error(f"""\
+            **Ladezustandsfehler**  
+            **Der Ladezustand eines Fahrzeugs reicht nicht für die vorgesehene Fahrt aus**  
+            -> Abhilfe kann eine höhere Ladeleistung (Minimum aus Leistung von Fahrzeug und Ladepunkt) oder eine höhere
+            Anzahl an Ladepunkten schaffen.  
+              
+            Interne Fehlermeldung: {e}
+            """)
         except Exception as e:
-            st.error(f"Fehler bei der Berechnung: {e}")
+            st.error(f"""\
+            **Berechnungsfehler**  
+            Wenden Sie sich bitte an den Administrator des Tools. Geben Sie dabei die verwendeten Parameter und die 
+            nachfolgend angezeigte Fehlermeldung an.  
+              
+            Interne Fehlermeldung: {e}
+            """)
             st.text(traceback.format_exc())
 
         st.session_state["run_backend"] = False
