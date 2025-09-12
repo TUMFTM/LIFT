@@ -262,6 +262,10 @@ def create_sidebar_and_get_input() -> Inputs:
                     label="Leistungspreis (EUR/kWp)",
                     key="eco_opex_spec_grid_peak",
                     domain=st),
+                opex_spec_route_charging=DEF_ECONOMICS.settings_opex_spec_route_charging.get_input(
+                    label="Energiekosten für On-Route Charging (EUR/kWh)",
+                    key="eco_opex_spec_route_charging",
+                    domain=st),
                 opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_input(
                     label="Dieselkosten (EUR/l)",
                     key="eco_opex_fuel",
@@ -536,7 +540,7 @@ def display_results(results):
 
             return (ring_baseline + ring_expansion + center_text).properties(width=200, height=200)
 
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
         _centered_heading(text="Kosten", domain=col1)
         col1.altair_chart(_create_bar_comparison(val_baseline=results.baseline.cashflow.sum(),
@@ -565,6 +569,13 @@ def display_results(results):
         col4.altair_chart(_create_ring_comparison(val_baseline=results.baseline.self_sufficiency,
                                                   val_expansion=results.expansion.self_sufficiency,
                                                   label="Autarkiegrad in %",
+                                                  ).properties(**PLOT_CONFIG),
+                          use_container_width=True)
+
+        _centered_heading(text="Heim-Laden", domain=col5)
+        col5.altair_chart(_create_ring_comparison(val_baseline=results.baseline.site_charging,
+                                                  val_expansion=results.expansion.site_charging,
+                                                  label="Anteil Heimladen (Energie) in %",
                                                   ).properties(**PLOT_CONFIG),
                           use_container_width=True)
 

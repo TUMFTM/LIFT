@@ -137,8 +137,9 @@ def simulate(logs: Logs,
                       energy_grid_buy_wh=grid.energy_buy_wh,
                       energy_grid_sell_wh=grid.energy_sell_wh,
                       pwr_grid_peak_w=grid.pwr_peak_w,
-                      energy_dem_wh=dem.energy_wh,
-                      energy_fleet_wh=fleet.energy_wh,
+                      energy_dem_site_wh=dem.energy_wh,
+                      energy_fleet_site_wh=fleet.energy_site_wh,
+                      energy_fleet_route_wh=fleet.energy_route_wh,
                       )
 
 
@@ -161,16 +162,25 @@ def calc_phase_results(logs: Logs,
         self_sufficiency = 0.0
         self_consumption = 0.0
     else:
-        if result_sim.energy_dem_wh + result_sim.energy_fleet_wh == 0:
+        if result_sim.energy_dem_site_wh + result_sim.energy_fleet_site_wh == 0:
             self_sufficiency = 0.0
         else:
-            # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet + site)
-            self_sufficiency = (result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh - result_sim.energy_grid_sell_wh) / (result_sim.energy_fleet_wh + result_sim.energy_dem_wh)
+            # potential PV energy minus curtailed and sold energy divided by total energy demand (fleet@site + site)
+            self_sufficiency = ((result_sim.energy_pv_pot_wh - result_sim.energy_pv_curt_wh -
+                                result_sim.energy_grid_sell_wh) /
+                                (result_sim.energy_fleet_site_wh + result_sim.energy_dem_site_wh))
         if result_sim.energy_pv_pot_wh == 0:
             self_consumption = 0.0
         else:
             # 1 - (pv energy not used on-site (curtailed or sold) divided by total potential PV energy)
             self_consumption = 1 - ((result_sim.energy_grid_sell_wh + result_sim.energy_pv_curt_wh) / result_sim.energy_pv_pot_wh)
+
+    # calculate share charged energy which was charged at the own site (vs. on route)
+    if (result_sim.energy_fleet_site_wh + result_sim.energy_fleet_route_wh) == 0:
+        site_charging = 0.0
+    else:
+        site_charging = (result_sim.energy_fleet_site_wh /
+                         (result_sim.energy_fleet_site_wh + result_sim.energy_fleet_route_wh))
 
     cashflow_capex = np.zeros(TIME_PRJ_YRS)
     cashflow_opex = np.zeros(TIME_PRJ_YRS)
@@ -213,6 +223,9 @@ def calc_phase_results(logs: Logs,
     cashflow_capem += capacities.ess_wh * DEF_ESS['capem_spec'] * replacements
 
     # vehicles
+    cashflow_opex += result_sim.energy_fleet_route_wh * economics.opex_spec_route_charging
+    cashflow_opem += result_sim.energy_fleet_route_wh * DEF_GRID['opem_spec']
+
     for sf_def in DEF_SUBFLEETS.values():
         sf_in = subfleets[sf_def.name]
         replacements = calc_replacements(ls=sf_def.ls)
@@ -254,14 +267,13 @@ def calc_phase_results(logs: Logs,
         cashflow_capex += chg_in.cost_per_charger_eur * chg_in.num * replacements
         cashflow_capem += chg_def.capem * chg_in.num * replacements
 
-
-
     cashflow = cashflow_capex + cashflow_opex
     co2_flow = cashflow_capem + cashflow_opem
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency=self_sufficiency,
                         self_consumption=self_consumption,
+                        site_charging=site_charging,
                         cashflow=cashflow,
                         co2_flow=co2_flow,
                         )

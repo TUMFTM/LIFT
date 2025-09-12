@@ -198,6 +198,8 @@ class Fleet(DemandBlock):
     subfleets: dict[str, SimInputSubfleet]
     chargers: dict[str, SimInputCharger]
 
+    fleet_units: dict[str, FleetUnit] = field(init=False)
+
     def __post_init__(self):
         self.fleet_units = {f"{subfleet.name}_{i}": FleetUnit(
             name=f"{subfleet.name}_{i}",
@@ -217,12 +219,12 @@ class Fleet(DemandBlock):
         pwr_chg_fleet_w = 0.0
         for fleet_unit in sorted(self.fleet_units.values(), key=lambda x: x.time_flexibility):
             # check for available charger
-            pwr_chg = fleet_unit.charge(pwr_available_w * min(chargers[fleet_unit.charger], 1))
-            pwr_available_w -= pwr_chg
-            pwr_chg_fleet_w += pwr_chg
+            pwr_chg_site = fleet_unit.charge(pwr_available_w if chargers[fleet_unit.charger] >= 1 else 0)
+            pwr_available_w -= pwr_chg_site
+            pwr_chg_fleet_w += pwr_chg_site
 
             # allocate charger
-            if pwr_chg > 0:
+            if pwr_chg_site > 0:
                 chargers[fleet_unit.charger] -= 1
 
             if pwr_available_w <= 0:
@@ -232,9 +234,14 @@ class Fleet(DemandBlock):
         return pwr_chg_fleet_w
 
     @property
-    def energy_wh(self) -> float:
-        # Return the total energy demand in Wh over the simulation period.
-        return sum(unit.energy_wh for unit in self.fleet_units.values())
+    def energy_site_wh(self) -> float:
+        # Return the total energy charged at the site in Wh over the simulation period.
+        return sum(unit.energy_site_wh for unit in self.fleet_units.values())
+
+    @property
+    def energy_route_wh(self) -> float:
+        # Return the total energy charged on the route in Wh over the simulation period.
+        return sum(unit.energy_route_wh for unit in self.fleet_units.values())
 
 
 @st.cache_data
@@ -275,8 +282,11 @@ class FleetUnit(DemandBlock):
     soc: float = field(init=False,
                        default=0.0)
 
-    _pwr_chg_w: float = field(init=False,
-                              default=0.0)
+    _pwr_chg_site_w: float = field(init=False,
+                                   default=0.0)
+
+    _e_chg_route_wh: float = field(init=False,
+                                   default=0.0)
 
     def __post_init__(self):
         self.soc_track = np.zeros(len(DTI), dtype=np.float64)
@@ -292,26 +302,35 @@ class FleetUnit(DemandBlock):
         return float(self.soc - self.soc_min[self.idx]) * self.capacity_wh / self.pwr_max_w
 
     @property
-    def availability(self) -> int:
-        return int(self.atbase[self.idx])
-
-    @property
     def demand_w(self) -> float:
-        return min(self.pwr_max_w, self.capacity_wh * (1 - self.soc) / FREQ_HOURS) * self.availability
+        return min(self.pwr_max_w, self.capacity_wh * (1 - self.soc) / FREQ_HOURS)
 
     def charge(self, pwr_available_w: float):
+        atbase = self.atbase[self.idx]
         # calculate the charging power based on available power and current SOC
-        pwr_chg = max(min(self.demand_w, pwr_available_w), 0)
-        self._pwr_chg_w += pwr_chg
+        pwr_chg_site = max(min(self.demand_w * int(atbase),  # only charge if at base
+                               pwr_available_w),
+                           0)
+        self._pwr_chg_site_w += pwr_chg_site
         # update SOC based on charging power
-        self.soc += (pwr_chg - self.consumption_w[self.idx]) * FREQ_HOURS / self.capacity_wh
-        if self.soc < (0 - EPS) or self.soc > (1 + EPS):
-            raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg} W at {DTI[self.idx]}.")
+        self.soc += (pwr_chg_site - self.consumption_w[self.idx]) * FREQ_HOURS / self.capacity_wh
+        if self.soc < (0 - EPS) and not atbase:
+            e_chg_route_wh = abs(self.soc * self.capacity_wh)  # energy needed to reach SOC=0
+            self.soc = 0.0  # equivalent to self.soc += e_chg_route_wh / self.capacity_wh
+            self._e_chg_route_wh += e_chg_route_wh
+        if self.soc > (1 + EPS) or self.soc < (0 - EPS):
+            raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg_site} W at {DTI[self.idx]}.")
         self.soc_track[self.idx] = self.soc
         # return the charging power applied to this unit
-        return pwr_chg
+        return pwr_chg_site
 
     @property
-    def energy_wh(self) -> float:
-        # Return the total energy demand in Wh over the simulation period.
-        return self._pwr_chg_w * FREQ_HOURS
+    def energy_site_wh(self) -> float:
+        # Return the total energy charged at the site in Wh over the simulation period.
+        return self._pwr_chg_site_w * FREQ_HOURS
+
+    @property
+    def energy_route_wh(self) -> float:
+        print(self.soc_track)
+        # Return the total energy charged on the route in Wh over the simulation period.
+        return self._e_chg_route_wh

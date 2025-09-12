@@ -137,6 +137,7 @@ class DefinitionEconomics:
     settings_opex_spec_grid_buy: SettingsSlider
     settings_opex_spec_grid_sell: SettingsSlider
     settings_opex_spec_grid_peak: SettingsSlider
+    settings_opex_spec_route_charging: SettingsSlider
     settings_opex_fuel: SettingsSlider
     settings_insurance_frac: SettingsSlider
     settings_salvage_bev_frac: SettingsSlider
@@ -313,6 +314,7 @@ class PhaseInputEconomic:
     opex_spec_grid_buy: float = 30E-5
     opex_spec_grid_sell: float = -6E-5
     opex_spec_grid_peak: float = 150E-3
+    opex_spec_route_charging: float = 49E-5
     opex_fuel: float = 1.7
     driver_wage_eur_h: float = 20.0
     mntex_bev_eur_km: float = 0.05
@@ -328,6 +330,7 @@ class InputEconomic:
     opex_spec_grid_buy: float = 30E-5
     opex_spec_grid_sell: float = -6E-5
     opex_spec_grid_peak: float = 150E-3
+    opex_spec_route_charging: float = 49E-5
     opex_fuel: float = 1.7
     driver_wage_eur_h: float = 20.0
     insurance_frac: float = 0.02
@@ -341,6 +344,7 @@ class InputEconomic:
             opex_spec_grid_buy=self.opex_spec_grid_buy,
             opex_spec_grid_sell=self.opex_spec_grid_sell,
             opex_spec_grid_peak=self.opex_spec_grid_peak,
+            opex_spec_route_charging=self.opex_spec_route_charging,
             opex_fuel=self.opex_fuel,
             driver_wage_eur_h=self.driver_wage_eur_h,
             insurance_frac=self.insurance_frac,
@@ -373,8 +377,9 @@ class SimResults:
     energy_grid_buy_wh: float = 0.0
     energy_grid_sell_wh: float = 0.0
     pwr_grid_peak_w: float = 0.0
-    energy_fleet_wh: float = 0.0
-    energy_dem_wh: float = 0.0
+    energy_dem_site_wh: float = 0.0
+    energy_fleet_site_wh: float = 0.0
+    energy_fleet_route_wh: float = 0.0
 
 
 @dataclass
@@ -382,6 +387,7 @@ class PhaseResults:
     simulation : SimResults = field(default_factory=SimResults)
     self_sufficiency: float = 0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     self_consumption: float = 0.0  # share of the energy produced by the on-site PV array which is consumed on-site (1 - feed-in / produced)
+    site_charging: float = 0.0  # share of the fleet energy demand which is charged on-site (vs on-route)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(18))
     co2_flow: np.typing.NDArray[np.floating] = field(init=True,
