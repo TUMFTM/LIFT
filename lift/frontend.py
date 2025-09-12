@@ -697,8 +697,8 @@ def run_frontend():
             st.error(f"""\
             **Ladezustandsfehler**  
             **Der Ladezustand eines Fahrzeugs reicht nicht für die vorgesehene Fahrt aus**  
-            -> Abhilfe kann eine höhere Ladeleistung (Minimum aus Leistung von Fahrzeug und Ladepunkt) oder eine höhere
-            Anzahl an Ladepunkten schaffen.  
+            -> Abhilfe kann eine höhere Ladeleistung (Minimum aus Leistung von Fahrzeug und Ladepunkt), eine höhere
+            Anzahl an Ladepunkten oder ein größerer Netzanschluss schaffen.  
               
             Interne Fehlermeldung: {e}
             """)
