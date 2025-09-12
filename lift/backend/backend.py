@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from lift.definitions.definitions import (
+from lift.definitions import (
     DTI,
     TIME_PRJ_YRS,
     DEF_PV,

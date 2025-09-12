@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 
-from lift.definitions.definitions import (
+from lift.definitions import (
     DTI,
     FREQ_HOURS,
 )

@@ -12,9 +12,7 @@ from streamlit_folium import st_folium
 
 from lift.backend import backend
 
-from lift.definitions.definitions import (
-    DefinitionSubfleet,
-    DefinitionCharger,
+from lift.definitions import (
     DEF_SUBFLEETS,
     DEF_CHARGERS,
     DEF_ENERGY_SYSTEM,
@@ -23,6 +21,8 @@ from lift.definitions.definitions import (
 )
 
 from lift.backend.interfaces import (
+    DefinitionSubfleet,
+    DefinitionCharger,
     GridPowerExceededError,
     SOCError,
     InputLocation,
