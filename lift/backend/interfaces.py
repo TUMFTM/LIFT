@@ -316,13 +316,12 @@ class PhaseInputEconomic:
     opex_spec_grid_peak: float = 150E-3
     opex_spec_route_charging: float = 49E-5
     opex_fuel: float = 1.7
-    driver_wage_eur_h: float = 20.0
     mntex_bev_eur_km: float = 0.05
     mntex_icev_eur_km: float = 0.1
     insurance_frac: float = 0.02
     salvage_bev_frac: float = 40.0
     salvage_icev_frac: float = 40.0
-    fix_cost_construction: int = 10000
+    fix_cost_construction: float = 10000
 
 
 @dataclass
@@ -332,11 +331,10 @@ class InputEconomic:
     opex_spec_grid_peak: float = 150E-3
     opex_spec_route_charging: float = 49E-5
     opex_fuel: float = 1.7
-    driver_wage_eur_h: float = 20.0
     insurance_frac: float = 0.02
     salvage_bev_frac: float = 40.0
     salvage_icev_frac: float = 40.0
-    fix_cost_construction: int = 10000
+    fix_cost_construction: float = 10000
 
     def get_phase_input(self,
                         phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomic':
