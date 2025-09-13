@@ -347,6 +347,14 @@ def create_sidebar_and_get_input() -> Inputs:
             toll_frac=toll_frac,
             charger=charger_type,
             pwr_max_w=pwr_max_w,
+            ls=subfleet.ls,
+            capem_bev=subfleet.capem_bev,
+            capem_icev=subfleet.capem_icev,
+            mntex_eur_km_bev=subfleet.mntex_eur_km_bev,
+            mntex_eur_km_icev=subfleet.mntex_eur_km_icev,
+            consumption_icev=subfleet.consumption_icev,
+            toll_eur_per_km_bev=subfleet.toll_eur_per_km_bev,
+            toll_eur_per_km_icev=subfleet.toll_eur_per_km_icev,
         )
     input_fleet = {sf_name: _get_params_subfleet(sf_def) for sf_name, sf_def in DEF_SUBFLEETS.items()}
 
@@ -378,7 +386,10 @@ def create_sidebar_and_get_input() -> Inputs:
             return InputCharger(name=charger.name,
                                 num=num,
                                 pwr_max_w=pwr_max_w,
-                                cost_per_charger_eur=cost_per_charger_eur)
+                                cost_per_charger_eur=cost_per_charger_eur,
+                                capem=charger.capem,
+                                ls=charger.ls,
+                                )
     input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
 
     # get simulation settings

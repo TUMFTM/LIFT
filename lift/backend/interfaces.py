@@ -237,6 +237,14 @@ class PhaseInputSubfleet:
     toll_frac: float = 0.3
     charger: str = 'ac'
     pwr_max_w: float = 11E3
+    ls: float = 6.0
+    capem_bev: float = 20000.0
+    capem_icev: float = 15000.0
+    mntex_eur_km_bev: float = 0.05
+    mntex_eur_km_icev: float = 0.1
+    consumption_icev: float = 27.0
+    toll_eur_per_km_bev: float = 0.0
+    toll_eur_per_km_icev: float = 1.0
 
     def get_sim_input(self) -> SimInputSubfleet:
         return SimInputSubfleet(name=self.name,
@@ -259,6 +267,14 @@ class InputSubfleet:
     toll_frac: float = 0.3
     charger: str = 'ac'
     pwr_max_w: float = 11E3
+    ls: float = 6.0
+    capem_bev: float = 20000.0
+    capem_icev: float = 15000.0
+    mntex_eur_km_bev: float = 0.05
+    mntex_eur_km_icev: float = 0.1
+    consumption_icev: float = 27.0
+    toll_eur_per_km_bev: float = 0.0
+    toll_eur_per_km_icev: float = 1.0
 
     def get_phase_input(self,
                       phase: Literal['baseline', 'expansion']) -> PhaseInputSubfleet:
@@ -271,6 +287,14 @@ class InputSubfleet:
                                   toll_frac=self.toll_frac,
                                   charger=self.charger,
                                   pwr_max_w=self.pwr_max_w,
+                                  ls=self.ls,
+                                  capem_bev=self.capem_bev,
+                                  capem_icev=self.capem_icev,
+                                  mntex_eur_km_bev=self.mntex_eur_km_bev,
+                                  mntex_eur_km_icev=self.mntex_eur_km_icev,
+                                  consumption_icev=self.consumption_icev,
+                                  toll_eur_per_km_bev=self.toll_eur_per_km_bev,
+                                  toll_eur_per_km_icev=self.toll_eur_per_km_icev,
                                   )
 
 
@@ -287,6 +311,8 @@ class PhaseInputCharger:
     num: int = 0
     pwr_max_w: float = 11E3
     cost_per_charger_eur: float = 3000.0
+    capem: float = 1.0
+    ls: float = 18.0
 
     def get_sim_input(self) -> SimInputCharger:
         return SimInputCharger(name=self.name,
@@ -300,6 +326,8 @@ class InputCharger:
                                                                                  expansion=4))
     pwr_max_w: float = 11E3
     cost_per_charger_eur: float = 3000.0
+    capem: float = 1.0
+    ls: float = 18.0
 
     def get_phase_input(self,
                         phase: Literal['baseline', 'expansion']) -> PhaseInputCharger:
@@ -307,6 +335,8 @@ class InputCharger:
                                  num=int(self.num.preexisting) if phase == 'baseline' else int(self.num.total),
                                  pwr_max_w=self.pwr_max_w,
                                  cost_per_charger_eur=self.cost_per_charger_eur,
+                                 capem=self.capem,
+                                 ls=self.ls,
                                  )
 
 @dataclass

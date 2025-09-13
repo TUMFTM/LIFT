@@ -14,8 +14,6 @@ from lift.definitions import (
     DEF_PV,
     DEF_ESS,
     DEF_GRID,
-    DEF_CHARGERS,
-    DEF_SUBFLEETS,
     CO2_PER_LITER_DIESEL_KG,
 )
 
@@ -226,9 +224,9 @@ def calc_phase_results(logs: Logs,
     cashflow_opex += result_sim.energy_fleet_route_wh * economics.opex_spec_route_charging
     cashflow_opem += result_sim.energy_fleet_route_wh * DEF_GRID['opem_spec']
 
-    for sf_def in DEF_SUBFLEETS.values():
-        sf_in = subfleets[sf_def.name]
-        replacements = calc_replacements(ls=sf_def.ls)
+    for sf_in in subfleets.values():
+        sf_in = subfleets[sf_in.name]
+        replacements = calc_replacements(ls=sf_in.ls)
         num_bev = sf_in.num_bev
         num_icev = sf_in.num_total - sf_in.num_bev
 
@@ -239,33 +237,32 @@ def calc_phase_results(logs: Logs,
 
         cashflow_capex += (num_bev * sf_in.capex_bev_eur * replacements +
                            num_icev * sf_in.capex_icev_eur * replacements)
-        cashflow_capem += (num_bev * sf_def.capem_bev * replacements +
-                           num_icev * sf_def.capem_icev * replacements)
+        cashflow_capem += (num_bev * sf_in.capem_bev * replacements +
+                           num_icev * sf_in.capem_icev * replacements)
 
         # bev
         dist_bev = log.loc[:, pd.IndexSlice[bevs, 'dist']].to_numpy().sum() if bevs else 0
         cashflow_opex += (num_bev * economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
                           dist_bev * (
-                                  sf_def.mntex_eur_km_bev +  # maintenance
-                                  sf_def.toll_eur_per_km_bev * sf_in.toll_frac  # toll
+                                  sf_in.mntex_eur_km_bev +  # maintenance
+                                  sf_in.toll_eur_per_km_bev * sf_in.toll_frac  # toll
                           ))
 
         # icev
         dist_icev = log.loc[:, pd.IndexSlice[icevs, 'dist']].to_numpy().sum() if icevs else 0
         cashflow_opex += (num_icev * economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
                           dist_icev * (
-                                  sf_def.mntex_eur_km_icev +  # maintenance
-                                  sf_def.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
-                                  economics.opex_fuel * sf_def.consumption_icev / 100  # fuel
+                                  sf_in.mntex_eur_km_icev +  # maintenance
+                                  sf_in.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
+                                  economics.opex_fuel * sf_in.consumption_icev / 100  # fuel
                           ))
-        cashflow_opem += dist_icev * sf_def.consumption_icev / 100 * CO2_PER_LITER_DIESEL_KG
+        cashflow_opem += dist_icev * sf_in.consumption_icev / 100 * CO2_PER_LITER_DIESEL_KG
 
     # chargers
-    for chg_def in DEF_CHARGERS.values():
-        chg_in = chargers[chg_def.name]
-        replacements = calc_replacements(ls=chg_def.ls)
+    for chg_in in chargers.values():
+        replacements = calc_replacements(ls=chg_in.ls)
         cashflow_capex += chg_in.cost_per_charger_eur * chg_in.num * replacements
-        cashflow_capem += chg_def.capem * chg_in.num * replacements
+        cashflow_capem += chg_in.capem * chg_in.num * replacements
 
     cashflow = cashflow_capex + cashflow_opex
     co2_flow = cashflow_capem + cashflow_opem
