@@ -344,7 +344,6 @@ class InputEconomic:
             opex_spec_grid_peak=self.opex_spec_grid_peak,
             opex_spec_route_charging=self.opex_spec_route_charging,
             opex_fuel=self.opex_fuel,
-            driver_wage_eur_h=self.driver_wage_eur_h,
             insurance_frac=self.insurance_frac,
             salvage_bev_frac=self.salvage_bev_frac,
             salvage_icev_frac=self.salvage_icev_frac,
