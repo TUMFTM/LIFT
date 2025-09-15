@@ -1,3 +1,5 @@
+import pandas as pd
+
 from lift.backend import backend
 
 from lift.backend.interfaces import (
@@ -5,6 +7,7 @@ from lift.backend.interfaces import (
     InputSubfleet,
     InputCharger,
     InputEconomics,
+    InputInvestComponent,
     Inputs,
     Coordinates,
     ExistExpansionValue,
@@ -18,15 +21,30 @@ if __name__ == "__main__":
                                     latitude=48.137154),
             slp='g0',
             consumption_yrl_wh=0.0,
-            grid_capacity_w=ExistExpansionValue(preexisting=200E3,
-                                                expansion=0.0),
-            pv_capacity_wp=ExistExpansionValue(preexisting=0.0,
-                                               expansion=0.0),
-            ess_capacity_wh=ExistExpansionValue(preexisting=0.0,
-                                                expansion=0.0),
+            grid=InputInvestComponent(
+                capacity=ExistExpansionValue(preexisting=100,
+                                             expansion=0),
+                capex_spec = 0.0,
+                capem_spec = 0.0,
+                ls = 18,
+            ),
+            pv=InputInvestComponent(
+                capacity=ExistExpansionValue(preexisting=0,
+                                             expansion=0),
+                capex_spec=0.0,
+                capem_spec=0.0,
+                ls=18,
+            ),
+            ess = InputInvestComponent(
+                capacity=ExistExpansionValue(preexisting=0,
+                                             expansion=0),
+                capex_spec=0.0,
+                capem_spec=0.0,
+                ls=18,
+            ),
         ),
         economics=InputEconomics(
-            fix_cost_construction=0.0,
+            fix_cost_construction=0,
             opex_spec_grid_buy=49E-5,
             opex_spec_grid_sell=0.0,
             opex_spec_grid_peak=0.0,
@@ -35,6 +53,11 @@ if __name__ == "__main__":
             insurance_frac=0.0,
             salvage_bev_frac=0.0,
             salvage_icev_frac=0.0,
+            period_eco=18,
+            period_sim=pd.Timedelta(days=365),
+            freq_sim=pd.Timedelta(hours=1),
+            co2_per_liter_diesel_kg=3.08,
+            opem_spec_grid=0.0004,
         ),
         subfleets=dict(
             hlt=InputSubfleet(
@@ -60,5 +83,4 @@ if __name__ == "__main__":
             ),
         )
     )
-    backend.run_backend(inputs)
-    pass
+    results = backend.run_backend(inputs)
