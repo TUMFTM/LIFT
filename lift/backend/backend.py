@@ -66,7 +66,6 @@ def get_log_pv(coordinates: Coordinates,
     data = data['P']
     data.index = data.index.round('h')
     data = data.tz_convert('Europe/Berlin').reindex(dti).ffill().bfill()
-    data = data.resample(settings.freq_sim).mean()
     return data.values / 1000
 
 
