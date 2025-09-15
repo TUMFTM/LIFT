@@ -325,7 +325,7 @@ def run_backend(inputs: Inputs) -> TotalResults:
                for phase in ["baseline", "expansion"]}
 
     # stop time tracking
-    print(f'Backend calculation completed in {time() - start_time:.2f} seconds.')
+    print(f'{pd.Timestamp.now().isoformat()} - Backend calculation completed in {time() - start_time:.2f} seconds.')
 
     return TotalResults(baseline=results['baseline'],
                         expansion=results['expansion'],
