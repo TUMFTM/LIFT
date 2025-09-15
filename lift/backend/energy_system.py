@@ -4,10 +4,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 from typing import TYPE_CHECKING
 
-from .interfaces import GridPowerExceededError, SOCError
+from .interfaces import GridPowerExceededError, SOCError, safe_cache_data
 
 
 if TYPE_CHECKING:
@@ -242,7 +241,7 @@ class Fleet(DemandBlock):
         return sum(unit.energy_route_wh for unit in self.fleet_units.values())
 
 
-@st.cache_data
+@safe_cache_data
 def get_soc_min(max_charge_rate,
                 dsoc,
                 atbase):

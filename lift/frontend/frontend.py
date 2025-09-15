@@ -1,5 +1,6 @@
 from __future__ import annotations
 import importlib.resources
+import os
 import toml
 import traceback
 from typing import Tuple, TYPE_CHECKING
@@ -10,6 +11,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
+
+# Flag to use streamlit caching; required before importing lift.backend.interfaces
+# Is automatically deleted after import
+os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 from lift.backend import backend
 

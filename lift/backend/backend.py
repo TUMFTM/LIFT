@@ -2,7 +2,6 @@ import demandlib
 import importlib.resources as resources
 import pandas as pd
 import pvlib
-import streamlit as st
 from time import time
 from typing import TYPE_CHECKING
 
@@ -18,6 +17,7 @@ from .energy_system import (
 )
 
 from .interfaces import (
+    safe_cache_data,
     Coordinates,
     Inputs,
     PhaseInputLocation,
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     pass
 
 
-@st.cache_data
+@safe_cache_data
 def get_log_pv(coordinates: Coordinates,
                settings: SimInputSettings,
                ) -> np.typing.NDArray[np.float64]:
@@ -69,7 +69,7 @@ def get_log_pv(coordinates: Coordinates,
     return data.values / 1000
 
 
-@st.cache_data
+@safe_cache_data
 def get_log_dem(slp: str,
                 consumption_yrl_wh: float,
                 settings: SimInputSettings) -> np.typing.NDArray[np.float64]:
@@ -80,7 +80,7 @@ def get_log_dem(slp: str,
                       for year in settings.dti.year.unique()]).values / settings.freq_hours  # get first (and only) column as numpy array and convert from energy to power
 
 
-@st.cache_data
+@safe_cache_data
 def get_log_subfleet(vehicle_type: str,
                      settings: SimInputSettings) -> pd.DataFrame:
     with resources.files('lift.data').joinpath(f'log_{vehicle_type}.csv').open('r') as logfile:
@@ -90,7 +90,7 @@ def get_log_subfleet(vehicle_type: str,
     return df.loc[settings.dti, :]
 
 
-@st.cache_data
+@safe_cache_data
 def simulate(settings: SimInputSettings,
              logs: Logs,
              capacities: SimInputLocation,
