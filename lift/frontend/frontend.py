@@ -642,8 +642,8 @@ def display_results(results):
         st.markdown("#### Kumulierter CO₂-Ausstoß")
         col1, col2 = st.columns([4, 1])
         with col1:
-            plot_flow(results.baseline.co2_flow,
-                      results.expansion.co2_flow,
+            plot_flow(results.baseline.co2_flow * 1E-3,
+                      results.expansion.co2_flow * 1E-3,
                       y_label="Kumulierte CO₂-Emissionen in t",
                       )
         with col2:
