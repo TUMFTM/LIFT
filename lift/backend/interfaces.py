@@ -185,58 +185,83 @@ class ExistExpansionValue:
 
 
 @dataclass
-class Capacities:
-    grid_w: float = 0.0
-    pv_wp: float = 0.0
-    ess_wh: float = 0.0
+class PhaseInvestComponent:
+    capacity: float = 10E3
+    capex_spec: float = 1.0
+    capem_spec: float = 1.0
+    ls: int = 18
 
 
 @dataclass
-class InputLocation:
+class InputInvestComponent(PhaseInvestComponent):
+    capacity: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10E3,
+                                                                                      expansion=50E3))
+
+    def get_input_component(self,
+                            phase: str) -> PhaseInvestComponent:
+        return PhaseInvestComponent(capacity=self.capacity.get_value(phase=phase),
+                                    capex_spec=self.capex_spec,
+                                    capem_spec=self.capem_spec,
+                                    ls=self.ls)
+
+
+@dataclass
+class SimInputLocation:
+    grid_w: float = 10E3
+    pv_wp: float = 10E3
+    ess_wh: float = 10E3
+
+
+@dataclass
+class PhaseInputLocation:
+    grid: PhaseInvestComponent = field(default_factory=lambda: PhaseInvestComponent())
+    pv: PhaseInvestComponent = field(default_factory=lambda: PhaseInvestComponent())
+    ess: PhaseInvestComponent = field(default_factory=lambda: PhaseInvestComponent())
+
+    def get_sim_input(self) -> SimInputLocation:
+        return SimInputLocation(grid_w=self.grid.capacity,
+                                pv_wp=self.pv.capacity,
+                                ess_wh=self.ess.capacity,
+                                )
+
+
+@dataclass
+class InputLocation(PhaseInputLocation):
     coordinates: Coordinates = field(default_factory=Coordinates)
 
     slp: str = 'h0'
     consumption_yrl_wh: float = 10000000.0
 
-    grid_capacity_w: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10E3,
-                                                                                             expansion=50E3))
+    grid: InputInvestComponent = field(default_factory=lambda: InputInvestComponent())
+    pv: InputInvestComponent = field(default_factory=lambda: InputInvestComponent())
+    ess: InputInvestComponent = field(default_factory=lambda: InputInvestComponent())
 
-    pv_capacity_wp: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10E3,
-                                                                                            expansion=20E3))
+    def get_phase_input(self,
+                        phase: str) -> PhaseInputLocation:
+        return PhaseInputLocation(grid=self.grid.get_input_component(phase=phase),
+                                  pv=self.pv.get_input_component(phase=phase),
+                                  ess=self.ess.get_input_component(phase=phase),
+                                  )
 
-    ess_capacity_wh: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0E3,
-                                                                                             expansion=50E3))
-
-    def get_capacities(self,
-                       phase: str) -> Capacities:
-        attr_name = 'preexisting' if phase == 'baseline' else 'total'
-
-        return Capacities(grid_w=getattr(self.grid_capacity_w, attr_name),
-                          pv_wp=getattr(self.pv_capacity_wp, attr_name),
-                          ess_wh=getattr(self.ess_capacity_wh, attr_name),
-                          )
+    def get_sim_input(self) -> SimInputLocation:
+        raise NotImplementedError()
 
 
 @dataclass
 class SimInputSubfleet:
     name: str = 'hlt'
-    num: int = 1
-    pwr_chg_max_w: float = 11E3
+    num_bev: int = 1
+    battery_capacity_wh: float = 80E3
+    pwr_max_w: float = 11E3
     charger: str = 'ac'
-    capacity_wh: float = 80E3
 
 
 @dataclass
-class PhaseInputSubfleet:
-    name: str = 'hlt'
+class PhaseInputSubfleet(SimInputSubfleet):
     num_total: int = 5
-    num_bev: int = 1
-    battery_capacity_wh: float = 80E3
     capex_bev_eur: float = 100E3
     capex_icev_eur: float = 80E3
     toll_frac: float = 0.3
-    charger: str = 'ac'
-    pwr_max_w: float = 11E3
     ls: float = 6.0
     capem_bev: float = 20000.0
     capem_icev: float = 15000.0
@@ -248,33 +273,17 @@ class PhaseInputSubfleet:
 
     def get_sim_input(self) -> SimInputSubfleet:
         return SimInputSubfleet(name=self.name,
-                                num=self.num_bev,
-                                capacity_wh=self.battery_capacity_wh,
+                                num_bev=self.num_bev,
+                                battery_capacity_wh=self.battery_capacity_wh,
                                 charger=self.charger,
-                                pwr_chg_max_w=self.pwr_max_w,
+                                pwr_max_w=self.pwr_max_w,
                                 )
 
 
 @dataclass
-class InputSubfleet:
-    name: str = 'hlt'
-    num_total: int = 5
+class InputSubfleet(PhaseInputSubfleet):
     num_bev: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=1,
                                                                                      expansion=4))
-    battery_capacity_wh: float = 80E3
-    capex_bev_eur: float = 100E3
-    capex_icev_eur: float = 80E3
-    toll_frac: float = 0.3
-    charger: str = 'ac'
-    pwr_max_w: float = 11E3
-    ls: float = 6.0
-    capem_bev: float = 20000.0
-    capem_icev: float = 15000.0
-    mntex_eur_km_bev: float = 0.05
-    mntex_eur_km_icev: float = 0.1
-    consumption_icev: float = 27.0
-    toll_eur_per_km_bev: float = 0.0
-    toll_eur_per_km_icev: float = 1.0
 
     def get_phase_input(self,
                       phase: Literal['baseline', 'expansion']) -> PhaseInputSubfleet:
@@ -297,6 +306,9 @@ class InputSubfleet:
                                   toll_eur_per_km_icev=self.toll_eur_per_km_icev,
                                   )
 
+    def get_sim_input(self) -> SimInputSubfleet:
+        raise NotImplementedError()
+
 
 @dataclass
 class SimInputCharger:
@@ -306,10 +318,7 @@ class SimInputCharger:
 
 
 @dataclass
-class PhaseInputCharger:
-    name: str = 'ac'
-    num: int = 0
-    pwr_max_w: float = 11E3
+class PhaseInputCharger(SimInputCharger):
     cost_per_charger_eur: float = 3000.0
     capem: float = 1.0
     ls: float = 18.0
@@ -320,14 +329,9 @@ class PhaseInputCharger:
                                pwr_max_w=self.pwr_max_w)
 
 @dataclass
-class InputCharger:
-    name: str = 'ac'
+class InputCharger(PhaseInputCharger):
     num: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0,
                                                                                  expansion=4))
-    pwr_max_w: float = 11E3
-    cost_per_charger_eur: float = 3000.0
-    capem: float = 1.0
-    ls: float = 18.0
 
     def get_phase_input(self,
                         phase: Literal['baseline', 'expansion']) -> PhaseInputCharger:
@@ -339,8 +343,29 @@ class InputCharger:
                                  ls=self.ls,
                                  )
 
+    def get_sim_input(self) -> PhaseInputCharger:
+        raise NotImplementedError()
+
+
 @dataclass
-class PhaseInputEconomic:
+class SimInputSettings:
+    period_sim: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(days=365))
+    start_sim: pd.Timestamp = field(default_factory=lambda: pd.Timestamp('2023-01-01 00:00'))
+    freq_sim: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(hours=1))
+
+    def __post_init__(self):
+        self.dti = pd.date_range(start=self.start_sim,
+                                 end=self.start_sim + self.period_sim,
+                                 freq=self.freq_sim,
+                                 tz='Europe/Berlin',
+                                 inclusive='left',
+                                 )
+        self.freq_hours = pd.Timedelta(self.freq_sim).total_seconds() / 3600
+
+
+@dataclass
+class PhaseInputEconomics(SimInputSettings):
+    fix_cost_construction: float = 10000
     opex_spec_grid_buy: float = 30E-5
     opex_spec_grid_sell: float = -6E-5
     opex_spec_grid_peak: float = 150E-3
@@ -351,24 +376,26 @@ class PhaseInputEconomic:
     insurance_frac: float = 0.02
     salvage_bev_frac: float = 40.0
     salvage_icev_frac: float = 40.0
-    fix_cost_construction: float = 10000
+    period_eco: int = 18
+    co2_per_liter_diesel_kg: float = 3.08
+    opem_spec_grid: float = 0.0004
+
+    def __post_init__(self):
+        super().__post_init__()
+
+    def get_sim_input(self) -> SimInputSettings:
+        return SimInputSettings(period_sim=self.period_sim,
+                                freq_sim=self.freq_sim,
+                                )
 
 
 @dataclass
-class InputEconomic:
-    opex_spec_grid_buy: float = 30E-5
-    opex_spec_grid_sell: float = -6E-5
-    opex_spec_grid_peak: float = 150E-3
-    opex_spec_route_charging: float = 49E-5
-    opex_fuel: float = 1.7
-    insurance_frac: float = 0.02
-    salvage_bev_frac: float = 40.0
-    salvage_icev_frac: float = 40.0
-    fix_cost_construction: float = 10000
+class InputEconomics(PhaseInputEconomics):
 
     def get_phase_input(self,
-                        phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomic':
-        return PhaseInputEconomic(
+                        phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomics':
+        return PhaseInputEconomics(
+            fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
             opex_spec_grid_buy=self.opex_spec_grid_buy,
             opex_spec_grid_sell=self.opex_spec_grid_sell,
             opex_spec_grid_peak=self.opex_spec_grid_peak,
@@ -377,8 +404,16 @@ class InputEconomic:
             insurance_frac=self.insurance_frac,
             salvage_bev_frac=self.salvage_bev_frac,
             salvage_icev_frac=self.salvage_icev_frac,
-            fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
+            period_eco=self.period_eco,
+            period_sim=self.period_sim,
+            freq_sim=self.freq_sim,
+            co2_per_liter_diesel_kg=self.co2_per_liter_diesel_kg,
+            opem_spec_grid=self.opem_spec_grid,
         )
+
+    def __post_init__(self):
+        super().__post_init__()
+
 
 @dataclass
 class Inputs:
@@ -387,7 +422,7 @@ class Inputs:
                                                                              hst=InputSubfleet(name='hst'), ))
     chargers: dict[str, InputCharger] = field(default_factory=lambda: dict(ac=InputCharger(name='ac'),
                                                                            dc=InputCharger(name='dc'), ))
-    economic: InputEconomic = field(default_factory=InputEconomic)
+    economics: InputEconomics = field(default_factory=InputEconomics)
 
 
 @dataclass

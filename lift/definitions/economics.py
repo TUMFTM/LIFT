@@ -17,7 +17,7 @@ DEF_ECONOMICS = DefinitionEconomics(
 )
 
 CO2_PER_LITER_DIESEL_KG = 3.08  # kg CO2 / Liter Diesel
-OPEX_SPEC_CO2_PER_KG = 45E-3  # ToDo: add correct value
+OPEM_SPEC_GRID = 0.0004  # ToDo: add correct value
 
 DEF_PV = dict(capex_spec=0.9,
               capem_spec=0.798,
@@ -28,5 +28,4 @@ DEF_ESS = dict(capex_spec=0.45,
                ls=9)
 DEF_GRID = dict(capex_spec=0.2,
                 capem_spec=1,  # ToDo: fix value
-                opem_spec=0.0004,  # ToDo: add correct value
                 ls=18)

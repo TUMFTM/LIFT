@@ -4,7 +4,7 @@ from lift.backend.interfaces import (
     InputLocation,
     InputSubfleet,
     InputCharger,
-    InputEconomic,
+    InputEconomics,
     Inputs,
     Coordinates,
     ExistExpansionValue,
@@ -25,7 +25,7 @@ if __name__ == "__main__":
             ess_capacity_wh=ExistExpansionValue(preexisting=0.0,
                                                 expansion=0.0),
         ),
-        economic=InputEconomic(
+        economics=InputEconomics(
             fix_cost_construction=0.0,
             opex_spec_grid_buy=49E-5,
             opex_spec_grid_sell=0.0,

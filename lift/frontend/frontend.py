@@ -18,16 +18,25 @@ from lift.definitions import (
     DEF_CHARGERS,
     DEF_ENERGY_SYSTEM,
     DEF_ECONOMICS,
-    TIME_PRJ_YRS,
+    DEF_GRID,
+    DEF_PV,
+    DEF_ESS,
+    PERIOD_ECO,
+    PERIOD_SIM,
+    START_SIM,
+    FREQ_SIM,
+    CO2_PER_LITER_DIESEL_KG,
+    OPEM_SPEC_GRID,
 )
 
 from lift.backend.interfaces import (
     GridPowerExceededError,
     SOCError,
     InputLocation,
+    InputInvestComponent,
     InputSubfleet,
     InputCharger,
-    InputEconomic,
+    InputEconomics,
     Inputs,
     Coordinates,
     ExistExpansionValue,
@@ -195,57 +204,66 @@ def create_sidebar_and_get_input() -> Inputs:
             st.markdown("**Netzanschluss**")
             # ToDo: distinguish static and dynamic load management
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            grid_capacity_w = ExistExpansionValue(
-                preexisting = DEF_ENERGY_SYSTEM.settings_grid_preexisting.get_input(label="Vorhanden (kW)",
-                                                                                    key="grid_preexisting",
-                                                                                    domain=col1),
-                expansion=DEF_ENERGY_SYSTEM.settings_grid_expansion.get_input(label="Zusätzlich (kW)",
-                                                                              key="grid_expansion",
-                                                                              domain=col2,
-                                                                              )
+            grid = InputInvestComponent(
+                capacity=ExistExpansionValue(
+                    preexisting = DEF_ENERGY_SYSTEM.settings_grid_preexisting.get_input(label="Vorhanden (kW)",
+                                                                                        key="grid_preexisting",
+                                                                                        domain=col1),
+                    expansion=DEF_ENERGY_SYSTEM.settings_grid_expansion.get_input(label="Zusätzlich (kW)",
+                                                                                  key="grid_expansion",
+                                                                                  domain=col2,
+                                                                                  )
+                ),
+                **DEF_GRID,
             )
 
             st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
             st.markdown("**PV-Anlage**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            pv_capacity_wp = ExistExpansionValue(
-                preexisting=DEF_ENERGY_SYSTEM.settings_pv_preexisting.get_input(label="Vorhanden (kWp)",
-                                                                                key="pv_preexisting",
-                                                                                domain=col1),
-                expansion=DEF_ENERGY_SYSTEM.settings_pv_expansion.get_input(label="Zusätzlich (kWp)",
-                                                                            key="pv_expansion",
-                                                                            domain=col2,
-                                                                            ),
+            pv = InputInvestComponent(
+                capacity = ExistExpansionValue(
+                    preexisting=DEF_ENERGY_SYSTEM.settings_pv_preexisting.get_input(label="Vorhanden (kWp)",
+                                                                                    key="pv_preexisting",
+                                                                                    domain=col1),
+                    expansion=DEF_ENERGY_SYSTEM.settings_pv_expansion.get_input(label="Zusätzlich (kWp)",
+                                                                                key="pv_expansion",
+                                                                                domain=col2,
+                                                                                ),
+                ),
+                **DEF_PV,
             )
 
             st.markdown(horizontal_line_style, unsafe_allow_html=True)
 
             st.markdown("**Stationärspeicher**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            ess_capacity_wh = ExistExpansionValue(
-                preexisting=DEF_ENERGY_SYSTEM.settings_ess_preexisting.get_input(label="Vorhanden (kWh)",
-                                                                                 key="ess_preexisting",
-                                                                                 domain=col1),
-                expansion=DEF_ENERGY_SYSTEM.settings_ess_expansion.get_input(label="Zusätzlich (kWh)",
-                                                                             key="ess_expansion",
-                                                                             domain=col2,
-                                                                             ),
+            ess = InputInvestComponent(
+                capacity=ExistExpansionValue(
+                    preexisting=DEF_ENERGY_SYSTEM.settings_ess_preexisting.get_input(label="Vorhanden (kWh)",
+                                                                                     key="ess_preexisting",
+                                                                                     domain=col1),
+                    expansion=DEF_ENERGY_SYSTEM.settings_ess_expansion.get_input(label="Zusätzlich (kWh)",
+                                                                                 key="ess_expansion",
+                                                                                 domain=col2,
+                                                                                 ),
+                ),
+                **DEF_ESS
             )
 
         return InputLocation(coordinates=st.session_state['location'],
                              slp=slp,
                              consumption_yrl_wh=consumption_yrl_wh,
-                             grid_capacity_w=grid_capacity_w,
-                             pv_capacity_wp=pv_capacity_wp,
-                             ess_capacity_wh=ess_capacity_wh,
+                             grid=grid,
+                             pv=pv,
+                             ess=ess,
                              )
     input_location = _get_input_location()
 
-    def _get_input_economic() -> InputEconomic:
+    def _get_input_economic() -> InputEconomics:
         with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                                  icon="💶"):
-            return InputEconomic(
+            return InputEconomics(
                 fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_input(
                     label="Fixkosten Standortausbau (EUR)",
                     key="eco_fix_cost_construction",
@@ -282,6 +300,12 @@ def create_sidebar_and_get_input() -> Inputs:
                     label="Restwert ICET (%) (In Berechnung noch unberücksichtigt)",
                     key="eco_salvage_icev_frac",
                     domain=st),
+                period_eco=PERIOD_ECO,
+                period_sim=PERIOD_SIM,
+                start_sim=START_SIM,
+                freq_sim=FREQ_SIM,
+                co2_per_liter_diesel_kg = CO2_PER_LITER_DIESEL_KG,
+                opem_spec_grid = OPEM_SPEC_GRID,
                 )
     input_economic = _get_input_economic()
 
@@ -410,7 +434,7 @@ def create_sidebar_and_get_input() -> Inputs:
     return Inputs(location=input_location,
                   subfleets=input_fleet,
                   chargers=input_charger,
-                  economic=input_economic
+                  economics=input_economic
                   )
 
 def display_results(results):
@@ -638,7 +662,7 @@ def plot_flow(
         y_label: str,
 ):
 
-    years = np.arange(TIME_PRJ_YRS, dtype=int) + 1
+    years = np.arange(PERIOD_ECO, dtype=int) + 1
 
     y_baseline = np.cumsum(flow_baseline)
     y_expansion  = np.cumsum(flow_expansion)

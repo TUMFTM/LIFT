@@ -7,12 +7,6 @@ import pandas as pd
 import streamlit as st
 from typing import TYPE_CHECKING
 
-
-from lift.definitions import (
-    DTI,
-    FREQ_HOURS,
-)
-
 from .interfaces import GridPowerExceededError, SOCError
 
 
@@ -27,6 +21,8 @@ EPS = 1E-8  # Small epsilon value for numerical stability in calculations
 
 @dataclass
 class Block(ABC):
+    dti: pd.DatetimeIndex
+    freq_hours: float
     _idx: int = field(init=False)
 
     @property
@@ -80,7 +76,7 @@ class PVSource(SupplyBlock):
 
     @property
     def energy_pot_wh(self) -> float:
-        return sum(self.log_spec * self.pwr_wp * FREQ_HOURS)
+        return sum(self.log_spec * self.pwr_wp * self.freq_hours)
 
     def satisfy_demand(self, demand_w: float) -> float:
         # Return remaining power demand after PV generation (negative if excess generation)
@@ -100,12 +96,12 @@ class StationaryStorage(SupplyBlock):
     @property
     def _pwr_max_chg_w(self) -> float:
         return min(self._pwr_max_crate_w,  # power limit due to c-rate
-                   self.capacity_wh * (1 - self.soc) / FREQ_HOURS)  # power limit due to current SOC
+                   self.capacity_wh * (1 - self.soc) / self.freq_hours)  # power limit due to current SOC
 
     @property
     def _pwr_max_dis_w(self) -> float:
         return min(self._pwr_max_crate_w,  # power limit due to c-rate
-                   self.capacity_wh * self.soc / FREQ_HOURS)  # power limit due to current SOC
+                   self.capacity_wh * self.soc / self.freq_hours)  # power limit due to current SOC
 
     @property
     def generation_max_w(self) -> float:
@@ -121,10 +117,10 @@ class StationaryStorage(SupplyBlock):
         else:  # charging
             pwr_ess = max(-1 * self._pwr_max_chg_w, demand_w)
 
-        dsoc = -1 * pwr_ess * FREQ_HOURS / self.capacity_wh # Change in SOC based on power applied
+        dsoc = -1 * pwr_ess * self.freq_hours / self.capacity_wh # Change in SOC based on power applied
         self.soc += dsoc
         if self.soc < (0 - EPS) or self.soc > (1 + EPS):
-            raise ValueError(f"SOC {self.soc} out of bounds after applying power {demand_w} W at {DTI[self.idx]}.")
+            raise ValueError(f"SOC {self.soc} out of bounds after applying power {demand_w} W at {self.dti[self.idx]}.")
 
         # Return remaining power demand after storage (negative, if PV excess generation cannot be charged into storage)
         return demand_w - pwr_ess
@@ -154,7 +150,7 @@ class GridConnection(SupplyBlock):
     def satisfy_demand(self, demand_w: float):
         # Apply power to the grid connection, updating peak power and costs/revenue.
         if demand_w > self.pwr_max_w + EPS:
-            raise GridPowerExceededError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {DTI[self.idx]}.")
+            raise GridPowerExceededError(f"Demand {demand_w} W exceeds maximum power {self.pwr_max_w} W at {self.dti[self.idx]}.")
 
         if demand_w > 0:
             self.pwr_peak_w = max(self.pwr_peak_w, demand_w)
@@ -165,15 +161,15 @@ class GridConnection(SupplyBlock):
 
     @property
     def energy_buy_wh(self) -> float:
-        return self._pwr_buy_w * FREQ_HOURS
+        return self._pwr_buy_w * self.freq_hours
 
     @property
     def energy_sell_wh(self) -> float:
-        return self._pwr_sell_w * FREQ_HOURS
+        return self._pwr_sell_w * self.freq_hours
 
     @property
     def energy_curt_wh(self) -> float:
-        return self._pwr_curt_w * FREQ_HOURS
+        return self._pwr_curt_w * self.freq_hours
 
 
 @dataclass
@@ -188,7 +184,7 @@ class FixedDemand(DemandBlock):
     @property
     def energy_wh(self) -> float:
         # Return the total energy demand in Wh over the simulation period.
-        return sum(self.log) * FREQ_HOURS
+        return sum(self.log) * self.freq_hours
 
 
 @dataclass
@@ -205,11 +201,13 @@ class Fleet(DemandBlock):
             name=f"{subfleet.name}_{i}",
             atbase=self.log[subfleet.name].loc[:, (f'{subfleet.name}{i}', 'atbase')].values,
             consumption_w=self.log[subfleet.name].loc[:, (f'{subfleet.name}{i}', 'consumption')].values,
-            capacity_wh=subfleet.capacity_wh,
+            battery_capacity_wh=subfleet.battery_capacity_wh,
             charger=subfleet.charger,
-            pwr_max_w=min(subfleet.pwr_chg_max_w, self.chargers[subfleet.charger].pwr_max_w),
+            pwr_max_w=min(subfleet.pwr_max_w, self.chargers[subfleet.charger].pwr_max_w),
+            dti=self.dti,
+            freq_hours=self.freq_hours,
         ) for subfleet in self.subfleets.values()
-            for i in range(subfleet.num)}
+            for i in range(subfleet.num_bev)}
 
     @property
     def demand_w(self) -> float:
@@ -273,7 +271,7 @@ class FleetUnit(DemandBlock):
     name: str
     atbase: np.typing.NDArray[np.float64]
     consumption_w: np.typing.NDArray[np.float64]
-    capacity_wh: float
+    battery_capacity_wh: float
     charger: str
     pwr_max_w: float
 
@@ -289,21 +287,21 @@ class FleetUnit(DemandBlock):
                                    default=0.0)
 
     def __post_init__(self):
-        self.soc_track = np.zeros(len(DTI), dtype=np.float64)
+        self.soc_track = np.zeros(len(self.dti), dtype=np.float64)
 
-        self.soc_min = get_soc_min(max_charge_rate=self.pwr_max_w * FREQ_HOURS / self.capacity_wh,
-                                   dsoc=self.consumption_w * FREQ_HOURS / self.capacity_wh,
+        self.soc_min = get_soc_min(max_charge_rate=self.pwr_max_w * self.freq_hours / self.battery_capacity_wh,
+                                   dsoc=self.consumption_w * self.freq_hours / self.battery_capacity_wh,
                                    atbase=self.atbase)
 
     @property
     def time_flexibility(self) -> float:
         if self.pwr_max_w == 0:  # division by 0 causes error
             return np.inf  # no charging possible, so lowest priority
-        return float(self.soc - self.soc_min[self.idx]) * self.capacity_wh / self.pwr_max_w
+        return float(self.soc - self.soc_min[self.idx]) * self.battery_capacity_wh / self.pwr_max_w
 
     @property
     def demand_w(self) -> float:
-        return min(self.pwr_max_w, self.capacity_wh * (1 - self.soc) / FREQ_HOURS)
+        return min(self.pwr_max_w, self.battery_capacity_wh * (1 - self.soc) / self.freq_hours)
 
     def charge(self, pwr_available_w: float):
         atbase = self.atbase[self.idx]
@@ -313,13 +311,13 @@ class FleetUnit(DemandBlock):
                            0)
         self._pwr_chg_site_w += pwr_chg_site
         # update SOC based on charging power
-        self.soc += (pwr_chg_site - self.consumption_w[self.idx]) * FREQ_HOURS / self.capacity_wh
+        self.soc += (pwr_chg_site - self.consumption_w[self.idx]) * self.freq_hours / self.battery_capacity_wh
         if self.soc < (0 - EPS) and not atbase:
-            e_chg_route_wh = abs(self.soc * self.capacity_wh)  # energy needed to reach SOC=0
+            e_chg_route_wh = abs(self.soc * self.battery_capacity_wh)  # energy needed to reach SOC=0
             self.soc = 0.0  # equivalent to self.soc += e_chg_route_wh / self.capacity_wh
             self._e_chg_route_wh += e_chg_route_wh
         if self.soc > (1 + EPS) or self.soc < (0 - EPS):
-            raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg_site} W at {DTI[self.idx]}.")
+            raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg_site} W at {self.dti[self.idx]}.")
         self.soc_track[self.idx] = self.soc
         # return the charging power applied to this unit
         return pwr_chg_site
@@ -327,10 +325,9 @@ class FleetUnit(DemandBlock):
     @property
     def energy_site_wh(self) -> float:
         # Return the total energy charged at the site in Wh over the simulation period.
-        return self._pwr_chg_site_w * FREQ_HOURS
+        return self._pwr_chg_site_w * self.freq_hours
 
     @property
     def energy_route_wh(self) -> float:
-        print(self.soc_track)
         # Return the total energy charged on the route in Wh over the simulation period.
         return self._e_chg_route_wh

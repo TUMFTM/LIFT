@@ -5,12 +5,14 @@ from .economics import (
     DEF_GRID,
     DEF_ESS,
     CO2_PER_LITER_DIESEL_KG,
-    OPEX_SPEC_CO2_PER_KG,
+    OPEM_SPEC_GRID,
 )
 from .energy_system import DEF_ENERGY_SYSTEM
 from .subfleets import DEF_SUBFLEETS
+
 from .times import (
-    DTI,
-    FREQ_HOURS,
-    TIME_PRJ_YRS,
+    PERIOD_ECO,
+    PERIOD_SIM,
+    START_SIM,
+    FREQ_SIM,
 )
