@@ -302,13 +302,14 @@ def run_backend(inputs: Inputs) -> TotalResults:
     # start time tracking
     start_time = time()
 
+    # ToDo: check timezone consistency of all inputs
     # get log data for the simulation
     logs = Logs(pv_spec=get_log_pv(coordinates=inputs.location.coordinates,
                                    settings=inputs.economics.get_sim_input()),
                 dem=get_log_dem(slp=inputs.location.slp.lower(),
                                 consumption_yrl_wh=inputs.location.consumption_yrl_wh,
                                 settings=inputs.economics.get_sim_input()),
-                # ToDo: get input parameters from settings
+                # ToDo: get input parameters from inputs
                 fleet={vehicle_type: get_log_subfleet(vehicle_type=vehicle_type,
                                                       settings=inputs.economics.get_sim_input())
                        for vehicle_type, subfleet in inputs.subfleets.items()},
