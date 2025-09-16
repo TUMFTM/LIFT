@@ -18,6 +18,11 @@ COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
 STYLES = f"""
     <style>
+        /* Hide the sidebar collapse button */
+        div[data-testid="stSidebarCollapseButton"] {{
+            display: none !important;
+        }}
+    
         /* Style for fixed footer */
         .footer {{
             position: fixed;
@@ -45,7 +50,7 @@ STYLES = f"""
         /* Define style for sidebar */
         [data-testid="stSidebar"] {{
             min-width: 450px;
-            max-width: 500px;
+            max-width: 450px;
             width: 450px;
         }}
         [data-testid="stSidebarContent"] {{
