@@ -1,6 +1,6 @@
 import pandas as pd
 
-from lift.backend import backend
+from lift.backend.backend import run_backend
 
 from lift.backend.interfaces import (
     InputLocation,
@@ -13,8 +13,13 @@ from lift.backend.interfaces import (
     ExistExpansionValue,
 )
 
+"""
+Use this script to directly run the backend without the frontend.
+This allows for scalable multi-scenario execution.
+"""
 
-if __name__ == "__main__":
+
+def run_scenario():
     inputs = Inputs(
         location=InputLocation(
             coordinates=Coordinates(longitude=11.576124,
@@ -83,4 +88,8 @@ if __name__ == "__main__":
             ),
         )
     )
-    results = backend.run_backend(inputs)
+    return run_backend(inputs)
+
+
+if __name__ == "__main__":
+    results = run_scenario()

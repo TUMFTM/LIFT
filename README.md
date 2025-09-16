@@ -4,7 +4,7 @@
 
 
 ## Created by 
-Anna Paper, M.Sc. and Brian Dietermann, M.Sc.  
+Brian Dietermann, M.Sc. and Anna Paper, M.Sc.  
 Institute of Automotive Technology  
 Department of Mobility Systems Engineering  
 TUM School of Engineering and Design  
@@ -55,7 +55,18 @@ pip install -e .
 Use the editable mode if you plan to modify the code during development.
 
 
-## Basic Usage
+## Basic Usage - GUI mode
 LIFT can be run using one of two terminal commands, given the correct virtual environment is activated:
 1. Call to the main module: ```python -m lift``` (best for local execution on host machine, e.g. through a run configuration in PyCharm)
 2. Call to the entry point: ```lift``` (best for remote execution on a server as it works irrespective of the current working directory as long as the correct environment is active)
+
+## Advanced Usage - GUI mode
+LIFT includes predefined options for vehicles, chargers and other assumptions. Those can be found in ```lift/definitions/*```.
+To create a new type of charger or vehicle add a new entry to the dictionary in ```chargers.py``` or ```subfleets.py```, respectively.
+If LIFT is installed in editable mode, the frontend will automatically include the changes made. 
+
+## Basic Usage - Scalable mode
+LIFT as being clearly divided into a frontend and backend also features the option to only use the backend without the frontend.
+This allows for scalable multi-scenario investigations. For this, a ```lift.interfaces.Inputs``` instance has to be created and passed to ```lift.backend.backend.run_backend()```.
+An example for a single scenario is given in ```scripts/run.py```.
+
