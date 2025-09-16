@@ -1,12 +1,11 @@
-import demandlib
 import importlib.resources as resources
-import pandas as pd
-import pvlib
 from time import time
 from typing import TYPE_CHECKING
 
+import demandlib
 import numpy as np
-
+import pandas as pd
+import pvlib
 
 from .energy_system import (
     FixedDemand,

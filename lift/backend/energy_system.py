@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from .interfaces import GridPowerExceededError, SOCError, safe_cache_data
 
-
 if TYPE_CHECKING:
     from .interfaces import (
         SimInputSubfleet,
