@@ -164,6 +164,7 @@ class DefinitionEnergySystem:
 
 @dataclass
 class DefinitionEconomics:
+    settings_discount_rate: SettingsSlider
     settings_fix_cost_construction: SettingsSlider
     settings_opex_spec_grid_buy: SettingsSlider
     settings_opex_spec_grid_sell: SettingsSlider
@@ -408,6 +409,7 @@ class PhaseInputEconomics(SimInputSettings):
     salvage_bev_frac: float = 40.0
     salvage_icev_frac: float = 40.0
     period_eco: int = 18
+    discount_rate: float = 0.05
     co2_per_liter_diesel_kg: float = 3.08
     opem_spec_grid: float = 0.0004
 
@@ -426,6 +428,7 @@ class InputEconomics(PhaseInputEconomics):
     def get_phase_input(self,
                         phase: Literal['baseline', 'expansion']) -> 'PhaseInputEconomics':
         return PhaseInputEconomics(
+            discount_rate=self.discount_rate,
             fix_cost_construction=self.fix_cost_construction if phase == 'expansion' else 0,
             opex_spec_grid_buy=self.opex_spec_grid_buy,
             opex_spec_grid_sell=self.opex_spec_grid_sell,
@@ -483,8 +486,8 @@ class PhaseResults:
     site_charging: float = 0.0  # share of the fleet energy demand which is charged on-site (vs on-route)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(18))
-    co2_flow: np.typing.NDArray[np.floating] = field(init=True,
-                                                     default_factory=lambda: np.zeros(18))
+    emissions: np.typing.NDArray[np.floating] = field(init=True,
+                                                      default_factory=lambda: np.zeros(18))
 
 
 @dataclass
@@ -494,11 +497,13 @@ class TotalResults:
 
     @property
     def npc_delta(self) -> float:
-        return self.baseline.cashflow.sum() - self.expansion.cashflow.sum()
+        return ((self.baseline.cashflow['capex'] + self.baseline.cashflow['opex']).sum() -
+                (self.expansion.cashflow['capex'] + self.expansion.cashflow['opex']).sum())
 
     @property
     def payback_period_yrs(self) -> Optional[float]:
-        diff = np.cumsum(self.baseline.cashflow) - np.cumsum(self.expansion.cashflow)
+        diff = (np.cumsum((self.baseline.cashflow['capex'] + self.baseline.cashflow['opex']).sum(axis=0)) -
+                np.cumsum((self.expansion.cashflow['capex'] + self.expansion.cashflow['opex']).sum(axis=0)))
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
         if idx.size == 0 or diff[0] > 0:

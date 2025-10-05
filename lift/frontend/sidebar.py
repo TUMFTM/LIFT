@@ -153,6 +153,10 @@ def create_sidebar_and_get_input() -> Inputs:
         with st.sidebar.expander(label="**Wirtschaftliche Parameter**",
                                  icon="💶"):
             return InputEconomics(
+                discount_rate=DEF_ECONOMICS.settings_discount_rate.get_input(
+                    label="Abzinsungsfaktor (%)",
+                    key="eco_discount_rate",
+                    domain=st),
                 fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_input(
                     label="Fixkosten Standortausbau (EUR)",
                     key="eco_fix_cost_construction",

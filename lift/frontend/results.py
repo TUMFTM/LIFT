@@ -160,16 +160,16 @@ def display_results(results):
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
         _centered_heading(text="Kosten", domain=col1)
-        col1.altair_chart(_create_bar_comparison(val_baseline=results.baseline.cashflow.sum(),
-                                                 val_expansion=results.expansion.cashflow.sum(),
+        col1.altair_chart(_create_bar_comparison(val_baseline=(results.baseline.cashflow['opex'] + results.baseline.cashflow['capex']).sum(),
+                                                 val_expansion=(results.expansion.cashflow['opex'] + results.expansion.cashflow['capex']).sum(),
                                                  label="Gesamtkosten in EUR",
                                                  ).properties(**PLOT_CONFIG),
                           use_container_width=True,
                           )
 
         _centered_heading(text="CO₂-Emissionen", domain=col2)
-        col2.altair_chart(_create_bar_comparison(val_baseline=results.baseline.co2_flow.sum(),
-                                                 val_expansion=results.expansion.co2_flow.sum(),
+        col2.altair_chart(_create_bar_comparison(val_baseline=(results.baseline.emissions['opex'] + results.baseline.emissions['capex']).sum(),
+                                                 val_expansion=(results.expansion.emissions['opex'] + results.expansion.emissions['capex']).sum(),
                                                  label="CO2-Emissionen in t",
                                                  factor_display=1E-3,  # convert from kg to t
                                                  ).properties(**PLOT_CONFIG),
@@ -201,8 +201,8 @@ def display_results(results):
     st.markdown("#### Gesamtkosten")
     col1, col2 = st.columns([4, 1])
     with col1:
-        plot_flow(flow_baseline=results.baseline.cashflow,
-                  flow_expansion=results.expansion.cashflow,
+        plot_flow(flow_baseline=(results.baseline.cashflow['opex'] + results.baseline.cashflow['capex']).sum(axis=0)[:-1],
+                  flow_expansion=(results.expansion.cashflow['opex'] + results.expansion.cashflow['capex']).sum(axis=0)[:-1],
                   y_label="Kumulierte Kosten in EUR",
                   )
     with col2:
@@ -219,8 +219,8 @@ def display_results(results):
         st.markdown("#### Kumulierter CO₂-Ausstoß")
         col1, col2 = st.columns([4, 1])
         with col1:
-            plot_flow(results.baseline.co2_flow * 1E-3,
-                      results.expansion.co2_flow * 1E-3,
+            plot_flow(flow_baseline=(results.baseline.emissions['opex'] + results.baseline.emissions['capex']).sum(axis=0)[:-1] * 1E-3,  # convert from kg to t
+                      flow_expansion=(results.expansion.emissions['opex'] + results.expansion.emissions['capex']).sum(axis=0)[:-1] * 1E-3,  # convert from kg to t
                       y_label="Kumulierte CO₂-Emissionen in t",
                       )
         with col2:

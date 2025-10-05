@@ -5,6 +5,7 @@ from lift.backend.interfaces import (
 
 
 DEF_ECONOMICS = DefinitionEconomics(
+    settings_discount_rate=SettingsSlider(min_value=0.0, max_value=20.0, value=5.0, step=0.1, factor=0.01, format="%0.1f"),
     settings_fix_cost_construction=SettingsSlider(min_value=0.0, max_value=1E6, value=10000.0, step=1000.0),
     settings_opex_spec_grid_buy=SettingsSlider(min_value=0.0, max_value=0.5, value=0.23, step=0.01, factor=1E-3, format="%0.2f"),
     settings_opex_spec_grid_sell=SettingsSlider(min_value=0.0, max_value=0.5, value=0.06, step=0.01, factor=1E-3, format="%0.2f"),

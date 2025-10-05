@@ -1,6 +1,6 @@
 import importlib.resources as resources
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import demandlib
 import numpy as np
@@ -35,6 +35,25 @@ from .interfaces import (
 
 if TYPE_CHECKING:
     pass
+
+
+CATEGORIES = ['general', 'grid', 'pv', 'ess', 'vehicles', 'chargers']
+CONV = {name: idx for idx, name in enumerate(CATEGORIES)}
+
+@safe_cache_data
+def _calc_discount_factors(period_sim: int,
+                           occurs_at: Literal['beginning', 'middle', 'end'],
+                           discount_rate: float) -> np.typing.NDArray[float]:
+    if discount_rate is None or discount_rate < 0:
+        raise ValueError("A positive discount rate must be provided if discounting is enabled.")
+
+    periods = np.arange(0, period_sim + 1) + 1
+    q = 1 + discount_rate
+
+    exp = {'beginning': 1,
+           'middle': 0.5,
+           'end': 0}.get(occurs_at, 0)
+    return 1 / (q ** (periods - exp))
 
 
 @safe_cache_data
@@ -175,6 +194,21 @@ def calc_phase_results(logs: Logs,
         chargers={chg.name: chg.get_sim_input() for chg in chargers.values()},
     )
 
+    period_eco = economics.period_eco
+
+    dtype_flow = np.dtype([('name', 'U10'),
+                           ('capex', 'f8', (period_eco + 1,)),
+                           ('opex', 'f8', (period_eco + 1,)),
+                           ])
+
+    cashflow = np.array([(category, np.zeros(period_eco + 1), np.zeros(period_eco + 1))
+                         for category in CATEGORIES
+                         ], dtype=dtype_flow)
+
+    emissions = np.array([(category, np.zeros(period_eco + 1), np.zeros(period_eco + 1))
+                         for category in CATEGORIES
+                         ], dtype=dtype_flow)
+
     # calculate self-sufficiency and self consumption based on simulation results
     if location.pv.capacity == 0:
         self_sufficiency = 0.0
@@ -200,49 +234,45 @@ def calc_phase_results(logs: Logs,
         site_charging = (result_sim.energy_fleet_site_wh /
                          (result_sim.energy_fleet_site_wh + result_sim.energy_fleet_route_wh))
 
-    cashflow_capex = np.zeros(economics.period_eco)
-    cashflow_opex = np.zeros(economics.period_eco)
-    cashflow_capem = np.zeros(economics.period_eco)
-    cashflow_opem = np.zeros(economics.period_eco)
-
     def calc_replacements(ls: float) -> np.typing.NDArray:
-        years = np.arange(economics.period_eco)
+        years = np.arange(economics.period_eco + 1)
 
         # Replacement years: start + 0, lifespan, 2*lifespan, ...
         replacement_years = np.arange(0, economics.period_eco, ls)
         # ToDo: exclude first year if required
-        # ToDo: add salvage value if required
 
-        repl = np.isin(years, replacement_years).astype(int)
+        repl = np.isin(years, replacement_years).astype(float)
 
+        # salvage value
+        repl[economics.period_eco] = (-1 * (1 - (economics.period_eco % ls) / ls)) if economics.period_eco % ls != 0 else 0
         return repl
 
     # fix cost
-    cashflow_capex[0] += economics.fix_cost_construction
+    cashflow[CONV['general']]['capex'][0] += economics.fix_cost_construction
 
     # grid
     replacements = calc_replacements(ls=location.grid.ls)
-    cashflow_capex += location.grid.capacity * location.grid.capex_spec * replacements
-    cashflow_opex += (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy -
+    cashflow[CONV['grid']]['capex'] += location.grid.capacity * location.grid.capex_spec * replacements
+    cashflow[CONV['grid']]['opex'][:period_eco] += (result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy -
                       result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell)
-    cashflow_opex += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak
+    cashflow[CONV['grid']]['opex'][:period_eco] += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak
 
-    cashflow_capem += location.grid.capacity * location.grid.capem_spec * replacements
-    cashflow_opem += result_sim.energy_grid_buy_wh * economics.opem_spec_grid
+    emissions[CONV['grid']]['capex'] += location.grid.capacity * location.grid.capem_spec * replacements
+    emissions[CONV['grid']]['opex'][:period_eco] += result_sim.energy_grid_buy_wh * economics.opem_spec_grid
 
     # pv
     replacements = calc_replacements(ls=location.pv.ls)
-    cashflow_capex += location.pv.capacity * location.pv.capex_spec * replacements
-    cashflow_capem += location.pv.capacity * location.pv.capem_spec * replacements
+    cashflow[CONV['pv']]['capex'] += location.pv.capacity * location.pv.capex_spec * replacements
+    emissions[CONV['pv']]['capex'] += location.pv.capacity * location.pv.capem_spec * replacements
 
     # ess
     replacements = calc_replacements(ls=location.ess.ls)
-    cashflow_capex += location.ess.capacity * location.ess.capex_spec * replacements
-    cashflow_capem += location.ess.capacity * location.ess.capem_spec * replacements
+    cashflow[CONV['ess']]['capex'] += location.ess.capacity * location.ess.capex_spec * replacements
+    emissions[CONV['ess']]['capex'] += location.ess.capacity * location.ess.capem_spec * replacements
 
     # vehicles
-    cashflow_opex += result_sim.energy_fleet_route_wh * economics.opex_spec_route_charging
-    cashflow_opem += result_sim.energy_fleet_route_wh * economics.opem_spec_grid
+    cashflow[CONV['vehicles']]['opex'][:period_eco] += result_sim.energy_fleet_route_wh * economics.opex_spec_route_charging
+    emissions[CONV['vehicles']]['opex'][:period_eco] += result_sim.energy_fleet_route_wh * economics.opem_spec_grid
 
     for sf_in in subfleets.values():
         sf_in = subfleets[sf_in.name]
@@ -255,44 +285,50 @@ def calc_phase_results(logs: Logs,
         bevs = vehicles[0:num_bev]
         icevs = vehicles[num_bev:num_bev + num_icev]
 
-        cashflow_capex += (num_bev * sf_in.capex_bev_eur * replacements +
-                           num_icev * sf_in.capex_icev_eur * replacements)
-        cashflow_capem += (num_bev * sf_in.capem_bev * replacements +
-                           num_icev * sf_in.capem_icev * replacements)
+        cashflow[CONV['vehicles']]['capex'] += (num_bev * sf_in.capex_bev_eur * replacements +
+                                                num_icev * sf_in.capex_icev_eur * replacements)
+        emissions[CONV['vehicles']]['capex'] += (num_bev * sf_in.capem_bev * replacements +
+                                                    num_icev * sf_in.capem_icev * replacements)
 
         # bev
         dist_bev = log.loc[:, pd.IndexSlice[bevs, 'dist']].to_numpy().sum() if bevs else 0
-        cashflow_opex += (num_bev * economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
-                          dist_bev * (
-                                  sf_in.mntex_eur_km_bev +  # maintenance
-                                  sf_in.toll_eur_per_km_bev * sf_in.toll_frac  # toll
-                          ))
+        cashflow[CONV['vehicles']]['opex'][:period_eco] += (num_bev * economics.insurance_frac * sf_in.capex_bev_eur +  # insurance
+                                                            dist_bev * (
+                                                                    sf_in.mntex_eur_km_bev +  # maintenance
+                                                                    sf_in.toll_eur_per_km_bev * sf_in.toll_frac  # toll
+                                                            ))
 
         # icev
         dist_icev = log.loc[:, pd.IndexSlice[icevs, 'dist']].to_numpy().sum() if icevs else 0
-        cashflow_opex += (num_icev * economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
-                          dist_icev * (
-                                  sf_in.mntex_eur_km_icev +  # maintenance
-                                  sf_in.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
-                                  economics.opex_fuel * sf_in.consumption_icev / 100  # fuel
-                          ))
-        cashflow_opem += dist_icev * sf_in.consumption_icev / 100 * economics.co2_per_liter_diesel_kg
+        cashflow[CONV['vehicles']]['opex'][:period_eco] += (num_icev * economics.insurance_frac * sf_in.capex_icev_eur +  # insurance
+                                                            dist_icev * (
+                                                                    sf_in.mntex_eur_km_icev +  # maintenance
+                                                                    sf_in.toll_eur_per_km_icev * sf_in.toll_frac +  # toll
+                                                                    economics.opex_fuel * sf_in.consumption_icev / 100  # fuel
+                                                            ))
+        emissions[CONV['vehicles']]['opex'][:period_eco] += dist_icev * sf_in.consumption_icev / 100 * economics.co2_per_liter_diesel_kg
 
     # chargers
     for chg_in in chargers.values():
         replacements = calc_replacements(ls=chg_in.ls)
-        cashflow_capex += chg_in.cost_per_charger_eur * chg_in.num * replacements
-        cashflow_capem += chg_in.capem * chg_in.num * replacements
+        cashflow[CONV['chargers']]['capex'] += chg_in.cost_per_charger_eur * chg_in.num * replacements
+        emissions[CONV['chargers']]['capex'] += chg_in.capem * chg_in.num * replacements
 
-    cashflow = cashflow_capex + cashflow_opex
-    co2_flow = cashflow_capem + cashflow_opem
+    # add discounting
+    cashflow['capex'] *= _calc_discount_factors(period_sim=economics.period_eco,
+                                                occurs_at='beginning',
+                                                discount_rate=economics.discount_rate)
+
+    cashflow['opex'] *= _calc_discount_factors(period_sim=economics.period_eco,
+                                               occurs_at='end',
+                                               discount_rate=economics.discount_rate)
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency=self_sufficiency,
                         self_consumption=self_consumption,
                         site_charging=site_charging,
                         cashflow=cashflow,
-                        co2_flow=co2_flow,
+                        emissions=emissions,
                         )
 
 
