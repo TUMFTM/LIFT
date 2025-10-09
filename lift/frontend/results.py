@@ -228,7 +228,14 @@ def display_results(results):
                       y_label="Kumulierte CO₂-Emissionen in t",
                       )
         with col2:
-            st.markdown("#### CO₂-Parität")
+            st.markdown("#### CO₂-Paritätsdauer")
+            if results.payback_period_co2_yrs is None:
+                st.markdown("Investition amortisiert sich nicht.")
+            else:
+                st.markdown(f"{results.payback_period_co2_yrs:.2f} Jahre")
+
+            st.markdown("#### CO₂-Einsparung")
+            st.markdown(f"{results.co2_delta * 1e-3:,.0f} t nach 18 Jahren")
 
 
 def display_empty_results():

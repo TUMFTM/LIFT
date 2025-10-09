@@ -501,10 +501,8 @@ class TotalResults:
     def npc_delta(self) -> float:
         return self.baseline.cashflow_dis['totex'].sum() - self.expansion.cashflow_dis['totex'].sum()
 
-    @property
-    def payback_period_yrs(self) -> Optional[float]:
-        diff = (np.cumsum(self.baseline.cashflow_dis['totex'].sum(axis=0)) -
-                np.cumsum(self.expansion.cashflow_dis['totex'].sum(axis=0)))
+    @staticmethod
+    def get_payback_period_yrs(diff):
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
         if idx.size == 0 or diff[0] > 0:
@@ -515,6 +513,23 @@ class TotalResults:
 
         # Linear interpolation to find x where y1 == y2
         return float((i - y0 / (y1 - y0)) + 1)
+
+    @property
+    def payback_period_yrs(self) -> Optional[float]:
+        diff = (np.cumsum(self.baseline.cashflow_dis['totex'].sum(axis=0)) -
+                np.cumsum(self.expansion.cashflow_dis['totex'].sum(axis=0)))
+        return self.get_payback_period_yrs(diff)
+
+    @property
+    def co2_delta(self) -> float:
+        return self.baseline.emissions['totex'].sum() - self.expansion.emissions['totex'].sum()
+
+    @property
+    def payback_period_co2_yrs(self) -> Optional[float]:
+        diff = (np.cumsum(self.baseline.emissions['totex'].sum(axis=0)) -
+                np.cumsum(self.expansion.emissions['totex'].sum(axis=0)))
+        return self.get_payback_period_yrs(diff)
+
 
     @property
     def roi_rel(self) -> float:
