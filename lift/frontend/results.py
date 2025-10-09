@@ -259,6 +259,17 @@ def plot_flow(
     years = np.arange(PERIOD_ECO + 1, dtype=int)
     n_years = PERIOD_ECO + 1
 
+    # the last entry holds data for the first year after the project duration
+    # - capex: this entry holds salvage values, caused by components which are not at the end of their lifespan at
+    #          the end of the project period, occurring directly after the project period
+    # -opex: this entry always is 0 as there are no opex beyond the project duration
+
+    # Plotting logic:
+    # Cost starts at 0, 0 (year, cost). Capex of a year always occur at the beginning of the year, opex at the end.
+    # This logic is also implemented in the discounting of capex and opex.
+    # Therefore, opex are shifted by one year in this plotting code (end of year n equals beginning of year n + 1)
+    # Additionally, a value for the start of the line at 0, 0 has to be added
+
     df = pd.DataFrame(data={'value': np.concatenate([[0], baseline_opex[:-1], baseline_capex,
                                                      [0], expansion_opex[:-1], expansion_capex]),
                             'scenario': ['Baseline'] * n_years * 2 + ['Expansion'] * n_years * 2,
