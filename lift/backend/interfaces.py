@@ -486,6 +486,8 @@ class PhaseResults:
     site_charging: float = 0.0  # share of the fleet energy demand which is charged on-site (vs on-route)
     cashflow: np.typing.NDArray[np.floating] = field(init=True,
                                                      default_factory=lambda: np.zeros(18))
+    cashflow_dis: np.typing.NDArray[np.floating] = field(init=True,
+                                                         default_factory=lambda: np.zeros(18))
     emissions: np.typing.NDArray[np.floating] = field(init=True,
                                                       default_factory=lambda: np.zeros(18))
 
@@ -497,13 +499,12 @@ class TotalResults:
 
     @property
     def npc_delta(self) -> float:
-        return ((self.baseline.cashflow['capex'] + self.baseline.cashflow['opex']).sum() -
-                (self.expansion.cashflow['capex'] + self.expansion.cashflow['opex']).sum())
+        return self.baseline.cashflow_dis['totex'].sum() - self.expansion.cashflow_dis['totex'].sum()
 
     @property
     def payback_period_yrs(self) -> Optional[float]:
-        diff = (np.cumsum((self.baseline.cashflow['capex'] + self.baseline.cashflow['opex']).sum(axis=0)) -
-                np.cumsum((self.expansion.cashflow['capex'] + self.expansion.cashflow['opex']).sum(axis=0)))
+        diff = (np.cumsum(self.baseline.cashflow_dis['totex'].sum(axis=0)) -
+                np.cumsum(self.expansion.cashflow_dis['totex'].sum(axis=0)))
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
         if idx.size == 0 or diff[0] > 0:

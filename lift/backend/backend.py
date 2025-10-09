@@ -199,13 +199,18 @@ def calc_phase_results(logs: Logs,
     dtype_flow = np.dtype([('name', 'U10'),
                            ('capex', 'f8', (period_eco + 1,)),
                            ('opex', 'f8', (period_eco + 1,)),
+                           ('totex', 'f8', (period_eco + 1,)),
                            ])
 
-    cashflow = np.array([(category, np.zeros(period_eco + 1), np.zeros(period_eco + 1))
+    cashflow = np.array([(category, *tuple(np.zeros(period_eco + 1) for _ in range(3)))
                          for category in CATEGORIES
                          ], dtype=dtype_flow)
 
-    emissions = np.array([(category, np.zeros(period_eco + 1), np.zeros(period_eco + 1))
+    cashflow_dis = np.array([(category, *tuple(np.zeros(period_eco + 1) for _ in range(3)))
+                             for category in CATEGORIES
+                             ], dtype=dtype_flow)
+
+    emissions = np.array([(category, *tuple(np.zeros(period_eco + 1) for _ in range(3)))
                          for category in CATEGORIES
                          ], dtype=dtype_flow)
 
@@ -315,19 +320,24 @@ def calc_phase_results(logs: Logs,
         emissions[CONV['chargers']]['capex'] += chg_in.capem * chg_in.num * replacements
 
     # add discounting
-    cashflow['capex'] *= _calc_discount_factors(period_sim=economics.period_eco,
-                                                occurs_at='beginning',
-                                                discount_rate=economics.discount_rate)
+    cashflow_dis['capex'] = cashflow['capex'] * _calc_discount_factors(period_sim=economics.period_eco,
+                                                                       occurs_at='beginning',
+                                                                       discount_rate=economics.discount_rate)
 
-    cashflow['opex'] *= _calc_discount_factors(period_sim=economics.period_eco,
-                                               occurs_at='end',
-                                               discount_rate=economics.discount_rate)
+    cashflow_dis['opex'] = cashflow['opex'] * _calc_discount_factors(period_sim=economics.period_eco,
+                                                                     occurs_at='end',
+                                                                     discount_rate=economics.discount_rate)
+
+    # calculate totex
+    for flow in [cashflow, cashflow_dis, emissions]:
+        flow['totex'] = flow['capex'] + flow['opex']
 
     return PhaseResults(simulation=result_sim,
                         self_sufficiency=self_sufficiency,
                         self_consumption=self_consumption,
                         site_charging=site_charging,
                         cashflow=cashflow,
+                        cashflow_dis=cashflow_dis,
                         emissions=emissions,
                         )
 

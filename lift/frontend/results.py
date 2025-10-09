@@ -160,16 +160,16 @@ def display_results(results):
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
         _centered_heading(text="Kosten", domain=col1)
-        col1.altair_chart(_create_bar_comparison(val_baseline=(results.baseline.cashflow['opex'] + results.baseline.cashflow['capex']).sum(),
-                                                 val_expansion=(results.expansion.cashflow['opex'] + results.expansion.cashflow['capex']).sum(),
+        col1.altair_chart(_create_bar_comparison(val_baseline=results.baseline.cashflow_dis['totex'].sum(),
+                                                 val_expansion=results.expansion.cashflow_dis['totex'].sum(),
                                                  label="Gesamtkosten in EUR",
                                                  ).properties(**PLOT_CONFIG),
                           use_container_width=True,
                           )
 
         _centered_heading(text="CO₂-Emissionen", domain=col2)
-        col2.altair_chart(_create_bar_comparison(val_baseline=(results.baseline.emissions['opex'] + results.baseline.emissions['capex']).sum(),
-                                                 val_expansion=(results.expansion.emissions['opex'] + results.expansion.emissions['capex']).sum(),
+        col2.altair_chart(_create_bar_comparison(val_baseline=results.baseline.emissions['totex'].sum(),
+                                                 val_expansion=results.expansion.emissions['totex'].sum(),
                                                  label="CO2-Emissionen in t",
                                                  factor_display=1E-3,  # convert from kg to t
                                                  ).properties(**PLOT_CONFIG),
@@ -201,8 +201,10 @@ def display_results(results):
     st.markdown("#### Gesamtkosten")
     col1, col2 = st.columns([4, 1])
     with col1:
-        plot_flow(flow_baseline=(results.baseline.cashflow['opex'] + results.baseline.cashflow['capex']).sum(axis=0)[:-1],
-                  flow_expansion=(results.expansion.cashflow['opex'] + results.expansion.cashflow['capex']).sum(axis=0)[:-1],
+        plot_flow(baseline_capex=results.baseline.cashflow_dis['capex'].sum(axis=0),
+                  baseline_opex=results.baseline.cashflow_dis['opex'].sum(axis=0),
+                  expansion_capex=results.expansion.cashflow_dis['capex'].sum(axis=0),
+                  expansion_opex=results.expansion.cashflow_dis['opex'].sum(axis=0),
                   y_label="Kumulierte Kosten in EUR",
                   )
     with col2:
@@ -219,8 +221,10 @@ def display_results(results):
         st.markdown("#### Kumulierter CO₂-Ausstoß")
         col1, col2 = st.columns([4, 1])
         with col1:
-            plot_flow(flow_baseline=(results.baseline.emissions['opex'] + results.baseline.emissions['capex']).sum(axis=0)[:-1] * 1E-3,  # convert from kg to t
-                      flow_expansion=(results.expansion.emissions['opex'] + results.expansion.emissions['capex']).sum(axis=0)[:-1] * 1E-3,  # convert from kg to t
+            plot_flow(baseline_capex=results.baseline.emissions['capex'].sum(axis=0) * 1E-3,  # convert from kg to t
+                      baseline_opex=results.baseline.emissions['opex'].sum(axis=0) * 1E-3,  # convert from kg to t
+                      expansion_capex=results.expansion.emissions['capex'].sum(axis=0) * 1E-3,  # convert from kg to t
+                      expansion_opex=results.expansion.emissions['opex'].sum(axis=0) * 1E-3,  # convert from kg to t
                       y_label="Kumulierte CO₂-Emissionen in t",
                       )
         with col2:
@@ -239,21 +243,32 @@ def display_empty_results():
 
 
 def plot_flow(
-        flow_baseline,
-        flow_expansion,
+        baseline_capex: np.typing.NDArray,
+        baseline_opex: np.typing.NDArray,
+        expansion_capex: np.typing.NDArray,
+        expansion_opex: np.typing.NDArray,
         y_label: str,
 ):
+    years = np.arange(PERIOD_ECO + 1, dtype=int)
+    n_years = PERIOD_ECO + 1
 
-    years = np.arange(PERIOD_ECO, dtype=int) + 1
+    df = pd.DataFrame(data={'value': np.concatenate([[0], baseline_opex[:-1], baseline_capex,
+                                                     [0], expansion_opex[:-1], expansion_capex]),
+                            'scenario': ['Baseline'] * n_years * 2 + ['Expansion'] * n_years * 2,
+                            'type': np.tile(['opex'] * n_years + ['capex'] * n_years, 2),
+                            'year': np.tile(np.arange(n_years), 4)})
 
-    y_baseline = np.cumsum(flow_baseline)
-    y_expansion  = np.cumsum(flow_expansion)
+    # Ensure type order for correct sorting (opex before capex)
+    df['type'] = pd.Categorical(df['type'], categories=['opex', 'capex'], ordered=True)
 
-    df = pd.DataFrame({"year": years, "Baseline": y_baseline, "Expansion": y_expansion})
-    df_long = df.melt(id_vars="year", var_name="scenario", value_name="value")
+    # Sort by phase, then year, then type
+    df = df.sort_values(by=['year', 'type'])
+
+    # Compute cumulative value per phase
+    df['value'] = df.groupby('scenario')['value'].cumsum()
 
     line = (
-        alt.Chart(df_long)
+        alt.Chart(df)
         .mark_line(point={"filled": True, "size": 50}, interpolate="linear")
         .encode(
             x=alt.X(shorthand="year:Q",
