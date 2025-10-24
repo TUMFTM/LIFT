@@ -28,6 +28,8 @@ def get_version() -> str:
         return f"v{importlib.metadata.version('lift')}"
     except importlib.metadata.PackageNotFoundError:
         return "dev"
+
+
 VERSION = get_version()
 
 
@@ -35,36 +37,37 @@ def display_footer():
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
     sep = '<span style="margin: 0 20px;"> | </span>'
-    st.markdown('<div class="footer">'
-                '<b>'
-                '© 2025 '
-                '<a href="https://www.mos.ed.tum.de/ftm/" '
-                'target="_blank" '  # open in new tab
-                'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-                '>Lehrstuhl für Fahrzeugtechnik, Technische Universität München</a>'
-                ' – Alle Rechte vorbehalten'
-                f'{sep}'
-                f'Demo Version {VERSION}'
-                f'{sep}'
-                '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
-                'target="_blank" '  # open in new tab
-                'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-                '>GitLab</a>'
-                f'{sep}'
-                '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
-                'target="_blank" '  # open in new tab
-                'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-                '>Impressum</a>'
-                '<span style="margin: 0 10px;"> </span>'
-                '</b></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="footer">'
+        "<b>"
+        "© 2025 "
+        '<a href="https://www.mos.ed.tum.de/ftm/" '
+        'target="_blank" '  # open in new tab
+        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+        ">Lehrstuhl für Fahrzeugtechnik, Technische Universität München</a>"
+        " – Alle Rechte vorbehalten"
+        f"{sep}"
+        f"Demo Version {VERSION}"
+        f"{sep}"
+        '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
+        'target="_blank" '  # open in new tab
+        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+        ">GitLab</a>"
+        f"{sep}"
+        '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
+        'target="_blank" '  # open in new tab
+        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+        ">Impressum</a>"
+        '<span style="margin: 0 10px;"> </span>'
+        "</b></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def run_frontend():
     # define page settings
     st.set_page_config(
-        page_title="LIFT - Logistics Infrastructure & Fleet Transformation",
-        page_icon="🚚",
-        layout="wide"
+        page_title="LIFT - Logistics Infrastructure & Fleet Transformation", page_icon="🚚", layout="wide"
     )
 
     # css styles for sidebar
@@ -87,28 +90,25 @@ def run_frontend():
 
         except GridPowerExceededError as e:
             st.error(f"""\
-            **Netzanschlussfehler**  
-            **Der Netzanschluss kann die benötigte Leistung nicht bereitstellen**  
-            -> Auftretende Lastspitzen können durch einen größeren Netzanschluss oder 
-            mittels PV-Anlage und stationärem Speicher abgedeckt werden.  
-              
+            **Netzanschlussfehler**<br>
+            **Der Netzanschluss kann die benötigte Leistung nicht bereitstellen**
+            -> Auftretende Lastspitzen können durch einen größeren Netzanschluss oder
+            mittels PV-Anlage und stationärem Speicher abgedeckt werden.<br><br>
             Interne Fehlermeldung: {e}
             """)
         except SOCError as e:
             st.error(f"""\
-            **Ladezustandsfehler**  
-            **Der Ladezustand eines Fahrzeugs reicht nicht für die vorgesehene Fahrt aus**  
+            **Ladezustandsfehler**<br>
+            **Der Ladezustand eines Fahrzeugs reicht nicht für die vorgesehene Fahrt aus**<br>
             -> Abhilfe kann eine höhere Ladeleistung (Minimum aus Leistung von Fahrzeug und Ladepunkt), eine höhere
-            Anzahl an Ladepunkten oder ein größerer Netzanschluss schaffen.  
-              
+            Anzahl an Ladepunkten oder ein größerer Netzanschluss schaffen.<br><br>
             Interne Fehlermeldung: {e}
             """)
         except Exception as e:
             st.error(f"""\
-            **Berechnungsfehler**  
-            Wenden Sie sich bitte an den Administrator des Tools. Geben Sie dabei die verwendeten Parameter und die 
-            nachfolgend angezeigte Fehlermeldung an.  
-              
+            **Berechnungsfehler**<br>
+            Wenden Sie sich bitte an den Administrator des Tools. Geben Sie dabei die verwendeten Parameter und die
+            nachfolgend angezeigte Fehlermeldung an.<br><br>
             Interne Fehlermeldung: {e}
             """)
             st.text(traceback.format_exc())

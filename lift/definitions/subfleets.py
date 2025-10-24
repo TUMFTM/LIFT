@@ -26,9 +26,8 @@ DEF_SUBFLEETS = {
         settings_capex_bev=SettingsSlider(min_value=0.0, max_value=250000.0, value=250000.0, step=10000.0),
         settings_capex_icev=SettingsSlider(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
     ),
-
     # Leergewicht: 10.4t, Zuladung: 16.6t
-    "hst":DefinitionSubfleet(
+    "hst": DefinitionSubfleet(
         label="Schwerer Verteilerverkehr",
         icon="🚚",
         name="hst",
@@ -48,7 +47,6 @@ DEF_SUBFLEETS = {
         settings_capex_bev=SettingsSlider(min_value=0.0, max_value=250000.0, value=250000.0, step=10000.0),
         settings_capex_icev=SettingsSlider(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
     ),
-
     # Leergewicht: 5.4t, Zuladung: 6.6t
     "ust": DefinitionSubfleet(
         label="Urbaner Verteilerverkehr",
@@ -70,7 +68,6 @@ DEF_SUBFLEETS = {
         settings_capex_bev=SettingsSlider(min_value=0.0, max_value=250000.0, value=150000.0, step=10000.0),
         settings_capex_icev=SettingsSlider(min_value=0.0, max_value=250000.0, value=100000.0, step=10000.0),
     ),
-
     # Leergewicht: 2.5t, Zuladung: 1.0t
     "usv": DefinitionSubfleet(
         label="Lieferwagen",

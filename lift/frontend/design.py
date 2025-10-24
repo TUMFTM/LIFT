@@ -12,7 +12,8 @@ def get_colors() -> Tuple[str, str, str, str]:
     with importlib.resources.files("lift").joinpath(".streamlit/colors.toml").open("r") as f:
         config = toml.load(f)
     colors = config.get("custom_colors", {})
-    return colors['tumblue'], colors['baseline'], colors['expansion'], colors['lightblue']
+    return colors["tumblue"], colors["baseline"], colors["expansion"], colors["lightblue"]
+
 
 COLOR_TUMBLUE, COLOR_BL, COLOR_EX, COLOR_LIGHTBLUE = get_colors()
 
@@ -22,7 +23,7 @@ STYLES = f"""
         div[data-testid="stSidebarCollapseButton"] {{
             display: none !important;
         }}
-    
+
         /* Style for fixed footer */
         .footer {{
             position: fixed;

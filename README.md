@@ -69,4 +69,3 @@ If LIFT is installed in editable mode, the frontend will automatically include t
 LIFT as being clearly divided into a frontend and backend also features the option to only use the backend without the frontend.
 This allows for scalable multi-scenario investigations. For this, a ```lift.interfaces.Inputs``` instance has to be created and passed to ```lift.backend.backend.run_backend()```.
 An example for a single scenario is given in ```scripts/run.py```.
-

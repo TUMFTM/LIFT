@@ -10,7 +10,7 @@ def main():
     # change working directory to package root; required for streamlit to find config.toml resources
     os.chdir(package_root)
     # get the absolute path to the frontend.py file in the 'lift' package
-    app_path = package_root / 'frontend' / 'app.py'
+    app_path = package_root / "frontend" / "app.py"
 
     # required to avoid manual call of streamlit run path/to/lift/lift/frontend.py
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)])
