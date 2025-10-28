@@ -1,0 +1,16 @@
+{
+  "capex_spec": 0.2,
+  "capem_spec": 1.0,
+  "ls": 18,
+  "settings_preexisting": {
+    "min_value": 0.0,
+    "max_value": 5000.0,
+    "value": 200.0
+  },
+  "settings_expansion": {
+    "min_value": 0.0,
+    "max_value": 5000.0,
+    "value": 0.0,
+    "step": 1.0
+  }
+}

@@ -1,20 +1,83 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+import importlib.resources as resources
+from typing import Self
 
+import demandlib
 import numpy as np
 import pandas as pd
-from typing import TYPE_CHECKING
+import pvlib
 
-from .interfaces import GridPowerExceededError, SOCError, safe_cache_data
+from .interfaces import SimInputSettings, SimInputSubfleet, SimInputCharger, GridPowerExceededError, SOCError
 
-if TYPE_CHECKING:
-    from .interfaces import (
-        SimInputSubfleet,
-        SimInputCharger,
-    )
+from lift.utils import safe_cache_data, Coordinates
 
 EPS = 1e-8  # Small epsilon value for numerical stability in calculations
+
+
+@safe_cache_data
+def _get_log_pv(
+    coordinates: Coordinates,
+    settings: SimInputSettings,
+) -> np.typing.NDArray[np.float64]:
+    # ToDo: add default value if internet connection is not available -> debug purposes only
+    dti = settings.dti
+
+    data, *_ = pvlib.iotools.get_pvgis_hourly(
+        latitude=coordinates.latitude,
+        longitude=coordinates.longitude,
+        start=int(dti.year.min()),
+        end=int(dti.year.max()),
+        raddatabase="PVGIS-SARAH3",
+        outputformat="json",
+        pvcalculation=True,
+        peakpower=1,  # convert kWp to Wp
+        pvtechchoice="crystSi",
+        mountingplace="free",
+        loss=0,
+        trackingtype=0,  # fixed mount
+        optimalangles=True,
+        url="https://re.jrc.ec.europa.eu/api/v5_3/",
+        map_variables=True,
+        timeout=30,  # default value
+    )
+    data = data["P"]
+    data.index = data.index.round("h")
+    data = data.tz_convert("Europe/Berlin").reindex(dti).ffill().bfill()
+    return data.values / 1000
+
+
+@safe_cache_data
+def _get_log_dem(slp: str, consumption_yrl_wh: float, settings: SimInputSettings) -> np.typing.NDArray[np.float64]:
+    if slp not in ["h0", "h0_dyn", "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "l0", "l1", "l2"]:
+        raise ValueError(f'Specified SLP "{slp}" is not valid. SLP has to be defined as lower case.')
+
+    return (
+        pd.concat(
+            [
+                demandlib.bdew.ElecSlp(year=year)
+                .get_scaled_profiles({slp: consumption_yrl_wh})  # returns energies
+                .resample(settings.freq_sim)
+                .sum()  # sum() as df contains energies -> for hours energy is equal to power
+                .iloc[:, 0]
+                for year in settings.dti.year.unique()
+            ]
+        ).values
+        / settings.freq_hours
+    )  # get first (and only) column as numpy array and convert from energy to power
+
+
+@safe_cache_data
+def _get_log_subfleet(vehicle_type: str, settings: SimInputSettings) -> pd.DataFrame:
+    with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
+        df = pd.read_csv(logfile, header=[0, 1])
+        df = (
+            df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True))
+            .drop(df.columns[0], axis=1)
+            .tz_convert("Europe/Berlin")
+        )
+    return df.loc[settings.dti, :]
 
 
 @dataclass
@@ -62,9 +125,14 @@ class SupplyBlock(Block):
 class PVSource(SupplyBlock):
     pwr_wp: float
     log_spec: np.typing.NDArray[np.float64]
+    log: np.typing.NDArray[np.float64]
 
-    def __post_init__(self):
-        self.log = self.log_spec * self.pwr_wp
+    @classmethod
+    def from_parameters(cls, settings: SimInputSettings, pwr_wp: float, coordinates: Coordinates) -> Self:
+        log_spec = _get_log_pv(coordinates=coordinates, settings=settings)
+        return cls(
+            dti=settings.dti, freq_hours=settings.freq_hours, pwr_wp=pwr_wp, log_spec=log_spec, log=log_spec * pwr_wp
+        )
 
     @property
     def generation_max_w(self) -> float:
@@ -84,6 +152,14 @@ class StationaryStorage(SupplyBlock):
     capacity_wh: float
     soc: float = field(init=False, default=1.0)
     c_rate_max: float = field(init=False, default=0.5)
+
+    @classmethod
+    def from_parameters(cls, settings: SimInputSettings, capacity_wh: float) -> Self:
+        return cls(
+            dti=settings.dti,
+            freq_hours=settings.freq_hours,
+            capacity_wh=capacity_wh,
+        )
 
     @property
     def _pwr_max_crate_w(self) -> float:
@@ -138,6 +214,14 @@ class GridConnection(SupplyBlock):
 
     _pwr_curt_w: float = field(init=False, default=0.0)
 
+    @classmethod
+    def from_parameters(cls, settings: SimInputSettings, pwr_max_w: float) -> Self:
+        return cls(
+            dti=settings.dti,
+            freq_hours=settings.freq_hours,
+            pwr_max_w=pwr_max_w,
+        )
+
     @property
     def generation_max_w(self) -> float:
         # Return the maximum power that can be supplied by the grid connection.
@@ -174,6 +258,12 @@ class GridConnection(SupplyBlock):
 class FixedDemand(DemandBlock):
     log: np.typing.NDArray[np.float64]
 
+    @classmethod
+    # ToDo: fix Literal
+    def from_parameters(cls, settings: SimInputSettings, consumption_yrl_wh: float, slp: str) -> Self:
+        log = _get_log_dem(slp=slp, consumption_yrl_wh=consumption_yrl_wh, settings=settings)
+        return cls(dti=settings.dti, freq_hours=settings.freq_hours, log=log)
+
     @property
     def demand_w(self) -> float:
         # Return the demand in W for the current dt.
@@ -181,34 +271,55 @@ class FixedDemand(DemandBlock):
 
     @property
     def energy_wh(self) -> float:
-        # Return the total energy demand in Wh over the simulation period.
+        # Return the total energy demand in Wh over the phase_simulation period.
         return sum(self.log) * self.freq_hours
 
 
 @dataclass
 class Fleet(DemandBlock):
     pwr_lim_w: float
-    log: pd.DataFrame
+    log: dict[str, pd.DataFrame]
     subfleets: dict[str, SimInputSubfleet]
     chargers: dict[str, SimInputCharger]
+    fleet_units: dict[str, FleetUnit]
 
-    fleet_units: dict[str, FleetUnit] = field(init=False)
+    @classmethod
+    def from_parameters(
+        cls,
+        settings: SimInputSettings,
+        pwr_lim_w: float,
+        subfleets: dict[str, SimInputSubfleet],
+        chargers: dict[str, SimInputCharger],
+    ):
+        log = {
+            vehicle_type: _get_log_subfleet(vehicle_type=vehicle_type, settings=settings)
+            for vehicle_type, subfleet in subfleets.items()
+        }
 
-    def __post_init__(self):
-        self.fleet_units = {
+        fleet_units = {
             f"{subfleet.name}_{i}": FleetUnit(
                 name=f"{subfleet.name}_{i}",
-                atbase=self.log[subfleet.name].loc[:, (f"{subfleet.name}{i}", "atbase")].values,
-                consumption_w=self.log[subfleet.name].loc[:, (f"{subfleet.name}{i}", "consumption")].values,
+                atbase=log[subfleet.name].loc[:, (f"{subfleet.name}{i}", "atbase")].values,
+                consumption_w=log[subfleet.name].loc[:, (f"{subfleet.name}{i}", "consumption")].values,
                 battery_capacity_wh=subfleet.battery_capacity_wh,
                 charger=subfleet.charger,
-                pwr_max_w=min(subfleet.pwr_max_w, self.chargers[subfleet.charger].pwr_max_w),
-                dti=self.dti,
-                freq_hours=self.freq_hours,
+                pwr_max_w=min(subfleet.pwr_max_w, chargers[subfleet.charger].pwr_max_w),
+                dti=settings.dti,
+                freq_hours=settings.freq_hours,
             )
-            for subfleet in self.subfleets.values()
+            for subfleet in subfleets.values()
             for i in range(subfleet.num_bev)
         }
+
+        return cls(
+            dti=settings.dti,
+            freq_hours=settings.freq_hours,
+            pwr_lim_w=pwr_lim_w,
+            log=log,
+            subfleets=subfleets,
+            chargers=chargers,
+            fleet_units=fleet_units,
+        )
 
     @property
     def demand_w(self) -> float:
@@ -234,13 +345,26 @@ class Fleet(DemandBlock):
 
     @property
     def energy_site_wh(self) -> float:
-        # Return the total energy charged at the site in Wh over the simulation period.
+        # Return the total energy charged at the site in Wh over the phase_simulation period.
         return sum(unit.energy_site_wh for unit in self.fleet_units.values())
 
     @property
     def energy_route_wh(self) -> float:
-        # Return the total energy charged on the route in Wh over the simulation period.
+        # Return the total energy charged on the route in Wh over the phase_simulation period.
         return sum(unit.energy_route_wh for unit in self.fleet_units.values())
+
+    @property
+    def distances(self) -> dict[str, dict[str, float]]:
+        distances = {}
+        for sf_name, sf in self.subfleets.items():
+            log = self.log[sf_name]
+            vehicles = log.columns.get_level_values(0).unique()
+            splits = {"bev": vehicles[: sf.num_bev], "icev": vehicles[sf.num_bev : sf.num_total]}
+
+            distances[sf_name] = {
+                kind: log.loc[:, (cols, "dist")].sum().sum() if len(cols) else 0 for kind, cols in splits.items()
+            }
+        return distances
 
 
 @safe_cache_data
@@ -326,10 +450,10 @@ class FleetUnit(DemandBlock):
 
     @property
     def energy_site_wh(self) -> float:
-        # Return the total energy charged at the site in Wh over the simulation period.
+        # Return the total energy charged at the site in Wh over the phase_simulation period.
         return self._pwr_chg_site_w * self.freq_hours
 
     @property
     def energy_route_wh(self) -> float:
-        # Return the total energy charged on the route in Wh over the simulation period.
+        # Return the total energy charged on the route in Wh over the phase_simulation period.
         return self._e_chg_route_wh

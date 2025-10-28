@@ -11,10 +11,7 @@ os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 from lift.backend import backend
 
-from lift.backend.interfaces import (
-    GridPowerExceededError,
-    SOCError,
-)
+from lift.backend.phase_simulation.interfaces import GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
 from lift.frontend.design import STYLES

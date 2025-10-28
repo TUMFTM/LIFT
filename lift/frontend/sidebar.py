@@ -1,19 +1,18 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
 
-from lift.definitions import (
-    DEF_SUBFLEETS,
-    DEF_CHARGERS,
-    DEF_ENERGY_SYSTEM,
-    DEF_ECONOMICS,
+from .definitions import (
+    DEF_DEMAND,
     DEF_GRID,
     DEF_PV,
     DEF_ESS,
+    DEF_ECONOMICS,
+    DEF_SUBFLEETS,
+    DEF_CHARGERS,
     PERIOD_ECO,
     PERIOD_SIM,
     START_SIM,
@@ -23,25 +22,18 @@ from lift.definitions import (
 )
 
 from lift.backend.interfaces import (
-    InputLocation,
-    InputInvestComponent,
-    InputSubfleet,
-    InputCharger,
-    InputEconomics,
+    ComparisonInputLocation,
+    ComparisonInvestComponent,
+    ComparisonInputEconomics,
+    ComparisonInputSubfleet,
+    ComparisonInputCharger,
     Inputs,
-    Coordinates,
     ExistExpansionValue,
 )
+from lift.utils import Coordinates
 
 from .design import LINE_HORIZONTAL
-
-
-if TYPE_CHECKING:
-    from lift.backend.interfaces import (
-        DefinitionSubfleet,
-        DefinitionCharger,
-    )
-
+from .interfaces import FrontendSubFleetInterface, FrontendChargerInterface
 
 SHARE_COLUMN_INPUT = [3, 7]
 
@@ -51,7 +43,7 @@ def create_sidebar_and_get_input() -> Inputs:
     st.sidebar.subheader("Allgemeine Parameter")
 
     # ToDo: combine location and economic parameters in one function
-    def _get_input_location() -> InputLocation:
+    def _get_input_location() -> ComparisonInputLocation:
         with st.sidebar.expander(label="**Position**", icon="🗺️"):
             if "location" not in st.session_state:
                 st.session_state["location"] = Coordinates(latitude=48.1351, longitude=11.5820)
@@ -82,9 +74,11 @@ def create_sidebar_and_get_input() -> Inputs:
         with st.sidebar.expander(label="**Energiesystem**", icon="💡"):
             st.markdown("**Stromverbrauch Standort**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            slp = DEF_ENERGY_SYSTEM.settings_dem_profile.get_input(label="Lastprofil", key="slp", domain=col1)
+            slp = DEF_DEMAND.settings_dem_profile.get_streamlit_element(
+                label="Lastprofil", key="slp", domain=col1
+            ).lower()
 
-            consumption_yrl_wh = DEF_ENERGY_SYSTEM.settings_dem_yr.get_input(
+            consumption_yrl_wh = DEF_DEMAND.settings_dem_yr.get_streamlit_element(
                 label="Jahresstromverbrauch (MWh)", key="consumption_yrl_wh", domain=col2
             )
 
@@ -93,57 +87,57 @@ def create_sidebar_and_get_input() -> Inputs:
             st.markdown("**Netzanschluss**")
             # ToDo: distinguish static and dynamic load management
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            grid = InputInvestComponent(
+            grid = ComparisonInvestComponent(
                 capacity=ExistExpansionValue(
-                    preexisting=DEF_ENERGY_SYSTEM.settings_grid_preexisting.get_input(
+                    preexisting=DEF_GRID.settings_preexisting.get_streamlit_element(
                         label="Vorhanden (kW)", key="grid_preexisting", domain=col1
                     ),
-                    expansion=DEF_ENERGY_SYSTEM.settings_grid_expansion.get_input(
+                    expansion=DEF_GRID.settings_expansion.get_streamlit_element(
                         label="Zusätzlich (kW)",
                         key="grid_expansion",
                         domain=col2,
                     ),
                 ),
-                **DEF_GRID,
+                **DEF_GRID.input_dict,
             )
 
             st.markdown(LINE_HORIZONTAL, unsafe_allow_html=True)
 
             st.markdown("**PV-Anlage**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            pv = InputInvestComponent(
+            pv = ComparisonInvestComponent(
                 capacity=ExistExpansionValue(
-                    preexisting=DEF_ENERGY_SYSTEM.settings_pv_preexisting.get_input(
+                    preexisting=DEF_PV.settings_preexisting.get_streamlit_element(
                         label="Vorhanden (kWp)", key="pv_preexisting", domain=col1
                     ),
-                    expansion=DEF_ENERGY_SYSTEM.settings_pv_expansion.get_input(
+                    expansion=DEF_PV.settings_expansion.get_streamlit_element(
                         label="Zusätzlich (kWp)",
                         key="pv_expansion",
                         domain=col2,
                     ),
                 ),
-                **DEF_PV,
+                **DEF_PV.input_dict,
             )
 
             st.markdown(LINE_HORIZONTAL, unsafe_allow_html=True)
 
             st.markdown("**Stationärspeicher**")
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-            ess = InputInvestComponent(
+            ess = ComparisonInvestComponent(
                 capacity=ExistExpansionValue(
-                    preexisting=DEF_ENERGY_SYSTEM.settings_ess_preexisting.get_input(
+                    preexisting=DEF_ESS.settings_preexisting.get_streamlit_element(
                         label="Vorhanden (kWh)", key="ess_preexisting", domain=col1
                     ),
-                    expansion=DEF_ENERGY_SYSTEM.settings_ess_expansion.get_input(
+                    expansion=DEF_ESS.settings_expansion.get_streamlit_element(
                         label="Zusätzlich (kWh)",
                         key="ess_expansion",
                         domain=col2,
                     ),
                 ),
-                **DEF_ESS,
+                **DEF_ESS.input_dict,
             )
 
-        return InputLocation(
+        return ComparisonInputLocation(
             coordinates=st.session_state["location"],
             slp=slp,
             consumption_yrl_wh=consumption_yrl_wh,
@@ -154,39 +148,39 @@ def create_sidebar_and_get_input() -> Inputs:
 
     input_location = _get_input_location()
 
-    def _get_input_economic() -> InputEconomics:
+    def _get_input_economic() -> ComparisonInputEconomics:
         with st.sidebar.expander(label="**Wirtschaftliche Parameter**", icon="💶"):
-            return InputEconomics(
-                discount_rate=DEF_ECONOMICS.settings_discount_rate.get_input(
+            return ComparisonInputEconomics(
+                discount_rate=DEF_ECONOMICS.settings_discount_rate.get_streamlit_element(
                     label="Abzinsungsfaktor (%)", key="eco_discount_rate", domain=st
                 ),
-                fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_input(
+                fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_streamlit_element(
                     label="Fixkosten Standortausbau (EUR)", key="eco_fix_cost_construction", domain=st
                 ),
-                opex_spec_grid_buy=DEF_ECONOMICS.settings_opex_spec_grid_buy.get_input(
+                opex_spec_grid_buy=DEF_ECONOMICS.settings_opex_spec_grid_buy.get_streamlit_element(
                     label="Strombezugskosten (EUR/kWh)", key="eco_opex_spec_grid_buy", domain=st
                 ),
-                opex_spec_grid_sell=DEF_ECONOMICS.settings_opex_spec_grid_sell.get_input(
+                opex_spec_grid_sell=DEF_ECONOMICS.settings_opex_spec_grid_sell.get_streamlit_element(
                     label="Einspeisevergütung (EUR/kWh)", key="eco_opex_spec_grid_sell", domain=st
                 ),
-                opex_spec_grid_peak=DEF_ECONOMICS.settings_opex_spec_grid_peak.get_input(
+                opex_spec_grid_peak=DEF_ECONOMICS.settings_opex_spec_grid_peak.get_streamlit_element(
                     label="Leistungspreis (EUR/kWp)", key="eco_opex_spec_grid_peak", domain=st
                 ),
-                opex_spec_route_charging=DEF_ECONOMICS.settings_opex_spec_route_charging.get_input(
+                opex_spec_route_charging=DEF_ECONOMICS.settings_opex_spec_route_charging.get_streamlit_element(
                     label="Energiekosten für On-Route Charging (EUR/kWh)", key="eco_opex_spec_route_charging", domain=st
                 ),
-                opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_input(
+                opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_streamlit_element(
                     label="Dieselkosten (EUR/l)", key="eco_opex_fuel", domain=st
                 ),
-                insurance_frac=DEF_ECONOMICS.settings_insurance_frac.get_input(
+                insurance_frac=DEF_ECONOMICS.settings_insurance_frac.get_streamlit_element(
                     label="Versicherung (%*Anschaffungspreis)", key="eco_insurance_frac", domain=st
                 ),
-                salvage_bev_frac=DEF_ECONOMICS.settings_salvage_bev_frac.get_input(
+                salvage_bev_frac=DEF_ECONOMICS.settings_salvage_bev_frac.get_streamlit_element(
                     label="Restwert BET (%) (In Berechnung noch unberücksichtigt)",
                     key="eco_salvage_bev_frac",
                     domain=st,
                 ),
-                salvage_icev_frac=DEF_ECONOMICS.settings_salvage_icev_frac.get_input(
+                salvage_icev_frac=DEF_ECONOMICS.settings_salvage_icev_frac.get_streamlit_element(
                     label="Restwert ICET (%) (In Berechnung noch unberücksichtigt)",
                     key="eco_salvage_icev_frac",
                     domain=st,
@@ -204,9 +198,11 @@ def create_sidebar_and_get_input() -> Inputs:
     # get fleet parameters
     st.sidebar.subheader("Flotte")
 
-    def _get_params_subfleet(subfleet: DefinitionSubfleet) -> InputSubfleet:
+    def _get_params_subfleet(subfleet: FrontendSubFleetInterface) -> ComparisonInputSubfleet:
         with st.sidebar.expander(
-            label=f"**{subfleet.label}**  \n{subfleet.weight_max_str}", icon=subfleet.icon, expanded=False
+            label=f"**{subfleet.label}**  \n{subfleet.weight_max_t} t zulässiges Gesamtgewicht",
+            icon=subfleet.icon,
+            expanded=False,
         ):
             num_total = st.number_input(
                 label="Fahrzeuge gesamt",
@@ -238,34 +234,36 @@ def create_sidebar_and_get_input() -> Inputs:
 
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
             charger_type = col1.selectbox(
-                label="Ladepunkt", key=f"charger_{subfleet.name}", options=[x.name for x in DEF_CHARGERS.values()]
-            )
-            max_value = DEF_CHARGERS[charger_type.lower()].settings_pwr_max.max_value
+                label="Ladepunkt", key=f"charger_{subfleet.label}", options=[x.label for x in DEF_CHARGERS.values()]
+            ).lower()
+            max_value = DEF_CHARGERS[charger_type].settings_pwr_max.max_value
             pwr_max_w = (
                 col2.slider(
                     label="max. Ladeleistung (kW)",
                     key=f"pwr_max_{subfleet.name}",
-                    min_value=0,
+                    min_value=0.0,
                     max_value=max_value,
                     value=max_value,
+                    step=1.0,
+                    format="%.0f",
                 )
                 * 1e3
             )
 
-            capex_bev_eur = subfleet.settings_capex_bev.get_input(
+            capex_bev_eur = subfleet.settings_capex_bev.get_streamlit_element(
                 label="Anschaffungspreis BEV (EUR)",
                 key=f"capex_bev_{subfleet.name}",
             )
-            capex_icev_eur = subfleet.settings_capex_icev.get_input(
+            capex_icev_eur = subfleet.settings_capex_icev.get_streamlit_element(
                 label="Anschaffungspreis ICEV (EUR)",
                 key=f"capex_icev_{subfleet.name}",
             )
-            toll_frac = subfleet.settings_toll_share.get_input(
+            toll_frac = subfleet.settings_toll_share.get_streamlit_element(
                 label="Anteil mautplichtiger Strecken (%)",
                 key=f"toll_frac_{subfleet.name}",
             )
 
-        return InputSubfleet(
+        return ComparisonInputSubfleet(
             name=subfleet.name,
             num_total=num_total,
             num_bev=ExistExpansionValue(preexisting=preexisting, expansion=expansion),
@@ -290,31 +288,31 @@ def create_sidebar_and_get_input() -> Inputs:
     # get charging infrastructure parameters
     st.sidebar.subheader("Ladeinfrastruktur")
 
-    def _get_params_charger(charger: DefinitionCharger) -> InputCharger:
-        with st.sidebar.expander(label=f"**{charger.name}-Ladepunkte**", icon=charger.icon, expanded=False):
+    def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCharger:
+        with st.sidebar.expander(label=f"**{charger.label}-Ladepunkte**", icon=charger.icon, expanded=False):
             col1, col2 = st.columns(SHARE_COLUMN_INPUT)
             num = ExistExpansionValue(
-                preexisting=charger.settings_preexisting.get_input(
+                preexisting=charger.settings_preexisting.get_streamlit_element(
                     label="Vorhandene", key=f"chg_{charger.name.lower()}_preexisting", domain=col1
                 ),
-                expansion=charger.settings_expansion.get_input(
+                expansion=charger.settings_expansion.get_streamlit_element(
                     label="Zusätzliche",
                     key=f"chg_{charger.name.lower()}_expansion",
                     domain=col2,
                 ),
             )
 
-            pwr_max_w = charger.settings_pwr_max.get_input(
+            pwr_max_w = charger.settings_pwr_max.get_streamlit_element(
                 label="Maximale Ladeleistung (kW)",
                 key=f"chg_{charger.name.lower()}_pwr",
             )
 
-            cost_per_charger_eur = charger.settings_cost_per_unit_eur.get_input(
+            cost_per_charger_eur = charger.settings_cost_per_unit_eur.get_streamlit_element(
                 label="Kosten (EUR pro Ladepunkt)",
                 key=f"chg_{charger.name.lower()}_cost",
             )
 
-            return InputCharger(
+            return ComparisonInputCharger(
                 name=charger.name,
                 num=num,
                 pwr_max_w=pwr_max_w,
@@ -325,8 +323,8 @@ def create_sidebar_and_get_input() -> Inputs:
 
     input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
 
-    # get simulation settings
-    def _get_sim_settings():
+    # get phase_simulation settings
+    def _get_simsettings():
         col1, col2 = st.sidebar.columns([6, 4])
         st.session_state["auto_refresh"] = col1.toggle("**Automatisch aktualisieren**", value=False)
 
@@ -335,6 +333,6 @@ def create_sidebar_and_get_input() -> Inputs:
         ):
             st.session_state["run_backend"] = True
 
-    _get_sim_settings()
+    _get_simsettings()
 
     return Inputs(location=input_location, subfleets=input_fleet, chargers=input_charger, economics=input_economic)
