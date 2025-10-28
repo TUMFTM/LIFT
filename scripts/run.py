@@ -3,15 +3,15 @@ import pandas as pd
 from lift.backend.backend import run_backend
 
 from lift.backend.interfaces import (
-    InputLocation,
-    InputSubfleet,
-    InputCharger,
+    SimInputLocation,
+    SimInputSubfleet,
+    SimInputCharger,
     InputEconomics,
     InputInvestComponent,
     Inputs,
-    Coordinates,
     ExistExpansionValue,
 )
+from lift.utils import Coordinates
 
 """
 Use this script to directly run the backend without the frontend.
@@ -21,7 +21,7 @@ This allows for scalable multi-scenario execution.
 
 def run_scenario():
     inputs = Inputs(
-        location=InputLocation(
+        location=SimInputLocation(
             coordinates=Coordinates(longitude=11.576124, latitude=48.137154),
             slp="g0",
             consumption_yrl_wh=0.0,
@@ -61,7 +61,7 @@ def run_scenario():
             opem_spec_grid=0.0004,
         ),
         subfleets=dict(
-            hlt=InputSubfleet(
+            hlt=SimInputSubfleet(
                 name="hlt",
                 battery_capacity_wh=480e3,
                 capex_bev_eur=0.0,
@@ -74,7 +74,7 @@ def run_scenario():
             ),
         ),
         chargers=dict(
-            dc=InputCharger(
+            dc=SimInputCharger(
                 name="dc",
                 cost_per_charger_eur=0.0,
                 pwr_max_w=150e3,

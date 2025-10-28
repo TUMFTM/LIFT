@@ -46,7 +46,7 @@ where = ["."]
 include = ["lift*"]
 
 [tool.setuptools.package-data]
-lift = ["data/*", ".streamlit/*"]
+lift = ["data/**/*", ".streamlit/**/*"]
 
 [project.scripts]
 lift = "lift.__main__:main"

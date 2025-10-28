@@ -11,7 +11,7 @@ import streamlit as st
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 
-from lift.definitions import PERIOD_ECO
+from .definitions import PERIOD_ECO
 
 from .design import COLOR_BL, COLOR_EX, LINE_HORIZONTAL
 
