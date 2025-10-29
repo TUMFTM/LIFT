@@ -1,4 +1,7 @@
 {
+  "page": {
+    "title": "LIFT"
+  },
   "sidebar": {
     "language_selection": "Language",
     "general": {
@@ -75,10 +78,70 @@
   },
   "main": {
     "title": "LIFT - Logistics Infrastructure & Fleet Transformation",
+    "name_baseline": "Baseline",
+    "name_expansion": "Expansion",
+    "name_scenario": "Szenario",
     "kpi_diagrams": {
-      "cost": {
-        "title": "Kosten"
+      "costs": {
+        "title": "Kosten",
+        "axis": "Gesamtkosten"
+      },
+      "emissions": {
+        "title": "CO₂-Emissionen",
+        "axis": "CO₂-Emissionen"
+      },
+      "self_consumption": {
+        "title": "Eigenverbrauchsquote",
+        "axis": "Eigenverbrauchsquote"
+      },
+      "self_sufficiency": {
+        "title": "Autarkiegrad",
+        "axis": "Autarkiegrad"
+      },
+      "home_charging": {
+        "title": "Heim-Laden",
+        "axis": "Anteil am Depot geladener Energie"
       }
+    },
+    "cost_diagram": {
+      "title": "Gesamtkosten",
+      "xaxis": "Jahr",
+      "yaxis": "Kumulierte, diskontierte Kosten",
+      "paybackperiod": {
+        "title": "Amortisationsdauer",
+        "years": "Jahre",
+        "negative_result": "Investition amortisiert sich nicht."
+      },
+      "saving": {
+        "title": "Kosteneinsparung",
+        "after": "nach",
+        "years": "Jahren"
+      }
+    },
+    "co2_diagram": {
+      "title": "CO₂-Emissionen",
+      "expander": "Analyse CO₂-Emissionen",
+      "xaxis": "Jahr",
+      "yaxis": "Kumulierte CO₂-Emissionen",
+      "paybackperiod": {
+        "title": "CO₂-Paritätsdauer",
+        "years": "Jahre",
+        "negative_result": "Investition amortisiert sich nicht"
+      },
+      "saving": {
+        "title": "CO₂-Einsparung",
+        "after": "nach",
+        "years": "Jahren"
+      }
+    },
+    "empty": {
+      "manual1": "Modellieren Sie Ihren Standort und Ihre Flotte sowie den geplanten Ausbau Ihrer Infrastruktur in der Seitenleiste.  \nKlicken Sie anschließend auf ",
+      "manual2": ", um die Transformation Ihres Standorts zu analysieren."
+    },
+    "errors": {
+      "grid": "test",
+      "soc": "test",
+      "undefined": "test"
     }
   },
   "footer": {

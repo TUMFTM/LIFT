@@ -343,7 +343,9 @@ def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCha
 
 def _get_simsettings():
     col1, col2 = st.sidebar.columns([6, 4])
-    st.session_state["auto_refresh"] = col1.toggle(f"**{get_label('sidebar.autorefresh')}**", value=False)
+    st.session_state["auto_refresh"] = col1.toggle(
+        f"**{get_label('sidebar.autorefresh')}**", value=st.session_state.auto_refresh
+    )
 
     if st.session_state["auto_refresh"] or col2.button(
         f"**{get_label('sidebar.calculate')}**", icon="🚀", key="calc", use_container_width=True

@@ -12,8 +12,8 @@ os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 
 from .definitions import PERIOD_ECO
-
 from .design import COLOR_BL, COLOR_EX, LINE_HORIZONTAL
+from .utils import get_label
 
 
 PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
@@ -21,17 +21,20 @@ PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
 
 def display_results(results):
     st.markdown(
-        f"### <span style='color:{COLOR_BL}'>Baseline</span> vs. <span style='color:{COLOR_EX}'>Expansion</span>",
+        f"### <span style='color:{COLOR_BL}'>{get_label('main.name_baseline')}</span> vs. <span style='color:{COLOR_EX}'>{get_label('main.name_expansion')}</span>",
         unsafe_allow_html=True,
     )
 
-    def _show_kpis():
+    phases = (get_label("main.name_baseline"), get_label("main.name_expansion"))
+
+    def _show_kpis(phases: tuple[str, str]):
         def _centered_heading(text: str, domain=st) -> None:
             domain.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
 
         def _create_bar_comparison(
             val_baseline: float,
             val_expansion: float,
+            phase_labels: tuple[str, str],
             label: str,
             factor_display: float = 1.0,
         ) -> alt.VConcatChart:
@@ -42,7 +45,7 @@ def display_results(results):
                         val_baseline,
                         val_expansion,
                     ],
-                    "phase": ["Baseline", "Expansion"],
+                    "phase": phase_labels,
                     "value_display": [val_baseline * factor_display, val_expansion * factor_display],
                 },
             )
@@ -76,7 +79,7 @@ def display_results(results):
                     x=alt.X(
                         shorthand="phase:N",
                         axis=None,
-                        sort=["Baseline", "Expansion"],
+                        sort=phase_labels,
                         scale=alt.Scale(paddingInner=0.0, paddingOuter=1),
                     ),
                     y=alt.Y(
@@ -86,10 +89,10 @@ def display_results(results):
                     color=alt.Color(
                         shorthand="phase:N",
                         legend=None,
-                        scale=alt.Scale(domain=["Baseline", "Expansion"], range=[COLOR_BL, COLOR_EX]),
+                        scale=alt.Scale(domain=phase_labels, range=[COLOR_BL, COLOR_EX]),
                     ),
                     tooltip=[
-                        alt.Tooltip(shorthand="phase:N", title="Szenario"),
+                        alt.Tooltip(shorthand="phase:N", title=get_label("main.name_scenario")),
                         alt.Tooltip(shorthand="value_display:Q", title=label, format=",.0f"),
                     ],
                 )
@@ -100,6 +103,7 @@ def display_results(results):
         def _create_ring_comparison(
             val_baseline: float,
             val_expansion: float,
+            phase_labels: tuple[str, str],
             label: str,
         ) -> alt.LayerChart:
             def _create_ring(
@@ -135,7 +139,7 @@ def display_results(results):
                 data={
                     "value_front": [val_baseline, val_expansion],
                     "value_back": [1, 1],
-                    "phase": ["Baseline", "Expansion"],
+                    "phase": phase_labels,
                     "value_display": [val_baseline * 100, val_expansion * 100],
                 },
             )
@@ -174,60 +178,65 @@ def display_results(results):
 
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
-        _centered_heading(text="Kosten", domain=col1)
+        _centered_heading(text=get_label("main.kpi_diagrams.costs.title"), domain=col1)
         col1.altair_chart(
             _create_bar_comparison(
                 val_baseline=results.baseline.cashflow_dis["totex"].sum(),
                 val_expansion=results.expansion.cashflow_dis["totex"].sum(),
-                label="Gesamtkosten in EUR",
+                phase_labels=phases,
+                label=f"{get_label('main.kpi_diagrams.costs.axis')} in EUR",
             ).properties(**PLOT_CONFIG),
             use_container_width=True,
         )
 
-        _centered_heading(text="CO₂-Emissionen", domain=col2)
+        _centered_heading(text=get_label("main.kpi_diagrams.emissions.title"), domain=col2)
         col2.altair_chart(
             _create_bar_comparison(
                 val_baseline=results.baseline.emissions["totex"].sum(),
                 val_expansion=results.expansion.emissions["totex"].sum(),
-                label="CO2-Emissionen in t",
+                phase_labels=phases,
+                label=f"{get_label('main.kpi_diagrams.emissions.axis')} in t CO₂-eq.",
                 factor_display=1e-3,  # convert from kg to t
             ).properties(**PLOT_CONFIG),
             use_container_width=True,
         )
 
-        _centered_heading(text="Eigenverbrauchsquote", domain=col3)
+        _centered_heading(text=get_label("main.kpi_diagrams.self_consumption.title"), domain=col3)
         col3.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.self_consumption,
                 val_expansion=results.expansion.self_consumption,
-                label="Eigenverbrauchsquote in %",
+                phase_labels=phases,
+                label=f"{get_label('main.kpi_diagrams.self_consumption.axis')} in %",
             ).properties(**PLOT_CONFIG),
             use_container_width=True,
         )
 
-        _centered_heading(text="Autarkiegrad", domain=col4)
+        _centered_heading(text=get_label("main.kpi_diagrams.self_sufficiency.title"), domain=col4)
         col4.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.self_sufficiency,
                 val_expansion=results.expansion.self_sufficiency,
-                label="Autarkiegrad in %",
+                phase_labels=phases,
+                label=f"{get_label('main.kpi_diagrams.self_sufficiency.axis')} in %",
             ).properties(**PLOT_CONFIG),
             use_container_width=True,
         )
 
-        _centered_heading(text="Heim-Laden", domain=col5)
+        _centered_heading(text=get_label("main.kpi_diagrams.home_charging.title"), domain=col5)
         col5.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.site_charging,
                 val_expansion=results.expansion.site_charging,
-                label="Anteil Heimladen (Energie) in %",
+                phase_labels=phases,
+                label=f"{get_label('main.kpi_diagrams.home_charging.axis')} in %",
             ).properties(**PLOT_CONFIG),
             use_container_width=True,
         )
 
-    _show_kpis()
+    _show_kpis(phases=phases)
 
-    st.markdown("#### Gesamtkosten")
+    st.markdown(f"#### {get_label('main.cost_diagram.title')}")
     col1, col2 = st.columns([4, 1])
     with col1:
         plot_flow(
@@ -235,20 +244,24 @@ def display_results(results):
             baseline_opex=results.baseline.cashflow_dis["opex"].sum(axis=0),
             expansion_capex=results.expansion.cashflow_dis["capex"].sum(axis=0),
             expansion_opex=results.expansion.cashflow_dis["opex"].sum(axis=0),
-            y_label="Kumulierte Kosten in EUR",
+            x_label=get_label("main.cost_diagram.xaxis"),
+            y_label=f"{get_label('main.cost_diagram.yaxis')} in EUR",
+            phase_labels=phases,
         )
     with col2:
-        st.markdown("#### Amortisationsdauer")
+        st.markdown(f"#### {get_label('main.cost_diagram.paybackperiod.title')}")
         if results.payback_period_yrs is None:
-            st.markdown("Investition amortisiert sich nicht.")
+            st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
         else:
-            st.markdown(f"{results.payback_period_yrs:.2f} Jahre")
+            st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
 
-        st.markdown("#### Kosteneinsparung")
-        st.markdown(f"{results.npc_delta:,.0f} EUR nach 18 Jahren")
+        st.markdown(f"#### {get_label('main.cost_diagram.saving.title')}")
+        st.markdown(
+            f"{results.npc_delta:,.0f} EUR {get_label('main.cost_diagram.saving.after')} {PERIOD_ECO} {get_label('main.cost_diagram.saving.years')}"
+        )
 
-    with st.expander("#### Verlauf CO₂-Ausstoß"):
-        st.markdown("#### Kumulierter CO₂-Ausstoß")
+    with st.expander(f"#### {get_label('main.co2_diagram.expander')}"):
+        st.markdown(f"#### {get_label('main.co2_diagram.title')}")
         col1, col2 = st.columns([4, 1])
         with col1:
             plot_flow(
@@ -256,27 +269,27 @@ def display_results(results):
                 baseline_opex=results.baseline.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
                 expansion_capex=results.expansion.emissions["capex"].sum(axis=0) * 1e-3,  # convert from kg to t
                 expansion_opex=results.expansion.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
-                y_label="Kumulierte CO₂-Emissionen in t",
+                x_label=get_label("main.co2_diagram.xaxis"),
+                y_label=f"{get_label('main.co2_diagram.yaxis')} in t CO₂-eq.",
+                phase_labels=phases,
             )
         with col2:
-            st.markdown("#### CO₂-Paritätsdauer")
+            st.markdown(f"#### {get_label('main.co2_diagram.paybackperiod.title')}")
             if results.payback_period_co2_yrs is None:
-                st.markdown("Investition amortisiert sich nicht.")
+                st.markdown(get_label("main.co2_diagram.paybackperiod.negative_result"))
             else:
-                st.markdown(f"{results.payback_period_co2_yrs:.2f} Jahre")
+                st.markdown(f"{results.payback_period_co2_yrs:.2f} {get_label('main.co2_diagram.paybackperiod.years')}")
 
-            st.markdown("#### CO₂-Einsparung")
-            st.markdown(f"{results.co2_delta * 1e-3:,.0f} t nach 18 Jahren")
+            st.markdown(f"#### {get_label('main.co2_diagram.saving.title')}")
+            st.markdown(
+                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.co2_diagram.saving.after')} {PERIOD_ECO} {get_label('main.co2_diagram.saving.years')}"
+            )
 
 
 def display_empty_results():
-    st.markdown("""
-    Willkommen zu deinem datengetriebenen Framework für die Elektrifizierung von Lkw-Flotten
-    und die Optimierung von Speditionsstandorten. Nutze die Seitenleiste, um Parameter
-    einzugeben und klicke anschließend auf den Button, um erste Berechnungen zu starten.
-    """)
-    st.markdown(LINE_HORIZONTAL, unsafe_allow_html=True)
-    st.warning("Bitte geben Sie die Parameter in der Seitenleiste ein und klicken Sie auf **🚀 Berechnen**.")
+    st.warning(
+        f"{get_label('main.empty.manual1')}**🚀 {get_label('sidebar.calculate')}**{get_label('main.empty.manual2')}"
+    )
 
 
 def plot_flow(
@@ -284,7 +297,9 @@ def plot_flow(
     baseline_opex: np.typing.NDArray,
     expansion_capex: np.typing.NDArray,
     expansion_opex: np.typing.NDArray,
+    x_label: str,
     y_label: str,
+    phase_labels: tuple[str, str],
 ):
     years = np.arange(PERIOD_ECO + 1, dtype=int)
     n_years = PERIOD_ECO + 1
@@ -305,7 +320,7 @@ def plot_flow(
             "value": np.concatenate(
                 [[0], baseline_opex[:-1], baseline_capex, [0], expansion_opex[:-1], expansion_capex]
             ),
-            "scenario": ["Baseline"] * n_years * 2 + ["Expansion"] * n_years * 2,
+            "scenario": [phase_labels[0]] * n_years * 2 + [phase_labels[1]] * n_years * 2,
             "type": np.tile(["opex"] * n_years + ["capex"] * n_years, 2),
             "year": np.tile(np.arange(n_years), 4),
         }
@@ -326,18 +341,18 @@ def plot_flow(
         .encode(
             x=alt.X(
                 shorthand="year:Q",
-                axis=alt.Axis(title="Jahr", values=years, format=".0f"),
+                axis=alt.Axis(title=x_label, values=years, format=".0f"),
                 scale=alt.Scale(domain=[float(years.min()), float(years.max())], nice=False),
             ),
             y=alt.Y(shorthand="value:Q", axis=alt.Axis(title=y_label)),
             color=alt.Color(
                 shorthand="scenario:N",
                 legend=None,
-                scale=alt.Scale(domain=["Baseline", "Expansion"], range=[COLOR_BL, COLOR_EX]),
+                scale=alt.Scale(domain=phase_labels, range=[COLOR_BL, COLOR_EX]),
             ),
             tooltip=[
-                alt.Tooltip(shorthand="scenario:N", title="Szenario"),
-                alt.Tooltip(shorthand="year:Q", title="Jahr", format=".0f"),
+                alt.Tooltip(shorthand="scenario:N", title=get_label("main.name_scenario")),
+                alt.Tooltip(shorthand="year:Q", title=x_label, format=".0f"),
                 alt.Tooltip(shorthand="value:Q", title=y_label, format=",.0f"),
             ],
         )

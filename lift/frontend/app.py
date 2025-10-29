@@ -64,7 +64,7 @@ def run_frontend():
         load_language(language="de")
 
     # define page settings
-    st.set_page_config(page_title=get_label("main.title"), page_icon="🚚", layout="wide")
+    st.set_page_config(page_title=get_label("page.title"), page_icon="🚚", layout="wide")
 
     # css styles for sidebar
     st.markdown(STYLES, unsafe_allow_html=True)
@@ -80,28 +80,11 @@ def run_frontend():
             display_results(results)
 
         except GridPowerExceededError as e:
-            st.error(f"""\
-            **Netzanschlussfehler**\n
-            **Der Netzanschluss kann die benötigte Leistung nicht bereitstellen**\n
-            -> Auftretende Lastspitzen können durch einen größeren Netzanschluss oder
-            mittels PV-Anlage und stationärem Speicher abgedeckt werden.\n
-            Interne Fehlermeldung: {e}
-            """)
+            st.error(f"{get_label('main.errors.grid')} {e}")
         except SOCError as e:
-            st.error(f"""\
-            **Ladezustandsfehler**\n
-            **Der Ladezustand eines Fahrzeugs reicht nicht für die vorgesehene Fahrt aus**\n
-            -> Abhilfe kann eine höhere Ladeleistung (Minimum aus Leistung von Fahrzeug und Ladepunkt), eine höhere
-            Anzahl an Ladepunkten oder ein größerer Netzanschluss schaffen.\n
-            Interne Fehlermeldung: {e}
-            """)
+            st.error(f"{get_label('main.errors.soc')} {e}")
         except Exception as e:
-            st.error(f"""\
-            **Berechnungsfehler**\n
-            Wenden Sie sich bitte an den Administrator des Tools. Geben Sie dabei die verwendeten Parameter und die
-            nachfolgend angezeigte Fehlermeldung an.\n
-            Interne Fehlermeldung: {e}
-            """)
+            st.error(f"{get_label('main.errors.undefined')} {e}")
             st.text(traceback.format_exc())
 
         st.session_state["run_backend"] = False
