@@ -11,7 +11,7 @@ from lift.backend.interfaces import (
     Inputs,
     ExistExpansionValue,
 )
-from lift.utils import Coordinates
+from lift.backend.phase_simulation.interfaces import Coordinates
 
 """
 Use this script to directly run the backend without the frontend.

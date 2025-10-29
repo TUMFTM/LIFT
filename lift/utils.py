@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from functools import wraps
 import os
 
@@ -35,31 +34,3 @@ def safe_cache_data(*dargs, **dkwargs):
 
     # Used with arguments -> @safe_cache_data(...)
     return decorator
-
-
-@dataclass
-class Coordinates:
-    latitude: float = 48.148
-    longitude: float = 11.507
-
-    @property
-    def as_tuple(self) -> tuple[float, float]:
-        return self.latitude, self.longitude
-
-    @staticmethod
-    def _decimal_to_dms(decimal_deg: float) -> tuple[int, int, float]:
-        degrees = int(abs(decimal_deg))
-        minutes_full = (abs(decimal_deg) - degrees) * 60
-        minutes = int(minutes_full)
-        seconds = (minutes_full - minutes) * 60
-        return degrees, minutes, seconds
-
-    @property
-    def as_dms_str(self) -> str:
-        lat_deg, lat_min, lat_sec = self._decimal_to_dms(self.latitude)
-        lon_deg, lon_min, lon_sec = self._decimal_to_dms(self.longitude)
-
-        return (
-            f"{lat_deg}°{lat_min}'{lat_sec:.2f}'' {'N' if self.latitude >= 0 else 'S'}, "
-            f"{lon_deg}°{lon_min}'{lon_sec:.2f}'' {'E' if self.longitude >= 0 else 'W'}"
-        )

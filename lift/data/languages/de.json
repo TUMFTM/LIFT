@@ -1,0 +1,91 @@
+{
+  "sidebar": {
+    "language_selection": "Sprache",
+    "general": {
+      "title": "Allgemeine Parameter",
+      "position": {
+        "title": "Position",
+        "north": "N",
+        "east": "O",
+        "south": "S",
+        "west": "W"
+      },
+      "energy_system": {
+        "title": "Energiesystem",
+        "demand": {
+          "title": "Stromverbrauch Standort",
+          "slp": "Lastprofil",
+          "consumption": "Jahresstromverbrauch"
+        },
+        "grid": {
+          "title": "Netzanschluss",
+          "existing": "Vorhanden",
+          "expansion": "Zusätzlich"
+        },
+        "pv": {
+          "title": "PV-Anlage",
+          "existing": "Vorhanden",
+          "expansion": "Zusätzlich"
+        },
+        "ess": {
+          "title": "Stationärspeicher",
+          "existing": "Vorhanden",
+          "expansion": "Zusätzlich"
+        }
+      },
+      "economics": {
+        "title": "Wirtschaftliche Parameter",
+        "discount": "Abzinsungsfaktor",
+        "fixcost": "Fixkosten Standortausbau",
+        "opexbuy": "Strombezugskosten",
+        "opexfeedin": "Einspeisevergütung",
+        "opexpeakpower": "Leistungspreis",
+        "opexonroute": "Energiekosten für On-Route Charging",
+        "opexfuel": "Dieselkosten",
+        "insurance": "Versicherung (%*Anschaffungspreis)",
+        "salvagebev": "Restwert BET (%) (In Berechnung noch unberücksichtigt)",
+        "salvageicev": "Restwert ICET (%) (In Berechnung noch unberücksichtigt)"
+      }
+    },
+    "fleet": {
+      "title": "Flotte",
+      "subfleet": {
+        "weight_total": "Zulässiges Gesamtgewicht",
+        "num_total": "Fahrzeuge gesamt",
+        "num_bev_existing": "Vorhandene E-Fahrzeuge",
+        "num_bev_expansion": "Zusätzliche E-Fahrzeuge",
+        "charger": "Ladepunkt",
+        "pwr_max": "max. Ladeleistung",
+        "capex": "Anschaffungspreis",
+        "share_toll": "Anteil mautpflichtiger Strecken (%)"
+      }
+    },
+    "chargers": {
+      "title":  "Ladeinfrastruktur",
+      "charger": {
+        "title_suffix": "-Ladepunkte",
+        "existing": "Vorhandene",
+        "expansion": "Zusätzliche",
+        "pwr_max": "max. Ladeleistung",
+        "capex": "Kosten pro Ladepunkt"
+      }
+    },
+    "autorefresh": "Automatisch aktualisieren",
+    "calculate": "Berechnen"
+  },
+  "main": {
+    "title": "LIFT - Logistics Infrastructure & Fleet Transformation",
+    "kpi_diagrams": {
+      "cost": {
+        "title": "Kosten"
+      }
+    }
+  },
+  "footer": {
+    "institute": "Lehrstuhl für Fahrzeugtechnik, Technische Universität München",
+    "institute_url": "https://www.mos.ed.tum.de/ftm/",
+    "rights": "Alle Rechte vorbehalten",
+    "version_prefix": "Demo Version ",
+    "imprint": "Impressum"
+  }
+}

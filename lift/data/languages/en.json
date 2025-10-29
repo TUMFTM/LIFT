@@ -1,0 +1,91 @@
+{
+  "sidebar": {
+    "language_selection": "Language",
+    "general": {
+      "title": "General Parameters",
+      "position": {
+        "title": "Position",
+        "north": "N",
+        "east": "E",
+        "south": "S",
+        "west": "W"
+      },
+      "energy_system": {
+        "title": "Energy System",
+        "demand": {
+          "title": "Electricity Site Demand",
+          "slp": "Load Profile",
+          "consumption": "Annual Consumption"
+        },
+        "grid": {
+          "title": "Grid Connection",
+          "existing": "Existing",
+          "expansion": "Additional"
+        },
+        "pv": {
+          "title": "PV Array",
+          "existing": "Existing",
+          "expansion": "Additional"
+        },
+        "ess": {
+          "title": "Stationary Storage",
+          "existing": "Existing",
+          "expansion": "Additional"
+        }
+      },
+      "economics": {
+        "title": "Economic Parameters",
+        "discount": "WACC",
+        "fixcost": "Fix Expansion Costs",
+        "opexbuy": "Energy tariff",
+        "opexfeedin": "Feed-in tariff renewable",
+        "opexpeakpower": "Power tariff",
+        "opexonroute": "On-Route Charging Tariff",
+        "opexfuel": "Fuel Costs",
+        "insurance": "Insurance (%*Anschaffungspreis)",
+        "salvagebev": "Salvage Value BEV (%) (Ignored)",
+        "salvageicev": "Salvage Value ICEV (%) (Ignored)"
+      }
+    },
+    "fleet": {
+      "title": "Fleet",
+      "subfleet": {
+        "weight_total": "Permissible Gross Weight",
+        "num_total": "Vehicles Total",
+        "num_bev_existing": "Existing Electric Vehicles",
+        "num_bev_expansion": "Additional Electric Vehicles",
+        "charger": "Charger",
+        "pwr_max": "max. Charging Power",
+        "capex": "Anschaffungspreis",
+        "share_toll": "Anteil mautpflichtiger Strecken (%)"
+      }
+    },
+    "chargers": {
+      "title":  "Charging Infrastructure",
+      "charger": {
+        "title_suffix": " Chargers",
+        "existing": "Existing",
+        "expansion": "Additional",
+        "pwr_max": "max. Charging Power",
+        "capex": "Cost per Charger"
+      }
+    },
+    "autorefresh": "Auto Refresh",
+    "calculate": "Calculate"
+  },
+  "main": {
+    "title": "LIFT - Logistics Infrastructure & Fleet Transformation",
+    "kpi_diagrams": {
+      "cost": {
+        "title": "Kosten"
+      }
+    }
+  },
+  "footer": {
+    "institute": "Institute of Automotive Technology, Technical University of Munich",
+    "institute_url": "https://www.mos.ed.tum.de/en/ftm/",
+    "rights": "All Rights Reserved",
+    "version_prefix": "Demo Version ",
+    "imprint": "Imprint"
+  }
+}

@@ -1,25 +1,21 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Self
+from typing import Any, Literal, Self
 
 import streamlit as st
+
+from .utils import get_label
+
+from lift.backend.phase_simulation.interfaces import Coordinates
 
 
 class SettingsInput(ABC):
     @abstractmethod
-    def get_streamlit_element(self, label: str, key: Optional[str] = None, domain=st) -> Any:
-        """
-        Return a streamlit input element
-        :param label:
-        :param key:
-        :param domain:
-        :return:
-        """
-        ...
+    def get_streamlit_element(self, label: str, key: str | None = None, domain=st) -> Any: ...
 
 
 @dataclass
-class SettingsNumeric(SettingsInput):
+class SettingsNumeric(SettingsInput, ABC):
     max_value: float
     value: float
     min_value: float = 0.0
@@ -31,14 +27,14 @@ class SettingsNumeric(SettingsInput):
 class SettingsSlider(SettingsNumeric):
     step: float = 1.0
 
-    def get_streamlit_element(self, label: str, key: Optional[str] = None, domain=st) -> Any:
+    def get_streamlit_element(self, label: str, key: str | None = None, domain=st) -> Any:
         return (
             domain.slider(
                 label=label,
                 key=key,
                 min_value=self.min_value,
                 max_value=self.max_value,
-                value=self.value,
+                value=st.session_state.get(key, self.value),
                 format=self.format,
                 step=self.step,
             )
@@ -48,14 +44,14 @@ class SettingsSlider(SettingsNumeric):
 
 @dataclass
 class SettingsNumberInput(SettingsNumeric):
-    def get_streamlit_element(self, label: str, key: Optional[str] = None, domain=st):
+    def get_streamlit_element(self, label: str, key: str | None = None, domain=st):
         return (
             domain.number_input(
                 label=label,
                 key=key,
                 min_value=self.min_value,
                 max_value=self.max_value,
-                value=self.value,
+                value=st.session_state.get(key, self.value),
                 format=self.format,
             )
             * self.factor
@@ -65,14 +61,14 @@ class SettingsNumberInput(SettingsNumeric):
 @dataclass
 class SettingsSelectBox(SettingsInput):
     options: list[str]
-    index: int
+    value: str
 
-    def get_streamlit_element(self, label: str, key: Optional[str] = None, domain=st):
+    def get_streamlit_element(self, label: str, key: str | None = None, domain=st):
         return domain.selectbox(
             label=label,
             key=key,
             options=self.options,
-            index=self.index,
+            index=self.options.index(st.session_state.get(key, self.value)),
         )
 
 
@@ -85,9 +81,40 @@ class FrontendInterface(ABC):
 @dataclass
 class FrontendBlockInterface(FrontendInterface, ABC):
     name: str
-    label: str
+    label: str | dict[str, str]  # use dict to support different languages
     icon: str
     ls: int
+
+    def get_label(self, language: str):
+        """
+        Retrieve the label text for the specified language, with fallbacks.
+
+        If the label is stored as a string, it is returned directly.
+        If the label is a dictionary of language codes, the method returns the label for the provided language.
+        If this language is not available, the method provides a fallback value (first "en", if not available "de").
+        first available translation based on a defined preference order.
+
+        Args:
+            language (str): The desired language code for the label.
+
+        Returns:
+            str | None: The corresponding label text, or ``None`` if no matching
+            translation is found.
+
+        Raises:
+            ValueError: If ``self.label`` is neither a string nor a dictionary or an empty dictionary.
+        """
+        if isinstance(self.label, str):
+            return self.label
+        elif self.label and isinstance(self.label, dict):
+            preferred_languages = (language, "en", "de")
+            return next((self.label[k] for k in preferred_languages if k in self.label), None)
+
+        else:
+            raise ValueError(
+                f"Label of type {type(self.label).__name__} is not supported."
+                f"Please provide the label as string or a dict of strings to support different languages."
+            )
 
 
 @dataclass
@@ -161,7 +188,7 @@ class FrontendSizableBlockInterface(FrontendEnergyBlockInterface):
         return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
 
     @property
-    def input_dict(self) -> Dict:
+    def input_dict(self) -> dict:
         return {
             "capex_spec": self.capex_spec,
             "capem_spec": self.capem_spec,
@@ -177,14 +204,14 @@ class FrontendDemandInterface:
     @classmethod
     def from_parameters(
         cls,
-        options: List,
-        options_default_index: int,
+        options: list,
+        options_default: str,
         max_value: float,
         value: float,
         step: float,
     ) -> Self:
         return cls(
-            settings_dem_profile=SettingsSelectBox(options=options, index=options_default_index),
+            settings_dem_profile=SettingsSelectBox(options=options, value=options_default),
             settings_dem_yr=SettingsSlider(min_value=0.0, max_value=max_value, value=value, step=step, factor=1e6),
         )
 
@@ -201,3 +228,18 @@ class FrontendEconomicsInterface:
     settings_insurance_frac: SettingsSlider
     settings_salvage_bev_frac: SettingsSlider
     settings_salvage_icev_frac: SettingsSlider
+
+
+@dataclass
+class FrontendCoordinates(Coordinates):
+    @property
+    def as_dms_str(self) -> str:
+        lat_deg, lat_min, lat_sec = self._decimal_to_dms(self.latitude)
+        lon_deg, lon_min, lon_sec = self._decimal_to_dms(self.longitude)
+
+        return (
+            f"{lat_deg}°{lat_min}'{lat_sec:.2f}'' "
+            f"{get_label('sidebar.general.position.north') if self.latitude >= 0 else get_label('sidebar.general.position.south')}, "
+            f"{lon_deg}°{lon_min}'{lon_sec:.2f}'' "
+            f"{get_label('sidebar.general.position.east') if self.longitude >= 0 else get_label('sidebar.general.position.west')}"
+        )

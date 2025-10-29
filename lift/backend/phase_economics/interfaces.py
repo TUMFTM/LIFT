@@ -5,9 +5,7 @@ from typing import Literal, Self
 import numpy as np
 import pandas as pd
 
-from lift.utils import Coordinates
-
-from lift.backend.phase_simulation.interfaces import SimResults
+from lift.backend.phase_simulation.interfaces import SimResults, Coordinates
 
 
 class PhaseInputBase(ABC):

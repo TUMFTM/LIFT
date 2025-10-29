@@ -1,7 +1,10 @@
 {
   "hlt": {
     "name": "hlt",
-    "label": "Schwere Lkw",
+    "label": {
+      "de": "Schwere Lkw",
+      "en": "Heavy-duty Trucks"
+    },
     "icon": "🚛",
     "weight_max_t": 42,
     "battery_capactiy_wh": 480000,
@@ -33,7 +36,10 @@
   },
   "hst": {
     "name": "hst",
-    "label": "Schwerer Verteilverkehr",
+    "label": {
+      "de": "Schwerer Verteilverkehr",
+      "en": "Heavy distribution transport"
+    },
     "icon": "🚚",
     "weight_max_t": 28,
     "battery_capactiy_wh": 400000,
@@ -65,7 +71,10 @@
   },
   "ust": {
     "name": "ust",
-    "label": "Urbaner Verteilverkehr",
+    "label": {
+      "de": "Urbaner Verteilverkehr",
+      "en": "Urban distribution transport truck"
+    },
     "icon": "🚚",
     "weight_max_t": 12,
     "battery_capactiy_wh": 160000,
@@ -97,7 +106,10 @@
   },
   "usv": {
     "name": "usv",
-    "label": "Lieferwagen",
+    "label": {
+      "de": "Lieferwagen",
+      "en": "Light Commercial Vehicle"
+    },
     "icon": "🚐",
     "weight_max_t": 3.5,
     "battery_capactiy_wh": 81000,

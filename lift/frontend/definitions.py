@@ -1,8 +1,3 @@
-import importlib.resources as resources
-import json
-from pathlib import Path
-from typing import Dict
-
 import pandas as pd
 
 from .interfaces import (
@@ -14,32 +9,30 @@ from .interfaces import (
     SettingsSlider,
 )
 
+from lift.frontend.utils import read_json_from_package_data, get_supported_languages
 
-def read_json(path: Path) -> Dict:
-    if not path.exists():
-        raise FileNotFoundError(path)
-    with open(path, "rb") as f:
-        return json.load(f)
+
+DEF_LANGUAGE_OPTIONS = get_supported_languages()
 
 
 DEF_DEMAND = FrontendDemandInterface.from_parameters(
     options=["H0", "H0_dyn", "G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "L0", "L1", "L2"],
-    options_default_index=2,
+    options_default="G0",
     max_value=1000.0,
     value=50.0,
     step=1.0,
 )
 
 DEF_GRID = FrontendSizableBlockInterface.from_dict(
-    dict(name="grid", label="Netzanschluss", icon="🔌⚡") | read_json(resources.files("lift.data") / "grid.json")
+    dict(name="grid", label="Netzanschluss", icon="🔌⚡") | read_json_from_package_data("grid.json")
 )
 
 DEF_PV = FrontendSizableBlockInterface.from_dict(
-    dict(name="pv", label="PV-Anlage", icon="☀️") | read_json(resources.files("lift.data") / "pv.json")
+    dict(name="pv", label="PV-Anlage", icon="☀️") | read_json_from_package_data("pv.json")
 )
 
 DEF_ESS = FrontendSizableBlockInterface.from_dict(
-    dict(name="ess", label="Stationärspeicher", icon="🔋") | read_json(resources.files("lift.data") / "ess.json")
+    dict(name="ess", label="Stationärspeicher", icon="🔋") | read_json_from_package_data("ess.json")
 )
 
 DEF_ECONOMICS = FrontendEconomicsInterface(
@@ -56,13 +49,11 @@ DEF_ECONOMICS = FrontendEconomicsInterface(
 )
 
 DEF_CHARGERS = {
-    k: FrontendChargerInterface.from_dict(v)
-    for k, v in read_json(resources.files("lift.data") / "chargers.json").items()
+    k: FrontendChargerInterface.from_dict(v) for k, v in read_json_from_package_data("chargers.json").items()
 }
 
 DEF_SUBFLEETS = {
-    k: FrontendSubFleetInterface.from_dict(v)
-    for k, v in read_json(resources.files("lift.data") / "subfleets.json").items()
+    k: FrontendSubFleetInterface.from_dict(v) for k, v in read_json_from_package_data("subfleets.json").items()
 }
 
 

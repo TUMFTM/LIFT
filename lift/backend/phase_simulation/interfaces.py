@@ -4,11 +4,34 @@ from typing import Literal, Self, TYPE_CHECKING
 
 import pandas as pd
 
-from lift.utils import Coordinates
-
 # ToDo: try to fix this issue without circular imports
 if TYPE_CHECKING:
     pass
+
+
+@dataclass
+class Coordinates:
+    latitude: float = 48.148
+    longitude: float = 11.507
+
+    @classmethod
+    def from_frontend_coordinates(cls, frontend_coordinates: "FrontendCoordinates") -> Self:
+        return cls(
+            latitude=frontend_coordinates.latitude,
+            longitude=frontend_coordinates.longitude,
+        )
+
+    @property
+    def as_tuple(self) -> tuple[float, float]:
+        return self.latitude, self.longitude
+
+    @staticmethod
+    def _decimal_to_dms(decimal_deg: float) -> tuple[int, int, float]:
+        degrees = int(abs(decimal_deg))
+        minutes_full = (abs(decimal_deg) - degrees) * 60
+        minutes = int(minutes_full)
+        seconds = (minutes_full - minutes) * 60
+        return degrees, minutes, seconds
 
 
 class BaseInput(ABC):

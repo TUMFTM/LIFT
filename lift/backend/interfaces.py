@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 
 
 from lift.backend.phase_economics.interfaces import PhaseResults
-from lift.utils import Coordinates
+from lift.backend.phase_simulation.interfaces import Coordinates
 
 
 @dataclass
@@ -122,7 +122,7 @@ class TotalResults:
         return self.baseline.cashflow_dis["totex"].sum() - self.expansion.cashflow_dis["totex"].sum()
 
     @staticmethod
-    def get_payback_period_yrs(diff):
+    def get_payback_period_yrs(diff) -> float | None:
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
         if idx.size == 0 or diff[0] > 0:
@@ -135,7 +135,7 @@ class TotalResults:
         return float((i - y0 / (y1 - y0)) + 1)
 
     @property
-    def payback_period_yrs(self) -> Optional[float]:
+    def payback_period_yrs(self) -> float | None:
         diff = np.cumsum(self.baseline.cashflow_dis["totex"].sum(axis=0)) - np.cumsum(
             self.expansion.cashflow_dis["totex"].sum(axis=0)
         )
@@ -146,7 +146,7 @@ class TotalResults:
         return self.baseline.emissions["totex"].sum() - self.expansion.emissions["totex"].sum()
 
     @property
-    def payback_period_co2_yrs(self) -> Optional[float]:
+    def payback_period_co2_yrs(self) -> float | None:
         diff = np.cumsum(self.baseline.emissions["totex"].sum(axis=0)) - np.cumsum(
             self.expansion.emissions["totex"].sum(axis=0)
         )
