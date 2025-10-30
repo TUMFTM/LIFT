@@ -4,21 +4,21 @@ import numpy as np
 
 from lift.utils import safe_cache_data
 
-from lift.backend.phase_simulation.simulation import simulate
+from lift.backend.simulation.simulation import simulate
 
-from lift.backend.phase_simulation.interfaces import (
+from lift.backend.simulation.interfaces import (
     SimInputSettings,
     SimInputLocation,
     SimInputSubfleet,
     SimInputCharger,
 )
 
-from lift.backend.phase_economics.interfaces import (
+from lift.backend.economics.interfaces import (
     PhaseInputEconomics,
     PhaseInputLocation,
     PhaseInputCharger,
     PhaseInputSubfleet,
-    PhaseResults,
+    PhaseResult,
 )
 
 
@@ -45,7 +45,7 @@ def calc_phase_results(
     economics: PhaseInputEconomics,
     subfleets: dict[str, PhaseInputSubfleet],
     chargers: dict[str, PhaseInputCharger],
-) -> PhaseResults:
+) -> PhaseResult:
     result_sim = simulate(
         settings=SimInputSettings.from_phase_input(economics),
         location=SimInputLocation.from_phase_input(location),
@@ -76,7 +76,7 @@ def calc_phase_results(
         [(category, *tuple(np.zeros(period_eco + 1) for _ in range(3))) for category in CATEGORIES], dtype=dtype_flow
     )
 
-    # calculate self-sufficiency and self consumption based on phase_simulation results
+    # calculate self-sufficiency and self consumption based on simulation results
     if location.pv.capacity == 0:
         self_sufficiency = 0.0
         self_consumption = 0.0
@@ -204,7 +204,7 @@ def calc_phase_results(
     for flow in [cashflow, cashflow_dis, emissions]:
         flow["totex"] = flow["capex"] + flow["opex"]
 
-    return PhaseResults(
+    return PhaseResult(
         simulation=result_sim,
         self_sufficiency=self_sufficiency,
         self_consumption=self_consumption,

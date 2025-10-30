@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 
 
-from lift.backend.phase_economics.interfaces import PhaseResults
-from lift.backend.phase_simulation.interfaces import Coordinates
+from lift.backend.economics.interfaces import PhaseResult
+from lift.backend.simulation.interfaces import Coordinates
 
 
 @dataclass
@@ -95,7 +95,7 @@ class ComparisonInputEconomics:
 
 
 @dataclass
-class Inputs:
+class ComparisonInput:
     location: ComparisonInputLocation = field(default_factory=ComparisonInputLocation)
     economics: ComparisonInputEconomics = field(default_factory=ComparisonInputEconomics)
     subfleets: dict[str, ComparisonInputSubfleet] = field(
@@ -113,9 +113,9 @@ class Inputs:
 
 
 @dataclass
-class TotalResults:
-    baseline: PhaseResults
-    expansion: PhaseResults
+class ComparisonResult:
+    baseline: PhaseResult
+    expansion: PhaseResult
 
     @property
     def npc_delta(self) -> float:

@@ -278,7 +278,7 @@ class FixedDemand(DemandBlock):
 
     @property
     def energy_wh(self) -> float:
-        # Return the total energy demand in Wh over the phase_simulation period.
+        # Return the total energy demand in Wh over the simulation period.
         return sum(self.log) * self.freq_hours
 
 
@@ -352,12 +352,12 @@ class Fleet(DemandBlock):
 
     @property
     def energy_site_wh(self) -> float:
-        # Return the total energy charged at the site in Wh over the phase_simulation period.
+        # Return the total energy charged at the site in Wh over the simulation period.
         return sum(unit.energy_site_wh for unit in self.fleet_units.values())
 
     @property
     def energy_route_wh(self) -> float:
-        # Return the total energy charged on the route in Wh over the phase_simulation period.
+        # Return the total energy charged on the route in Wh over the simulation period.
         return sum(unit.energy_route_wh for unit in self.fleet_units.values())
 
     @property
@@ -457,10 +457,10 @@ class FleetUnit(DemandBlock):
 
     @property
     def energy_site_wh(self) -> float:
-        # Return the total energy charged at the site in Wh over the phase_simulation period.
+        # Return the total energy charged at the site in Wh over the simulation period.
         return self._pwr_chg_site_w * self.freq_hours
 
     @property
     def energy_route_wh(self) -> float:
-        # Return the total energy charged on the route in Wh over the phase_simulation period.
+        # Return the total energy charged on the route in Wh over the simulation period.
         return self._e_chg_route_wh

@@ -5,7 +5,7 @@ from typing import Literal, Self
 import numpy as np
 import pandas as pd
 
-from lift.backend.phase_simulation.interfaces import SimResults, Coordinates
+from lift.backend.simulation.interfaces import SimResults, Coordinates
 
 
 class PhaseInputBase(ABC):
@@ -172,7 +172,7 @@ class PhaseInputCharger(PhaseInputBase):
 
 
 @dataclass
-class PhaseResults:
+class PhaseResult:
     simulation: SimResults = field(default_factory=SimResults)
     self_sufficiency: float = (
         0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)

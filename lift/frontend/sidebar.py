@@ -22,17 +22,17 @@ from .definitions import (
     OPEM_SPEC_GRID,
 )
 
-from lift.backend.interfaces import (
+from lift.backend.comparison.interfaces import (
     ComparisonInputLocation,
     ComparisonInvestComponent,
     ComparisonInputEconomics,
     ComparisonInputSubfleet,
     ComparisonInputCharger,
-    Inputs,
+    ComparisonInput,
     ExistExpansionValue,
 )
 
-from lift.backend.phase_simulation.interfaces import Coordinates
+from lift.backend.simulation.interfaces import Coordinates
 
 from .design import LINE_HORIZONTAL
 from .interfaces import FrontendSubFleetInterface, FrontendChargerInterface, FrontendCoordinates
@@ -353,7 +353,7 @@ def _get_simsettings():
         st.session_state["run_backend"] = True
 
 
-def create_sidebar_and_get_input() -> Inputs:
+def create_sidebar_and_get_input() -> ComparisonInput:
     # language selector
     _, col2 = st.sidebar.columns([7, 3])
     col2.selectbox(
@@ -377,7 +377,9 @@ def create_sidebar_and_get_input() -> Inputs:
     st.sidebar.subheader(get_label("sidebar.chargers.title"))
     input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
 
-    # get phase_simulation settings
+    # get simulation settings
     _get_simsettings()
 
-    return Inputs(location=input_location, subfleets=input_fleet, chargers=input_charger, economics=input_economic)
+    return ComparisonInput(
+        location=input_location, subfleets=input_fleet, chargers=input_charger, economics=input_economic
+    )

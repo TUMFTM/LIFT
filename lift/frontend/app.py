@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import traceback
+import warnings
 
 import streamlit as st
 
@@ -8,9 +9,9 @@ import streamlit as st
 # Is automatically deleted after import
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
-from lift.backend import backend
+from lift.backend.comparison import backend
 
-from lift.backend.phase_simulation.interfaces import GridPowerExceededError, SOCError
+from lift.backend.simulation.interfaces import GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
 from lift.frontend.design import STYLES

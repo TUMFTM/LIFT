@@ -6,7 +6,7 @@ import streamlit as st
 
 from .utils import get_label
 
-from lift.backend.phase_simulation.interfaces import Coordinates
+from lift.backend.simulation.interfaces import Coordinates
 
 
 class SettingsInput(ABC):

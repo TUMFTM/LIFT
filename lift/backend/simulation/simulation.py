@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from lift.backend.phase_simulation.blocks import (
+from lift.backend.simulation.blocks import (
     FixedDemand,
     Fleet,
     GridConnection,
@@ -9,7 +9,7 @@ from lift.backend.phase_simulation.blocks import (
     StationaryStorage,
 )
 
-from lift.backend.phase_simulation.interfaces import (
+from lift.backend.simulation.interfaces import (
     SimInputSettings,
     SimInputLocation,
     SimInputSubfleet,
