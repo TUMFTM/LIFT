@@ -65,6 +65,15 @@
     },
     "chargers": {
       "title":  "Charging Infrastructure",
+      "load_mngmnt": {
+        "title": "Load Management",
+        "baseline": "Current Load Management",
+        "expansion": "Expansion Load Management",
+        "static": "static",
+        "dynamic": "dynamic",
+        "type": "Type",
+        "pwr_max": "max. Power"
+      },
       "charger": {
         "title_suffix": " Chargers",
         "existing": "Existing",

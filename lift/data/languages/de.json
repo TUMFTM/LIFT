@@ -65,10 +65,21 @@
     },
     "chargers": {
       "title":  "Ladeinfrastruktur",
+      "load_mngmnt": {
+        "title": "Lastmanagement",
+        "baseline": "Vorhandenes Lastmanagement",
+        "expansion": "Erweitertes Lastmanagement",
+        "static": "statisch",
+        "dynamic": "dynamisch",
+        "type": "Typ",
+        "pwr_max": "max. Leistung"
+      },
       "charger": {
         "title_suffix": "-Ladepunkte",
         "existing": "Vorhandene",
         "expansion": "Zusätzliche",
+        "static": "statisch",
+        "dynamic": "dynamisch",
         "pwr_max": "max. Ladeleistung",
         "capex": "Kosten pro Ladepunkt"
       }

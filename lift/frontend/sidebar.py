@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Literal
 
 import folium
 import numpy as np
@@ -303,6 +304,42 @@ def _get_params_subfleet(subfleet: FrontendSubFleetInterface) -> ComparisonInput
     )
 
 
+def _get_load_mngmnt(phase: Literal["baseline", "expansion"]) -> float:
+    st.markdown(f"**{get_label(f'sidebar.chargers.load_mngmnt.{phase}')}**")
+    col1, col2 = st.columns(2)
+    col1.radio(
+        label=get_label("sidebar.chargers.load_mngmnt.type"),
+        label_visibility="collapsed",
+        options=[get_label("sidebar.chargers.load_mngmnt.static"), get_label("sidebar.chargers.load_mngmnt.dynamic")],
+        index=1,
+        key=f"load_mngmnt_{phase}",
+    )
+    if st.session_state[f"load_mngmnt_{phase}"] == get_label("sidebar.chargers.load_mngmnt.static"):
+        pwr_max_grid = (
+            st.session_state.grid_preexisting
+            if phase == "baseline"
+            else st.session_state.grid_preexisting + st.session_state.grid_expansion
+        )
+        return (
+            col2.slider(
+                label=f"{get_label('sidebar.chargers.load_mngmnt.pwr_max')} (kW)",
+                min_value=0.0,
+                max_value=pwr_max_grid,
+                value=(
+                    pwr_max_grid * 0.5
+                    if not st.session_state.get(f"load_mngmnt_slider_{phase}", None)
+                    else st.session_state[f"load_mngmnt_slider_{phase}"]
+                ),
+                step=1.0,
+                format="%.0f",
+                key=f"load_mngmnt_slider_{phase}",
+            )
+            * 1e3
+        )  # convert kW to W
+    else:
+        return np.inf
+
+
 def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCharger:
     with st.sidebar.expander(
         label=f"**{charger.label}{get_label('sidebar.chargers.charger.title_suffix')}**",
@@ -344,40 +381,14 @@ def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCha
 
 
 def _get_params_charging_infrastructure():
-    # ToDo: integrate in language json file
-    with st.sidebar.expander(label="**Lastmanagement**", icon="⚖️"):
-        st.markdown("Vorhandenes Lastmanagement")
-        col1, col2 = st.columns(2)
-        col1.radio(
-            label="Lastmanagement",
-            label_visibility="collapsed",
-            options=["statisch", "dynamisch"],
-            key="load_management_baseline",
-        )
-        if st.session_state["load_management_baseline"] == "statisch":
-            # ToDo: get limits from grid connection
-            col2.slider(label="Leistung", min_value=0, max_value=100, value=100, key="load_management_slider_baseline")
-
-        st.markdown("Erweitertes Lastmanagement")
-        col1, col2 = st.columns(2)
-        col1.radio(
-            label="Lastmanagement",
-            label_visibility="collapsed",
-            options=["statisch", "dynamisch"],
-            key="load_management_expansion",
-        )
-        if st.session_state["load_management_expansion"] == "statisch":
-            # ToDo: get limits from grid connection
-            col2.slider(label="Leistung", min_value=0, max_value=100, value=100, key="load_management_slider_expansion")
+    with st.sidebar.expander(label=f"**{get_label('sidebar.chargers.load_mngmnt.title')}**", icon="⚖️"):
+        load_mngmnt_baseline = _get_load_mngmnt(phase="baseline")
+        load_mngmnt_expansion = _get_load_mngmnt(phase="expansion")
     chargers = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
 
     return ComparisonInputChargingInfrastructure(
-        pwr_max_w_baseline=np.inf
-        if st.session_state.load_management_baseline == "dynamisch"
-        else st.session_state.load_management_slider_baseline,
-        pwr_max_w_expansion=np.inf
-        if st.session_state.load_management_expansion == "dynamisch"
-        else st.session_state.load_management_slider_expansion,
+        pwr_max_w_baseline=load_mngmnt_baseline,
+        pwr_max_w_expansion=load_mngmnt_expansion,
         chargers=chargers,
     )
 
@@ -402,6 +413,7 @@ def create_sidebar_and_get_input() -> ComparisonInput:
         options=DEF_LANGUAGE_OPTIONS,
         index=DEF_LANGUAGE_OPTIONS.index(st.session_state.language),
         key="language_selection_box",
+        label_visibility="collapsed",
         on_change=lambda: load_language(language=st.session_state.language_selection_box),
     )
 
