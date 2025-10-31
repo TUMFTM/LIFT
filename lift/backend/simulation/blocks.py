@@ -294,7 +294,7 @@ class Fleet(DemandBlock):
     def from_parameters(
         cls,
         settings: SimInputSettings,
-        pwr_lim_w: float,
+        pwr_max_w: float,
         subfleets: dict[str, SimInputSubfleet],
         chargers: dict[str, SimInputCharger],
     ):
@@ -321,7 +321,7 @@ class Fleet(DemandBlock):
         return cls(
             dti=settings.dti,
             freq_hours=settings.freq_hours,
-            pwr_lim_w=pwr_lim_w,
+            pwr_lim_w=pwr_max_w,
             log=log,
             subfleets=subfleets,
             chargers=chargers,

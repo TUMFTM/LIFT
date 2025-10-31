@@ -10,15 +10,15 @@ from lift.backend.simulation.interfaces import (
     SimInputSettings,
     SimInputLocation,
     SimInputSubfleet,
-    SimInputCharger,
+    SimInputChargingInfrastructure,
 )
 
 from lift.backend.economics.interfaces import (
     PhaseInputEconomics,
     PhaseInputLocation,
-    PhaseInputCharger,
     PhaseInputSubfleet,
     PhaseResult,
+    PhaseInputChargingInfrastructure,
 )
 
 
@@ -44,13 +44,13 @@ def calc_phase_results(
     location: PhaseInputLocation,
     economics: PhaseInputEconomics,
     subfleets: dict[str, PhaseInputSubfleet],
-    chargers: dict[str, PhaseInputCharger],
+    charging_infrastructure: PhaseInputChargingInfrastructure,
 ) -> PhaseResult:
     result_sim = simulate(
         settings=SimInputSettings.from_phase_input(economics),
         location=SimInputLocation.from_phase_input(location),
         subfleets={sf.name: SimInputSubfleet.from_phase_input(sf) for sf in subfleets.values()},
-        chargers={chg.name: SimInputCharger.from_phase_input(chg) for chg in chargers.values()},
+        charging_infrastructure=SimInputChargingInfrastructure.from_phase_input(charging_infrastructure),
     )
 
     period_eco = economics.period_eco
@@ -186,7 +186,7 @@ def calc_phase_results(
         )
 
     # chargers
-    for chg in chargers.values():
+    for chg in charging_infrastructure.chargers.values():
         replacements = calc_replacements(ls=chg.ls)
         cashflow[CONV["chargers"]]["capex"] += chg.cost_per_charger_eur * chg.num * replacements
         emissions[CONV["chargers"]]["capex"] += chg.capem * chg.num * replacements
@@ -220,6 +220,6 @@ if __name__ == "__main__":
         location=PhaseInputLocation(),
         economics=PhaseInputEconomics(),
         subfleets={"hlt": PhaseInputSubfleet()},
-        chargers={"ac": PhaseInputCharger()},
+        charging_infrastructure=PhaseInputChargingInfrastructure(),
     )
     pass

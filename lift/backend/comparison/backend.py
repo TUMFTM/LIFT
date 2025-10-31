@@ -6,7 +6,7 @@ from lift.backend.economics.interfaces import (
     PhaseInputLocation,
     PhaseInputEconomics,
     PhaseInputSubfleet,
-    PhaseInputCharger,
+    PhaseInputChargingInfrastructure,
 )
 
 from lift.backend.economics.economics_phase import calc_phase_results
@@ -34,10 +34,9 @@ def run_comparison(comparison_input: ComparisonInput) -> ComparisonResult:
                 sf.name: PhaseInputSubfleet.from_comparison_input(comparison_input=sf, phase=phase)
                 for sf in comparison_input.subfleets.values()
             },
-            chargers={
-                chg.name: PhaseInputCharger.from_comparison_input(comparison_input=chg, phase=phase)
-                for chg in comparison_input.chargers.values()
-            },
+            charging_infrastructure=PhaseInputChargingInfrastructure.from_comparison_input(
+                comparison_input.charging_infrastructure, phase=phase
+            ),
         )
         for phase in ["baseline", "expansion"]
     }

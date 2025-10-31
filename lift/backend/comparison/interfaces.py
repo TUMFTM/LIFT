@@ -73,6 +73,13 @@ class ComparisonInputCharger:
 
 
 @dataclass
+class ComparisonInputChargingInfrastructure:
+    pwr_max_w_baseline: float = np.inf
+    pwr_max_w_expansion: float = np.inf
+    chargers: dict[str, ComparisonInputCharger] = field(default_factory=lambda: {"ac": ComparisonInputCharger()})
+
+
+@dataclass
 class ComparisonInputEconomics:
     period_sim: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(days=365))
     start_sim: pd.Timestamp = field(default_factory=lambda: pd.Timestamp("2023-01-01 00:00"))
@@ -104,11 +111,8 @@ class ComparisonInput:
             "hst": ComparisonInputSubfleet(name="hst"),
         }
     )
-    chargers: dict[str, ComparisonInputCharger] = field(
-        default_factory=lambda: {
-            "ac": ComparisonInputCharger(name="ac"),
-            "dc": ComparisonInputCharger(name="dc"),
-        }
+    charging_infrastructure: ComparisonInputChargingInfrastructure = field(
+        default_factory=lambda: ComparisonInputChargingInfrastructure()
     )
 
 

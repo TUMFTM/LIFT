@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal, Self, TYPE_CHECKING
 
+import numpy as np
 import pandas as pd
 
 # ToDo: try to fix this issue without circular imports
@@ -129,6 +130,22 @@ class SimInputCharger(BaseInput):
             name=phase_input.name,
             num=phase_input.num,
             pwr_max_w=phase_input.pwr_max_w,
+        )
+
+
+@dataclass
+class SimInputChargingInfrastructure(BaseInput):
+    pwr_max_w: float = np.inf
+    chargers: dict[str, SimInputCharger] = field(default_factory=lambda: {"ac": SimInputCharger()})
+
+    @classmethod
+    def from_phase_input(cls, phase_input: "PhaseInputChargingInfrastructure") -> Self:
+        return cls(
+            pwr_max_w=phase_input.pwr_max_w,
+            chargers={
+                charger_name: SimInputCharger.from_phase_input(charger)
+                for charger_name, charger in phase_input.chargers.items()
+            },
         )
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import folium
+import numpy as np
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -28,6 +29,7 @@ from lift.backend.comparison.interfaces import (
     ComparisonInputEconomics,
     ComparisonInputSubfleet,
     ComparisonInputCharger,
+    ComparisonInputChargingInfrastructure,
     ComparisonInput,
     ExistExpansionValue,
 )
@@ -341,6 +343,45 @@ def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCha
         )
 
 
+def _get_params_charging_infrastructure():
+    # ToDo: integrate in language json file
+    with st.sidebar.expander(label="**Lastmanagement**", icon="⚖️"):
+        st.markdown("Vorhandenes Lastmanagement")
+        col1, col2 = st.columns(2)
+        col1.radio(
+            label="Lastmanagement",
+            label_visibility="collapsed",
+            options=["statisch", "dynamisch"],
+            key="load_management_baseline",
+        )
+        if st.session_state["load_management_baseline"] == "statisch":
+            # ToDo: get limits from grid connection
+            col2.slider(label="Leistung", min_value=0, max_value=100, value=100, key="load_management_slider_baseline")
+
+        st.markdown("Erweitertes Lastmanagement")
+        col1, col2 = st.columns(2)
+        col1.radio(
+            label="Lastmanagement",
+            label_visibility="collapsed",
+            options=["statisch", "dynamisch"],
+            key="load_management_expansion",
+        )
+        if st.session_state["load_management_expansion"] == "statisch":
+            # ToDo: get limits from grid connection
+            col2.slider(label="Leistung", min_value=0, max_value=100, value=100, key="load_management_slider_expansion")
+    chargers = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
+
+    return ComparisonInputChargingInfrastructure(
+        pwr_max_w_baseline=np.inf
+        if st.session_state.load_management_baseline == "dynamisch"
+        else st.session_state.load_management_slider_baseline,
+        pwr_max_w_expansion=np.inf
+        if st.session_state.load_management_expansion == "dynamisch"
+        else st.session_state.load_management_slider_expansion,
+        chargers=chargers,
+    )
+
+
 def _get_simsettings():
     col1, col2 = st.sidebar.columns([6, 4])
     st.session_state["auto_refresh"] = col1.toggle(
@@ -375,11 +416,14 @@ def create_sidebar_and_get_input() -> ComparisonInput:
 
     # get charging infrastructure parameters
     st.sidebar.subheader(get_label("sidebar.chargers.title"))
-    input_charger = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
+    input_charging_infrastructure = _get_params_charging_infrastructure()
 
     # get simulation settings
     _get_simsettings()
 
     return ComparisonInput(
-        location=input_location, subfleets=input_fleet, chargers=input_charger, economics=input_economic
+        location=input_location,
+        subfleets=input_fleet,
+        charging_infrastructure=input_charging_infrastructure,
+        economics=input_economic,
     )

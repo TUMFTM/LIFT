@@ -172,6 +172,26 @@ class PhaseInputCharger(PhaseInputBase):
 
 
 @dataclass
+class PhaseInputChargingInfrastructure(PhaseInputBase):
+    pwr_max_w: float = np.inf
+    chargers: dict[str, PhaseInputCharger] = field(default_factory=lambda: {"ac": PhaseInputCharger()})
+
+    @classmethod
+    def from_comparison_input(
+        cls, comparison_input: "ComparisonInputChargingInfrastructure", phase: Literal["baseline", "expansion"]
+    ):
+        return cls(
+            pwr_max_w=comparison_input.pwr_max_w_baseline
+            if phase == "baseline"
+            else comparison_input.pwr_max_w_expansion,
+            chargers={
+                charger_name: PhaseInputCharger.from_comparison_input(charger, phase=phase)
+                for charger_name, charger in comparison_input.chargers.items()
+            },
+        )
+
+
+@dataclass
 class PhaseResult:
     simulation: SimResults = field(default_factory=SimResults)
     self_sufficiency: float = (

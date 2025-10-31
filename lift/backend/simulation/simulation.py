@@ -14,6 +14,7 @@ from lift.backend.simulation.interfaces import (
     SimInputLocation,
     SimInputSubfleet,
     SimInputCharger,
+    SimInputChargingInfrastructure,
     SimResults,
 )
 
@@ -25,7 +26,7 @@ def simulate(
     settings: SimInputSettings,
     location: SimInputLocation,
     subfleets: dict[str, SimInputSubfleet],
-    chargers: dict[str, SimInputCharger],
+    charging_infrastructure: SimInputChargingInfrastructure,
 ) -> SimResults:
     dem = FixedDemand.from_parameters(
         settings=settings,
@@ -34,9 +35,9 @@ def simulate(
     )
     fleet = Fleet.from_parameters(
         settings=settings,
-        pwr_lim_w=np.inf,
+        pwr_max_w=charging_infrastructure.pwr_max_w,
         subfleets=subfleets,
-        chargers=chargers,
+        chargers=charging_infrastructure.chargers,
     )
     pv = PVSource.from_parameters(settings=settings, pwr_wp=location.pv_wp, coordinates=location.coordinates)
     ess = StationaryStorage.from_parameters(
@@ -57,13 +58,15 @@ def simulate(
         for block in blocks:
             block.idx = idx
 
-        # calculate maximum power supply
-        pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
         # get the total demand from the fixed demand block
         pwr_demand_w = dem.demand_w
 
-        # define Fleet charging power limit for dynamic load management
-        fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
+        # Update available power for dynamic load management
+        if charging_infrastructure.pwr_max_w == np.inf:
+            # calculate maximum power supply
+            pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
+            # define Fleet charging power limit for dynamic load management
+            fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
 
         # add fleet demand to the total demand
         pwr_demand_w += fleet.demand_w
