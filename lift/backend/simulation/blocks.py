@@ -409,7 +409,8 @@ class FleetUnit(DemandBlock):
     _e_chg_route_wh: float = field(init=False, default=0.0)
 
     def __post_init__(self):
-        self.soc_track = np.zeros(len(self.dti), dtype=np.float64)
+        self.soc_track = np.zeros(len(self.dti) + 1, dtype=np.float64)
+        self.soc_track[0] = self.soc
 
         self.soc_min = get_soc_min(
             max_charge_rate=self.pwr_max_w * self.freq_hours / self.battery_capacity_wh,
@@ -446,7 +447,7 @@ class FleetUnit(DemandBlock):
             self._e_chg_route_wh += e_chg_route_wh
         if self.soc > (1 + EPS) or self.soc < (0 - EPS):
             raise SOCError(f"SOC {self.soc} out of bounds after charging {pwr_chg_site} W at {self.dti[self.idx]}.")
-        self.soc_track[self.idx] = self.soc
+        self.soc_track[self.idx + 1] = self.soc
         # return the charging power applied to this unit
         return pwr_chg_site
 
