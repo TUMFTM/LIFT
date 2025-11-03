@@ -4,6 +4,7 @@ from typing import Literal
 import folium
 import numpy as np
 import streamlit as st
+from streamlit import area_chart
 from streamlit_folium import st_folium
 
 
@@ -407,18 +408,18 @@ def _get_simsettings():
 
 def create_sidebar_and_get_input() -> ComparisonInput:
     # language selector
-    _, col2 = st.sidebar.columns([7, 3])
-    col2.selectbox(
+    col_subheader, col_language = st.sidebar.columns([8, 2])
+    col_language.selectbox(
         f"**{get_label('sidebar.language_selection')}**",
-        options=DEF_LANGUAGE_OPTIONS,
-        index=DEF_LANGUAGE_OPTIONS.index(st.session_state.language),
+        options=list(DEF_LANGUAGE_OPTIONS.keys()),
+        index=list(DEF_LANGUAGE_OPTIONS.values()).index(st.session_state.language),
         key="language_selection_box",
         label_visibility="collapsed",
-        on_change=lambda: load_language(language=st.session_state.language_selection_box),
+        on_change=lambda: load_language(language=DEF_LANGUAGE_OPTIONS[st.session_state.language_selection_box]),
     )
 
     # get depot parameters
-    st.sidebar.subheader(get_label("sidebar.general.title"))
+    col_subheader.subheader(get_label("sidebar.general.title"))
     input_location = _get_input_location()
     input_economic = _get_input_economic()
 

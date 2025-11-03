@@ -198,15 +198,18 @@ def get_version() -> str:
         return "dev"
 
 
-def get_supported_languages() -> list[str]:
+def get_supported_languages() -> dict[str, str]:
     """
-    Retrieve a list of supported languages based on the JSON files in lift/data/languages.
+    Retrieve a dictionary of supported languages based on options.json in lift/data/languages.
 
     Returns:
-        list[str]: A list of the supported languages' language codes.
+        dict[str, str]: A dict of the supported languages' languages with the flag (key) and the language code (value).
 
     Examples:
         >>> get_supported_languages()
-        ['de', 'en']
+        {DE: 'de', EN: 'en'}
     """
-    return [f.stem for f in resources.files("lift.data.languages").iterdir() if f.suffix == ".json"]
+    return {
+        d["flag"]: d["name"]
+        for d in read_json_from_package_data(resource="options.json", package="lift.data.languages").values()
+    }
