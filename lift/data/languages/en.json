@@ -60,7 +60,7 @@
         "charger": "Charger",
         "pwr_max": "max. Charging Power",
         "capex": "Anschaffungspreis",
-        "share_toll": "Anteil mautpflichtiger Strecken (%)"
+        "share_toll": "Anteil mautpflichtiger Strecken"
       }
     },
     "chargers": {

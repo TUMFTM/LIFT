@@ -60,7 +60,7 @@
         "charger": "Ladepunkt",
         "pwr_max": "max. Ladeleistung",
         "capex": "Anschaffungspreis",
-        "share_toll": "Anteil mautpflichtiger Strecken (%)"
+        "share_toll": "Anteil mautpflichtiger Strecken"
       }
     },
     "chargers": {
