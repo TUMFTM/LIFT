@@ -4,7 +4,6 @@ from typing import Literal
 import folium
 import numpy as np
 import streamlit as st
-from streamlit import area_chart
 from streamlit_folium import st_folium
 
 

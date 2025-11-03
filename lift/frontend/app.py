@@ -4,7 +4,7 @@ import traceback
 
 import streamlit as st
 
-# Flag to use streamlit caching; required before importing lift.backend.interfaces
+# Flag to use streamlit caching; required to be set before importing lift.backend.utils
 # Is automatically deleted after import
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
