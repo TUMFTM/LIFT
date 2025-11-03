@@ -11,7 +11,9 @@ from lift.backend.simulation.interfaces import Coordinates
 
 class SettingsInput(ABC):
     @abstractmethod
-    def get_streamlit_element(self, label: str, key: str | None = None, domain=st) -> Any: ...
+    def get_streamlit_element(
+        self, label: str, help_msg: str | None = None, key: str | None = None, domain=st
+    ) -> Any: ...
 
 
 @dataclass
@@ -27,10 +29,11 @@ class SettingsNumeric(SettingsInput, ABC):
 class SettingsSlider(SettingsNumeric):
     step: float = 1.0
 
-    def get_streamlit_element(self, label: str, key: str | None = None, domain=st) -> Any:
+    def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st) -> Any:
         return (
             domain.slider(
                 label=label,
+                help=help_msg,
                 key=key,
                 min_value=self.min_value,
                 max_value=self.max_value,
@@ -44,10 +47,11 @@ class SettingsSlider(SettingsNumeric):
 
 @dataclass
 class SettingsNumberInput(SettingsNumeric):
-    def get_streamlit_element(self, label: str, key: str | None = None, domain=st):
+    def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st):
         return (
             domain.number_input(
                 label=label,
+                help=help_msg,
                 key=key,
                 min_value=self.min_value,
                 max_value=self.max_value,
@@ -63,9 +67,10 @@ class SettingsSelectBox(SettingsInput):
     options: list[str]
     value: str
 
-    def get_streamlit_element(self, label: str, key: str | None = None, domain=st):
+    def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st):
         return domain.selectbox(
             label=label,
+            help=help_msg,
             key=key,
             options=self.options,
             index=self.options.index(st.session_state.get(key, self.value)),
