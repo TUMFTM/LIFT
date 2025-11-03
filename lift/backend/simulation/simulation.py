@@ -61,10 +61,7 @@ def simulate(
 
         # Update available power for dynamic load management
         if charging_infrastructure.pwr_max_w == np.inf:
-            # calculate maximum power supply
-            pwr_supply_max_w = sum(block.generation_max_w for block in blocks_supply)
-            # define Fleet charging power limit for dynamic load management
-            fleet.pwr_lim_w = pwr_supply_max_w - pwr_demand_w
+            fleet.pwr_lim_w = sum(block.generation_max_w for block in blocks_supply) - pwr_demand_w
 
         # add fleet demand to the total demand
         pwr_demand_w += fleet.demand_w
