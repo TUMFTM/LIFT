@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lift"
-version = "0.9.0a4"
+version = "0.9.1a1"
 description = "LIFT - Logistics Infrastructure & Fleet Transformation"
 authors = [
     { name = "Brian Dietermann", email = "brian.dietermann@tum.de"},
@@ -26,7 +26,6 @@ dependencies = [
 ]
 
 [dependency-groups]
-# [project.optional-dependencies]
 dev = ["pre-commit", "ruff"]
 
 [tool.ruff]
