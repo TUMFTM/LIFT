@@ -1,7 +1,6 @@
 from __future__ import annotations
 import os
 import traceback
-import warnings
 
 import streamlit as st
 
@@ -77,7 +76,7 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = backend.run_backend(inputs=settings)
+            results = backend.run_comparison(comparison_input=settings)
             display_results(results)
 
         except GridPowerExceededError as e:
