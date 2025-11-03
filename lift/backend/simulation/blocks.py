@@ -418,6 +418,9 @@ class FleetUnit(DemandBlock):
             atbase=self.atbase,
         )
 
+    def __repr__(self):
+        return f"FleetUnit(name={self.name}, soc={self.soc}, charger={self.charger}, pwr_max_w={self.pwr_max_w})"
+
     @property
     def time_flexibility(self) -> float:
         if self.pwr_max_w == 0:  # division by 0 causes error
