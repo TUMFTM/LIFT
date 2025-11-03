@@ -8,3 +8,5 @@ from .interfaces import (
     PhaseInputChargingInfrastructure,
     PhaseResult,
 )
+
+from lift.backend.simulation.interfaces import Coordinates

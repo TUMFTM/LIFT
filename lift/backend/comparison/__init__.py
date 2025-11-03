@@ -10,3 +10,5 @@ from .interfaces import (
     ComparisonInput,
     ComparisonResult,
 )
+
+from lift.backend.simulation.interfaces import Coordinates
