@@ -9,11 +9,12 @@ Institute of Automotive Technology
 Department of Mobility Systems Engineering  
 TUM School of Engineering and Design  
 Technical University of Munich  
+brian.dietermann@tum.de  
 anna.paper@tum.de  
 2025
 
 #### Contributors  
-Fabian Mayer, B.Sc. - Semester Thesis ongoing
+Fabian Mayer, B.Sc. - Semester Thesis submitted 09/2025
 
 ## Installation
 
@@ -48,9 +49,10 @@ After pulling new changes from the repository, the package has to be reinstalled
 
 ##### b) Editable Installation (recommended for development)
 
-This links the package to your local source code, so any changes (you make or pulled from the repository) are immediately reflected without reinstalling:
+This links the package to your local source code, so any changes (you make or pulled from the repository) are immediately reflected without reinstalling.
+In addition to the packages required to run LIFT, the package pre-commit is installed.  
 ```bash
-pip install -e .
+pip install -e . --group dev
 ```
 Use the editable mode if you plan to modify the code during development.
 
@@ -61,11 +63,13 @@ LIFT can be run using one of two terminal commands, given the correct virtual en
 2. Call to the entry point: ```lift``` (best for remote execution on a server as it works irrespective of the current working directory as long as the correct environment is active)
 
 ## Advanced Usage - GUI mode
-LIFT includes predefined options for vehicles, chargers and other assumptions. Those can be found in ```lift/definitions/*```.
-To create a new type of charger or vehicle add a new entry to the dictionary in ```chargers.py``` or ```subfleets.py```, respectively.
-If LIFT is installed in editable mode, the frontend will automatically include the changes made. 
+LIFT includes predefined options for vehicles, chargers and other assumptions. Those can be found in the JSON files located in ```lift/data/*```.
+To change those predefined values or create a new type of charger or vehicle modify or add a new entry to the JSON files.
+If LIFT is installed in editable mode, the frontend will automatically include the changes made.
+If a new type of vehicle is added, providing an according mobility CSV files in ```lift/data/mobility/``` is required.
+This file has to be named as the new type of vehicle.
 
 ## Basic Usage - Scalable mode
 LIFT as being clearly divided into a frontend and backend also features the option to only use the backend without the frontend.
-This allows for scalable multi-scenario investigations. For this, a ```lift.interfaces.Inputs``` instance has to be created and passed to ```lift.backend.backend.run_backend()```.
-An example for a single scenario is given in ```scripts/run.py```.
+This allows for scalable multi-scenario investigations.
+An example for a single scenario is given in ```scripts/run_lift.ipynb```.
