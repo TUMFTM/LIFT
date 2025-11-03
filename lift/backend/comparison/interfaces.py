@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 
 
-from lift.backend.economics.interfaces import PhaseResult
-from lift.backend.simulation.interfaces import Coordinates
+import lift.backend.evaluation as eval
+import lift.backend.simulation as sim
 
 
 @dataclass
@@ -32,7 +32,7 @@ class ComparisonInvestComponent:
 
 @dataclass
 class ComparisonInputLocation:
-    coordinates: Coordinates = field(default_factory=Coordinates)
+    coordinates: sim.Coordinates = field(default_factory=sim.Coordinates)
     slp: str = "h0"
     consumption_yrl_wh: float = 10000000.0
 
@@ -118,8 +118,8 @@ class ComparisonInput:
 
 @dataclass
 class ComparisonResult:
-    baseline: PhaseResult
-    expansion: PhaseResult
+    baseline: eval.PhaseResult
+    expansion: eval.PhaseResult
 
     @property
     def npc_delta(self) -> float:

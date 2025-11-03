@@ -5,7 +5,7 @@ from typing import Literal, Self
 import numpy as np
 import pandas as pd
 
-from lift.backend.simulation.interfaces import SimResults, Coordinates
+import lift.backend.simulation as sim
 
 
 class PhaseInputBase(ABC):
@@ -82,7 +82,7 @@ class PhaseInputInvestComponent(PhaseInputBase):
 
 @dataclass
 class PhaseInputLocation(PhaseInputBase):
-    coordinates: Coordinates = field(default_factory=Coordinates)
+    coordinates: sim.Coordinates = field(default_factory=sim.Coordinates)
     slp: Literal["H0"] = "h0"  # ToDo: fix this
     consumption_yrl_wh: float = 3e6  # ToDo: fix this
     grid: PhaseInputInvestComponent = field(default_factory=lambda: PhaseInputInvestComponent())
@@ -193,7 +193,7 @@ class PhaseInputChargingInfrastructure(PhaseInputBase):
 
 @dataclass
 class PhaseResult:
-    simulation: SimResults = field(default_factory=SimResults)
+    simulation: sim.SimResults = field(default_factory=sim.SimResults)
     self_sufficiency: float = (
         0.0  # share of energy demand (fleet + site) which is satisfied by the PV (produced - fed in)
     )

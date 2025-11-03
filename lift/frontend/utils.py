@@ -3,11 +3,9 @@ from __future__ import annotations
 import importlib.metadata
 import importlib.resources as resources
 import json
-from typing import Any, Literal
+from typing import Any
 
 import streamlit as st
-
-from lift.utils import safe_cache_data
 
 
 def _flatten_dict(d: dict[str, Any], sep: str = ".", _parent_key: str | None = None) -> dict[str, Any]:
@@ -96,7 +94,7 @@ def read_json_from_package_data(resource: str, package: str = "lift.data") -> di
         raise FileNotFoundError(f'Specified resource "{resource}" does not exist in package "{package}".')
 
 
-@safe_cache_data
+@st.cache_data
 def _load_language_from_json(language: str) -> dict[str, str]:
     """
     Load and flatten a language JSON file from the package resources.

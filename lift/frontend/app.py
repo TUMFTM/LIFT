@@ -8,7 +8,7 @@ import streamlit as st
 # Is automatically deleted after import
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
-from lift.backend.comparison import backend
+from lift.backend.comparison.comparison import run_comparison
 
 from lift.backend.simulation.interfaces import GridPowerExceededError, SOCError
 
@@ -76,7 +76,7 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = backend.run_comparison(comparison_input=settings)
+            results = run_comparison(comparison_input=settings)
             display_results(results)
 
         except GridPowerExceededError as e:

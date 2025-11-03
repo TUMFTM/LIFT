@@ -2,18 +2,11 @@ from typing import Literal
 
 import numpy as np
 
-from lift.utils import safe_cache_data
+from lift.backend.utils import safe_cache_data
 
-from lift.backend.simulation.simulation import simulate
+import lift.backend.simulation as sim
 
-from lift.backend.simulation.interfaces import (
-    SimInputSettings,
-    SimInputLocation,
-    SimInputSubfleet,
-    SimInputChargingInfrastructure,
-)
-
-from lift.backend.economics.interfaces import (
+from .interfaces import (
     PhaseInputEconomics,
     PhaseInputLocation,
     PhaseInputSubfleet,
@@ -40,17 +33,17 @@ def _calc_discount_factors(
     return 1 / (q ** (periods - exp))
 
 
-def calc_phase_results(
+def evaluate(
     location: PhaseInputLocation,
     economics: PhaseInputEconomics,
     subfleets: dict[str, PhaseInputSubfleet],
     charging_infrastructure: PhaseInputChargingInfrastructure,
 ) -> PhaseResult:
-    result_sim = simulate(
-        settings=SimInputSettings.from_phase_input(economics),
-        location=SimInputLocation.from_phase_input(location),
-        subfleets={sf.name: SimInputSubfleet.from_phase_input(sf) for sf in subfleets.values()},
-        charging_infrastructure=SimInputChargingInfrastructure.from_phase_input(charging_infrastructure),
+    result_sim = sim.simulate(
+        settings=sim.SimInputSettings.from_phase_input(economics),
+        location=sim.SimInputLocation.from_phase_input(location),
+        subfleets={sf.name: sim.SimInputSubfleet.from_phase_input(sf) for sf in subfleets.values()},
+        charging_infrastructure=sim.SimInputChargingInfrastructure.from_phase_input(charging_infrastructure),
     )
 
     period_eco = economics.period_eco
@@ -213,13 +206,3 @@ def calc_phase_results(
         cashflow_dis=cashflow_dis,
         emissions=emissions,
     )
-
-
-if __name__ == "__main__":
-    results = calc_phase_results(
-        location=PhaseInputLocation(),
-        economics=PhaseInputEconomics(),
-        subfleets={"hlt": PhaseInputSubfleet()},
-        charging_infrastructure=PhaseInputChargingInfrastructure(),
-    )
-    pass

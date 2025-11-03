@@ -18,7 +18,7 @@ from .interfaces import (
     Coordinates,
 )
 
-from lift.utils import safe_cache_data
+from lift.backend.utils import safe_cache_data
 
 EPS = 1e-8  # Small epsilon value for numerical stability in calculations
 

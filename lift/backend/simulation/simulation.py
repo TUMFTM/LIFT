@@ -1,7 +1,6 @@
 import numpy as np
-import pandas as pd
 
-from lift.backend.simulation.blocks import (
+from .blocks import (
     FixedDemand,
     Fleet,
     GridConnection,
@@ -9,16 +8,15 @@ from lift.backend.simulation.blocks import (
     StationaryStorage,
 )
 
-from lift.backend.simulation.interfaces import (
+from .interfaces import (
     SimInputSettings,
     SimInputLocation,
     SimInputSubfleet,
-    SimInputCharger,
     SimInputChargingInfrastructure,
     SimResults,
 )
 
-from lift.utils import safe_cache_data
+from lift.backend.utils import safe_cache_data
 
 
 @safe_cache_data
@@ -88,25 +86,3 @@ def simulate(
         energy_fleet_route_wh=fleet.energy_route_wh,
         dist_km=dist_km,
     )
-
-
-if __name__ == "__main__":
-    results = simulate(
-        settings=SimInputSettings(
-            period_sim=pd.Timedelta(days=365),
-            start_sim=pd.Timestamp("2023-01-01 00:00", tz="Europe/Berlin"),
-            freq_sim=pd.Timedelta(hours=1),
-            freq_hours=1.0,
-            dti=pd.date_range(
-                start=pd.Timestamp("2023-01-01 00:00", tz="Europe/Berlin"),
-                end=pd.Timestamp("2023-01-01 00:00", tz="Europe/Berlin") + pd.Timedelta(days=365),
-                freq=pd.Timedelta(hours=1),
-                tz="Europe/Berlin",
-                inclusive="left",
-            ),
-        ),
-        location=SimInputLocation(),
-        subfleets={"hlt": SimInputSubfleet()},
-        chargers={"ac": SimInputCharger()},
-    )
-    pass
