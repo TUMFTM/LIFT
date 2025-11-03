@@ -89,68 +89,68 @@
     "title": "LIFT - Logistics Infrastructure & Fleet Transformation",
     "name_baseline": "Baseline",
     "name_expansion": "Expansion",
-    "name_scenario": "Szenario",
+    "name_scenario": "Scenario",
     "kpi_diagrams": {
       "costs": {
-        "title": "Kosten",
-        "axis": "Gesamtkosten"
+        "title": "Costs",
+        "axis": "Total Costs"
       },
       "emissions": {
-        "title": "CO₂-Emissionen",
-        "axis": "CO₂-Emissionen"
+        "title": "CO₂ Emissions",
+        "axis": "CO₂ Emissions"
       },
       "self_consumption": {
-        "title": "Eigenverbrauchsquote",
-        "axis": "Eigenverbrauchsquote"
+        "title": "Self Consumption Rate",
+        "axis": "Self Consumption Rate"
       },
       "self_sufficiency": {
-        "title": "Autarkiegrad",
-        "axis": "Autarkiegrad"
+        "title": "Self Sufficiency Rate",
+        "axis": "Self Sufficiency Rate"
       },
       "home_charging": {
-        "title": "Heim-Laden",
-        "axis": "Anteil am Depot geladener Energie"
+        "title": "Home Charging",
+        "axis": "Share of Energy Charged at the Depot"
       }
     },
     "cost_diagram": {
-      "title": "Gesamtkosten",
-      "xaxis": "Jahr",
-      "yaxis": "Kumulierte, diskontierte Kosten",
+      "title": "Total costs",
+      "xaxis": "Year",
+      "yaxis": "Cumulative Discounted Costs",
       "paybackperiod": {
-        "title": "Amortisationsdauer",
-        "years": "Jahre",
-        "negative_result": "Investition amortisiert sich nicht."
+        "title": "Payback Period",
+        "years": "years",
+        "negative_result": "Investment does not pay off."
       },
       "saving": {
-        "title": "Kosteneinsparung",
-        "after": "nach",
-        "years": "Jahren"
+        "title": "Cost Reduction",
+        "after": "after",
+        "years": "years"
       }
     },
     "co2_diagram": {
-      "title": "CO₂-Emissionen",
-      "expander": "Analyse CO₂-Emissionen",
-      "xaxis": "Jahr",
-      "yaxis": "Kumulierte CO₂-Emissionen",
+      "title": "CO₂ Emissions",
+      "expander": "Analysis CO₂ Emissions",
+      "xaxis": "Year",
+      "yaxis": "Cumulative CO₂ Emissions",
       "paybackperiod": {
-        "title": "CO₂-Paritätsdauer",
-        "years": "Jahre",
-        "negative_result": "Investition amortisiert sich nicht"
+        "title": "CO₂ Payback Period",
+        "years": "Years",
+        "negative_result": "Investment does not pay off."
       },
       "saving": {
-        "title": "CO₂-Einsparung",
-        "after": "nach",
-        "years": "Jahren"
+        "title": "CO₂ Reduction",
+        "after": "after",
+        "years": "years"
       }
     },
     "empty": {
-      "manual1": "Modellieren Sie Ihren Standort und Ihre Flotte sowie den geplanten Ausbau Ihrer Infrastruktur in der Seitenleiste.  \nKlicken Sie anschließend auf ",
-      "manual2": ", um die Transformation Ihres Standorts zu analysieren."
+      "manual1": "Model your site and fleet as well as the planned expansion of your infrastructure in the sidebar  \nNext, click on ",
+      "manual2": ", to analyse the transformation of your site."
     },
     "errors": {
-      "grid": "test",
-      "soc": "test",
-      "undefined": "test"
+      "grid": "**Grid Connection Error**  \n**The grid connection cannot provide the required power**  \n-> Occurring peak loads can be met by a larger grid connection or by using a PV system and stationary storage.  \n  \nInternal Error:",
+      "soc": "**Charge Level Error**  \n**The charge level of a vehicle is insufficient for the intended tour.**  \n-> This can be solved by increasing the charging power (minimum of vehicle and charger power), increasing the number of chargers, or using a larger grid connection..  \n  \nInternal Error:",
+      "undefined": "**Computation Error**  \nPlease contact the tool's administrators. Please provide the parameters used and the  \nerror message displayed below.  \n  \nInternal Error:"
     }
   },
   "footer": {

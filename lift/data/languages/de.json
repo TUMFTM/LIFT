@@ -137,7 +137,7 @@
       "paybackperiod": {
         "title": "CO₂-Paritätsdauer",
         "years": "Jahre",
-        "negative_result": "Investition amortisiert sich nicht"
+        "negative_result": "Investition amortisiert sich nicht."
       },
       "saving": {
         "title": "CO₂-Einsparung",
