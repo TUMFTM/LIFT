@@ -17,23 +17,47 @@
         "title": "Energiesystem",
         "demand": {
           "title": "Stromverbrauch Standort",
-          "slp": "Lastprofil",
-          "consumption": "Jahresstromverbrauch"
+          "slp": {
+            "label": "Lastprofil",
+            "help": "None"
+          },
+          "consumption": {
+            "label": "Jahresstromverbrauch",
+            "help": "XXX"
+          }
         },
         "grid": {
           "title": "Netzanschluss",
-          "existing": "Vorhanden",
-          "expansion": "Zusätzlich"
+          "existing": {
+            "label": "Vorhanden",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Zusätzlich",
+            "help": "XXX"
+          }
         },
         "pv": {
           "title": "PV-Anlage",
-          "existing": "Vorhanden",
-          "expansion": "Zusätzlich"
+          "existing": {
+            "label": "Vorhanden",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Zusätzlich",
+            "help": "XXX"
+          }
         },
         "ess": {
           "title": "Stationärspeicher",
-          "existing": "Vorhanden",
-          "expansion": "Zusätzlich"
+          "existing": {
+            "label": "Vorhanden",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Zusätzlich",
+            "help": "XXX"
+          }
         }
       },
       "economics": {

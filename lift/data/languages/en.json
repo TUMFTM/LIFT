@@ -17,23 +17,47 @@
         "title": "Energy System",
         "demand": {
           "title": "Electricity Site Demand",
-          "slp": "Load Profile",
-          "consumption": "Annual Consumption"
+          "slp": {
+            "label": "Load Profile",
+            "help": "None"
+          },
+          "consumption": {
+            "label": "Annual Consumption",
+            "help": "XX"
+          }
         },
         "grid": {
           "title": "Grid Connection",
-          "existing": "Existing",
-          "expansion": "Additional"
+          "existing": {
+            "label": "Existing",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Additional",
+            "help": "XXXX"
+          }
         },
         "pv": {
           "title": "PV Array",
-          "existing": "Existing",
-          "expansion": "Additional"
+          "existing": {
+            "label": "Existing",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Additional",
+            "help": "XXXX"
+          }
         },
         "ess": {
           "title": "Stationary Storage",
-          "existing": "Existing",
-          "expansion": "Additional"
+          "existing": {
+            "label": "Existing",
+            "help": "None"
+          },
+          "expansion": {
+            "label": "Additional",
+            "help": "XXXX"
+          }
         }
       },
       "economics": {

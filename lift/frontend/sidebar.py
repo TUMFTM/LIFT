@@ -78,11 +78,15 @@ def _get_input_location() -> ComparisonInputLocation:
         st.markdown(f"**{get_label('sidebar.general.energy_system.demand.title')}**")
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         slp = DEF_DEMAND.settings_dem_profile.get_streamlit_element(
-            label=get_label("sidebar.general.energy_system.demand.slp"), key="slp", domain=col1
+            label=get_label("sidebar.general.energy_system.demand.slp.label"),
+            help_msg=get_label("sidebar.general.energy_system.demand.slp.help"),
+            key="slp",
+            domain=col1,
         ).lower()
 
         consumption_yrl_wh = DEF_DEMAND.settings_dem_yr.get_streamlit_element(
-            label=f"{get_label('sidebar.general.energy_system.demand.consumption')} (MWh)",
+            label=f"{get_label('sidebar.general.energy_system.demand.consumption.label')} (MWh)",
+            help_msg=get_label("sidebar.general.energy_system.demand.consumption.help"),
             key="consumption_yrl_wh",
             domain=col2,
         )
@@ -95,12 +99,14 @@ def _get_input_location() -> ComparisonInputLocation:
         grid = ComparisonInvestComponent(
             capacity=ExistExpansionValue(
                 preexisting=DEF_GRID.settings_preexisting.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.grid.existing')} (kW)",
+                    label=f"{get_label('sidebar.general.energy_system.grid.existing.label')} (kW)",
+                    help_msg=get_label("sidebar.general.energy_system.grid.existing.help"),
                     key="grid_preexisting",
                     domain=col1,
                 ),
                 expansion=DEF_GRID.settings_expansion.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.grid.expansion')} (kW)",
+                    label=f"{get_label('sidebar.general.energy_system.grid.expansion.label')} (kW)",
+                    help_msg=get_label("sidebar.general.energy_system.grid.expansion.help"),
                     key="grid_expansion",
                     domain=col2,
                 ),
@@ -115,12 +121,14 @@ def _get_input_location() -> ComparisonInputLocation:
         pv = ComparisonInvestComponent(
             capacity=ExistExpansionValue(
                 preexisting=DEF_PV.settings_preexisting.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.pv.existing')} (kWp)",
+                    label=f"{get_label('sidebar.general.energy_system.pv.existing.label')} (kWp)",
+                    help_msg=get_label("sidebar.general.energy_system.pv.existing.help"),
                     key="pv_preexisting",
                     domain=col1,
                 ),
                 expansion=DEF_PV.settings_expansion.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.pv.expansion')} (kWp)",
+                    label=f"{get_label('sidebar.general.energy_system.pv.expansion.label')} (kWp)",
+                    help_msg=get_label("sidebar.general.energy_system.pv.expansion.help"),
                     key="pv_expansion",
                     domain=col2,
                 ),
@@ -135,12 +143,14 @@ def _get_input_location() -> ComparisonInputLocation:
         ess = ComparisonInvestComponent(
             capacity=ExistExpansionValue(
                 preexisting=DEF_ESS.settings_preexisting.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.ess.existing')} (kWh)",
+                    label=f"{get_label('sidebar.general.energy_system.ess.existing.label')} (kWh)",
+                    help_msg=get_label("sidebar.general.energy_system.ess.existing.help"),
                     key="ess_preexisting",
                     domain=col1,
                 ),
                 expansion=DEF_ESS.settings_expansion.get_streamlit_element(
-                    label=f"{get_label('sidebar.general.energy_system.ess.expansion')} (kWh)",
+                    label=f"{get_label('sidebar.general.energy_system.ess.expansion.label')} (kWh)",
+                    help_msg=get_label("sidebar.general.energy_system.ess.expansion.help"),
                     key="ess_expansion",
                     domain=col2,
                 ),
