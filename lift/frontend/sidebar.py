@@ -162,48 +162,62 @@ def _get_input_economic() -> ComparisonInputEconomics:
     with st.sidebar.expander(label=f"**{get_label('sidebar.general.economics.title')}**", icon="💶"):
         return ComparisonInputEconomics(
             discount_rate=DEF_ECONOMICS.settings_discount_rate.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.discount')} (%)",
+                label=f"{get_label('sidebar.general.economics.discount.label')} (%)",
+                help_msg=get_label("sidebar.general.economics.discount.help"),
                 key="eco_discount_rate",
                 domain=st,
             ),
             fix_cost_construction=DEF_ECONOMICS.settings_fix_cost_construction.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.fixcost')} (EUR)",
+                label=f"{get_label('sidebar.general.economics.fixcost.label')} (EUR)",
+                help_msg=get_label("sidebar.general.economics.fixcost.help"),
                 key="eco_fix_cost_construction",
                 domain=st,
             ),
             opex_spec_grid_buy=DEF_ECONOMICS.settings_opex_spec_grid_buy.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.opexbuy')} (EUR/kWh)",
+                label=f"{get_label('sidebar.general.economics.opexbuy.label')} (EUR/kWh)",
+                help_msg=get_label("sidebar.general.economics.opexbuy.help"),
                 key="eco_opex_spec_grid_buy",
                 domain=st,
             ),
             opex_spec_grid_sell=DEF_ECONOMICS.settings_opex_spec_grid_sell.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.opexfeedin')} (EUR/kWh)",
+                label=f"{get_label('sidebar.general.economics.opexfeedin.label')} (EUR/kWh)",
+                help_msg=get_label("sidebar.general.economics.opexfeedin.help"),
                 key="eco_opex_spec_grid_sell",
                 domain=st,
             ),
             opex_spec_grid_peak=DEF_ECONOMICS.settings_opex_spec_grid_peak.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.opexpeakpower')} (EUR/kWp)",
+                label=f"{get_label('sidebar.general.economics.opexpeakpower.label')} (EUR/kWp)",
+                help_msg=get_label("sidebar.general.economics.opexpeakpower.help"),
                 key="eco_opex_spec_grid_peak",
                 domain=st,
             ),
             opex_spec_route_charging=DEF_ECONOMICS.settings_opex_spec_route_charging.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.opexonroute')} (EUR/kWh)",
+                label=f"{get_label('sidebar.general.economics.opexonroute.label')} (EUR/kWh)",
+                help_msg=get_label("sidebar.general.economics.opexonroute.help"),
                 key="eco_opex_spec_route_charging",
                 domain=st,
             ),
             opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.opexfuel')} (EUR/l)", key="eco_opex_fuel", domain=st
+                label=f"{get_label('sidebar.general.economics.opexfuel.label')} (EUR/l)",
+                help_msg=get_label("sidebar.general.economics.opexfuel.help"),
+                key="eco_opex_fuel",
+                domain=st,
             ),
             insurance_frac=DEF_ECONOMICS.settings_insurance_frac.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.insurance')}", key="eco_insurance_frac", domain=st
+                label=f"{get_label('sidebar.general.economics.insurance.label')}",
+                help_msg=get_label("sidebar.general.economics.insurance.help"),
+                key="eco_insurance_frac",
+                domain=st,
             ),
             salvage_bev_frac=DEF_ECONOMICS.settings_salvage_bev_frac.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.salvagebev')}",
+                label=f"{get_label('sidebar.general.economics.salvagebev.label')}",
+                help_msg=get_label("sidebar.general.economics.salvagebev.help"),
                 key="eco_salvage_bev_frac",
                 domain=st,
             ),
             salvage_icev_frac=DEF_ECONOMICS.settings_salvage_icev_frac.get_streamlit_element(
-                label=f"{get_label('sidebar.general.economics.salvageicev')}",
+                label=f"{get_label('sidebar.general.economics.salvageicev.label')}",
+                help_msg=get_label("sidebar.general.economics.salvageicev.help"),
                 key="eco_salvage_icev_frac",
                 domain=st,
             ),

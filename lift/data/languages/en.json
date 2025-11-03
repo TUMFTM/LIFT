@@ -38,16 +38,46 @@
       },
       "economics": {
         "title": "Economic Parameters",
-        "discount": "WACC",
-        "fixcost": "Fix Expansion Costs",
-        "opexbuy": "Energy tariff",
-        "opexfeedin": "Feed-in tariff renewable",
-        "opexpeakpower": "Power tariff",
-        "opexonroute": "On-Route Charging Tariff",
-        "opexfuel": "Fuel Costs",
-        "insurance": "Insurance (%*Anschaffungspreis)",
-        "salvagebev": "Salvage Value BEV (%) (Ignored)",
-        "salvageicev": "Salvage Value ICEV (%) (Ignored)"
+        "discount": {
+          "label": "WACC",
+          "help": "This is the help message for this parameter"
+        },
+        "fixcost": {
+          "label": "Fix Expansion Costs",
+          "help": "This is the help message for this parameter"
+        },
+        "opexbuy": {
+          "label": "Energy tariff",
+          "help": "This is the help message for this parameter"
+        },
+        "opexfeedin": {
+          "label": "Feed-in tariff renewable",
+          "help": "This is the help message for this parameter"
+        },
+        "opexpeakpower": {
+          "label": "Power tariff",
+          "help": "This is the help message for this parameter"
+        },
+        "opexonroute": {
+          "label": "On-Route Charging Tariff",
+          "help": "This is the help message for this parameter"
+        },
+        "opexfuel": {
+          "label": "Fuel Costs",
+          "help": "This is the help message for this parameter"
+        },
+        "insurance": {
+          "label": "Insurance (%*Anschaffungspreis)",
+          "help": "This is the help message for this parameter"
+        },
+        "salvagebev": {
+          "label": "Salvage Value BEV (%) (Ignored)",
+          "help": "This is the help message for this parameter"
+        },
+        "salvageicev": {
+          "label": "Salvage Value ICEV (%) (Ignored)",
+          "help": "This is the help message for this parameter"
+        }
       }
     },
     "fleet": {

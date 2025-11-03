@@ -38,16 +38,46 @@
       },
       "economics": {
         "title": "Wirtschaftliche Parameter",
-        "discount": "Abzinsungsfaktor",
-        "fixcost": "Fixkosten Standortausbau",
-        "opexbuy": "Strombezugskosten",
-        "opexfeedin": "Einspeisevergütung",
-        "opexpeakpower": "Leistungspreis",
-        "opexonroute": "Energiekosten für On-Route Charging",
-        "opexfuel": "Dieselkosten",
-        "insurance": "Versicherung (%*Anschaffungspreis)",
-        "salvagebev": "Restwert BET (%) (In Berechnung noch unberücksichtigt)",
-        "salvageicev": "Restwert ICET (%) (In Berechnung noch unberücksichtigt)"
+        "discount": {
+          "label": "Abzinsungsfaktor",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "fixcost": {
+          "label": "Fixkosten Standortausbau",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "opexbuy": {
+          "label": "Strombezugskosten",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "opexfeedin": {
+          "label": "Einspeisevergütung",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "opexpeakpower": {
+          "label":"Leistungspreis",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "opexonroute": {
+          "label": "Energiekosten für On-Route Charging",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "opexfuel": {
+          "label": "Dieselkosten",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "insurance": {
+          "label": "Versicherung (%*Anschaffungspreis)",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "salvagebev": {
+          "label": "Restwert BET (%) (In Berechnung noch unberücksichtigt)",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        },
+        "salvageicev": {
+          "label": "Restwert ICET (%) (In Berechnung noch unberücksichtigt)",
+          "help": "Das ist der Hilfe-Text für den Parameter"
+        }
       }
     },
     "fleet": {
