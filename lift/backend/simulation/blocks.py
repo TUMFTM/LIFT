@@ -343,11 +343,6 @@ class Fleet(DemandBlock):
             # allocate charger
             if pwr_chg_site > 0:
                 chargers[fleet_unit.charger] -= 1
-
-            if pwr_available_w <= 0:
-                break
-            if sum(chargers.values()) <= 0:
-                break
         return pwr_chg_fleet_w
 
     @property
