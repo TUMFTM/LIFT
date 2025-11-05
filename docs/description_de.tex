@@ -1,0 +1,255 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{authblk}
+\usepackage[ngerman]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{geometry}
+
+% Set page margins
+\geometry{top=1in, bottom=1in, left=1in, right=1in}
+
+\title{LIFT\\Logistics Infrastructure \& Fleet Transformation}
+\author[1]{Brian Dietermann}
+\author[1]{Anna Paper}
+\author[1]{Philipp Rosner}
+
+\affil[1]{Lehrstuhl für Fahrzeugtechnik, Technische Universität München}
+\date{\today}
+
+\begin{document}
+
+% Title page
+\maketitle
+
+% Abstract
+\begin{abstract}
+Das Softwaretool LIFT dient zur Unterstützung des Planungsprozesses der Elektrifizierung von Flotten sowie des begleitenden Ausbaus des Energiesystems am Flottendepot.
+Über eine grafische, webbasierte Benutzeroberfläche lassen sich der Ist-Zustand von Flotte und Depot sowie ein mögliches Elektrifizierungs- und Ausbauszenario definieren.
+Basierend auf einer Energiesystem-Zeitschrittsimulation berechnet LIFT techno-ökonomische Kennzahlen für beide Szenarien und vergleicht diese.
+Dadurch lassen sich ersten Erkenntnisse über den Effekt der beabsichtigten Maßnahmen treffen und bereits eine erste Planung der Depot-Erweiterung ableiten.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Ausgangslage und Zielsetzung}
+\label{sec:target}
+Das Softwaretool LIFT wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München entwickelt.
+LIFT soll die Elektrifizierung von Flotten und dem begleitenden Ausbau des Depot-Energiesystems inklusive Ladeinfrastruktur mit techno-ökonomischen Kennwerten unterstützen.
+Ziel des Tools ist es hierbei, bereits in der frühen Planungsphase Effekte beabsichtigter Maßnahmen abschätzen zu können und dadurch eine Entscheidungsgrundlage für den weiteren Planungsprozess zu schaffen.
+
+Bereits existierende, optimierungsbasierte Tools verfügen verglichen mit LIFT über eine realistischere Modellierung der Gegebenheiten und durch die integrierte Optimierung eine kostenoptimale Energiesystem-Auslegung.
+Die Anwendung solcher Tools, die meist nur über ein Commandline-Interface und keine grafische Benutzeroberfläche verfügen, wird zusätzlich durch die dafür benötigte Datengrundlage, die oft erst aufwändig erhoben werden muss, das für die Parametrierung und Interpretation der Ergebnisse nötige Expertenwissen, sowie die lange Rechenzeit erschwert.
+Für eine initiale Abschätzung, ob und wenn ja, welche Elektrifizierungs- und Ausbaustrategie Sinn ergibt, sind solche Tools somit nicht geeignet.
+Ihr Anwendungsbereich liegt eher in der Detail-Planungsphase eines Elektrifizierungs- und Ausbauprojektes statt in der initialen Bewertung.
+LIFT soll diese Lücke schließen und bei der initialen Bewertung einer möglichen Elektrifizierung unterstützen.
+Dieser Schritt erfolgt zumeist von einem Flottenbetreiber noch vor dem Kontakt mit einem externen Planungs- und Umsetzungspartner oder in einem ersten Gespräch gemeinsam mit dem Partner.
+Dazu muss das Tool im Gegensatz zu den zuvor beschriebenen Optimierungstools nur auf wenigen Eingabeparametern operieren, deren Parametrierung nur begrenztes Expertenwissen erfordert.
+Für einen erfolgreichen Einsatz im direkten Planungsgespräch ist außerdem eine schnelle Berechnung der Ergebnisse sowie eine intuitiv verständliche, grafische Aufbereitung dieser nötig.
+
+Dazu ermöglicht LIFT durch entsprechende Parametrierung die Definition der Ist-Situation (\textit{Baseline} Szenario) von Depot und Flotte sowie eines möglichen Elektrifizierungs-/ Erweiterungsszenario (\textit{Expansion} Szenario).
+Für beide Szenarien wird mit den definierten Parametern dann eine Zeitschrittsimulation des Depots und der Flotte ausgeführt, auf deren Grundlage dann alle weiteren techno-ökonomischen Kennzahlen und der Vergleich der beiden Szenarien erstellt wird.
+
+Mit diesen Ergebnissen kann dann die Entscheidung, ob eine weitere Planung der Flottenelektrifizierung sowie des begleitenden Ausbaus des Energiesystems und der Ladeinfrastruktur am Depot erfolgen soll, getroffen werden.
+Um die zuvor beschriebenen Anforderungen erfüllen zu können, arbeitet LIFT mit Vereinfachungen und Annahmen, die in einer frühen Planungsphase der Elektrifizierung für eine generelle Bewertung noch zutreffend sind.
+Für eine weitere, detaillierte Planung und Auslegung des Energiesystems sind die getroffenen Vereinfachungen jedoch nicht mehr zielführend, da dadurch die Ergebnisse zu stark beeinflusst werden.
+Hierfür wird, wie bereits zuvor vorgestellt und beschrieben, die Verwendung eines detaillierteren Tools empfohlen, das auf einer umfangreicheren Datengrundlage basiert und somit realitätsnähere Ergebnisse liefert, die dann direkt in die Planung einfließen können.
+
+\section{Verwendung und grafische Benutzeroberfläche}
+\label{sec:gui}
+LIFT ist ein in Python programmiertes Tool, das optional über eine grafische Benutzeroberfläche (GUI) verfügt.
+Diese basiert auf der streamlit-Bibliothek und kann über einen Webbrowser aufgerufen werden.
+Die Installation von LIFT, entweder auf dem eigenen Computer oder auf einem Server ist im \texttt{README} des Software-Repository's beschrieben.
+Darin wird ebenfalls gezeigt, wie der Berechnungsalgorithmus von LIFT losgelöst von der GUI für eine skalierbare Bewertung multipler Szenarien eingesetzt werden kann.
+Dieses Dokument beschränkt sich jedoch auf die Verwendung von LIFT über die integrierte und in \autoref{fig:gui} dargestellte GUI\@.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1.0\textwidth]{gui}
+    \caption{Die GUI von LIFT in Version 0.9.1a1 mit der Seitenleiste zur Eingabe der Szenario-Parameter auf der linken Seite und der Darstellung von exemplarischen Ergebnissen im Hauptbereich.}
+    \label{fig:gui}
+\end{figure}
+
+Diese ist in zwei Bereiche aufgeteilt.
+Die linke Seitenleiste dient zur Definition der Eingabeparameter für die anschließenden Berechnungen.
+Hierbei wird nach Parametern für das Energiesystem des Standorts, wirtschaftlichen Eingangsgrößen und den Definitionen der Flotte und deren Ladeinfrastruktur unterschieden.
+Für die einzelnen Eingabeparameter stehen in der GUI Hilfetexte zur Verfügung, in denen der jeweilige Parameter genauer erläutert wird.
+Der Hauptbereich der GUI zeigt nach erfolgreicher Berechnung die Ergebnisse an.
+Dabei werden die berechneten Kennwerte jeweils für die beiden definierten Szenarien verglichen, um so intuitiv Rückschlüsse auf die Effekte der untersuchten Maßnahmen zu erlauben.
+Die den Ergebnissen zugrundeliegende Methodik wird im weiteren Verlauf in \autoref{sec:methods} dieses Dokuments im Detail beschrieben.
+Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfetexte vorhanden.
+Die GUI ist in den Sprachen Deutsch und Englisch verfügbar.
+
+
+\section{Methodik}
+\label{sec:methods}
+
+Dieses Kapitel beschreibt die dem Tool LIFT zugrundeliegende Methodik.
+Wie bereits beschrieben, basiert LIFT auf einigen Annahmen, die sich in methodische Annahmen und quantitative Annahmen unterteilen lassen.
+Als methodische Annahmen werden inhärente Bestandteile der zugrundeliegenden Berechnungsmethodik bezeichnet.
+Diese werden in diesem Kapitel erläutert.
+Quantitative Annahmen beschreiben lediglich die Parametrierung des Berechnungsalgorithmus' und können bei einer skalierten Nutzung desselben nutzerspezifisch angepasst werden.
+Sie sind somit nur bei einer Benutzung von LIFT durch die GUI zutreffend und separat in \autoref{sec:defaultvalues} aufgeführt.
+
+\subsection{Komponentenübersicht}
+\label{subsec:components}
+
+Das von LIFT abgebildete Energiesystem besteht aus verschiedenen Komponenten, von denen bis auf Ladeinfrastruktur und Fahrzeuge genau ein Element in definierbarer Größe vorhanden ist.
+Im Energiesystem von LIFT existieren folgende Komponententypen:
+\begin{itemize}
+    \item \textbf{Netzanschluss\\}
+    Der Netzanschluss stellt die Verbindung des lokalen Energiesystems zum öffentlichen Stromnetz dar und dient somit sowohl als Energiequelle (Bezug aus dem Netz) als auch -senke (Einspeisung in das Netz).
+    \item \textbf{PV-Anlage\\}
+    Die PV-Anlage dient zur Erzeugung lokaler erneuerbarer Energie und wird somit als Energiequelle modelliert.
+    \item \textbf{Stationärspeicher\\}
+    Im Stationärspeicher stellt einen stationären batterieelektrischen Speicher dar.
+    \item \textbf{Standortverbrauch\\}
+    Der Standortverbrauch beinhaltet den Verbrauch elektrischer Energie des Standorts (Gebäude, Werkstätten sowie sonstige Infrastruktur) exklusive der Energie für Ladeinfrastruktur \text{bzw.} Mobilität und wird im Energiesystem als Energiesenke modelliert.
+    \item \textbf{Ladeinfrastruktur\\}
+    In LIFT können verschiedene Typen von Ladeinfrastruktur modelliert werden.
+    Von jedem Typen können eine unterschiedliche Anzahl Ladepunkte definiert werden.
+    \item \textbf{Flotte\\}
+    Eine Flotte setzt sich aus unterschiedlichen Subflotten zusammen, in der jeweils Fahrzeuge des gleichen Typs \test{bzw.} Nutzungsprofils zusammengefasst werden.
+    Innerhalb der gleichen Subflotte können sowohl konventionell als auch batterieelektrisch angetriebene Fahrzeuge definiert werden.
+    Jede Subflotte kann aus einer unterschiedlichen Anzahl Fahrzeuge bestehen.
+\end{itemize}
+
+\subsection{Zeitschrittsimulation}
+\label{subsec:sim}
+
+
+
+\section{Standardwerte}
+\label{sec:defaultvalues}
+
+\section{Inhaltsspeicher}
+\label{sec:contentstorage}
+
+Den Kern von LIFT stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots beginnend ab $T_{start}$ über einen Simulationszeitraum $T_{sim}$ mit einem Zeitschritt von $T_{step}$ simuliert.
+Basierend auf diesen Ergebnissen werden techno-ökonomische Kennzahlen für einen Projektzeitraum $T_{project}$ extrapoliert.
+
+Die einzelnen Komponenten des simulierten Energiesystems und die dafür berechneten Kosten und Emissionen werden im Folgenden aufgeschlüsselt:
+
+Standortverbrauch:
+Der Standortverbrauch modelliert den Energieverbrauch des Gebäudes und sonstiger Infrastruktur des Depots exklusive möglicherweise vorhandenen Ladepunkte.
+Für den Standortverbrauch werden skalierte Standardlastprofile des BDEW verwendet.
+Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
+Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
+
+Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen über die dafür bezogene Energie an.
+Diese Kosten und Emissionen werden
+
+Kosten:
+	- keine
+
+Emissionen:
+	- keine
+
+Netzanschluss:
+Der Netzanschluss wird in kW angegeben, da Blindleistung in der Simulation nicht berücksichtigt wird.
+
+Kosten:
+	- Investition (c_Grid, ls_Grid)
+	- Energiebezug (c_Grid,opex,buy, E_Grid,buy)
+	- Energieeinspeisung (c_Grid,opex,buy, E_Grid,buy)
+	- Spitzenlast (c_Grid,opex,peak, P_Grid,max)
+
+Emissionen:
+	- Investition (co2_Grid, ls_Grid)
+	- Energiebezug (co2_Grid,opex,buy, E_Grid,buy)
+
+
+PV-Anlage:
+Die potenzielle PV-Leistung wird für den angegebenen Standort und die optimale Ausrichtung einer nicht-beweglichen PV-Anlage von PVGIS für das Jahr 2023 abgerufen.
+Neuere Daten sind bei diesem Anbieter nicht verfügbar. Die Daten liegen in einem stündlichen Intervall vor.
+
+Kosten:
+	- Investition (c_PV,spec, ls_PV)
+
+Emissionen:
+	- Investition (co2_PV_spec, ls_PV)
+
+
+Stationärspeicher:
+Der Speicher wird mit einer Leistungslimitation von 0,5 C sowohl in Lade- als auch Entladerichtung betrieben. Bei einem 10 kWh Speicher entspricht das einer maximalen Leistung von 5 kW.
+
+Kosten:
+	- Investition (c_ESS_spec, ls_ESS)
+
+Emissionen:
+	- Investition (c_ESS_spec, ls_ESS)
+
+
+
+Ladeinfrastruktur:
+Die verfügbaren Ladepunkte werden gemäß der unter Flotte definierten Logik priorisiert.
+Das an einem Ladepunkt angeschlossene Fahrzeuge kann von Zeitschritt zu Zeitschritt variieren.
+Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement. Dieses kann entweder statisch oder dynamisch ausgelegt sein.
+Für große Simulationszeitschritte (>15 Minuten) verhält sich das statische Lastmanagement nicht realistisch.
+Grund hierfür ist die starke Glättung des Standortlastgangs, dessen Lastspitzen normalerweise maßgeblich zur Definition der maximalen Leistung des statischen Lastmanagements berücksichtigt werden.
+Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung. Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
+
+Kosten:
+	- Investition pro Ladestation (c_CHG, ls_CHG)
+
+Emissionen:
+	- Investition pro Ladestation (c_CHG, ls_CHG)
+
+Flotte:
+Eine Flotte besteht aus mehreren Subflotten, die jeweils Fahrzeuge des gleichen Typs beinhalten. Die Mobilitätsprofile einer Subflotte werden stochastisch gesamplet.
+Die maximale Ladeleistung eines Fahrzeugs berechnet sich aus dem Fahrzeugspezifischen Limit und dem Limit des für das Fahrzeug definierten Ladepunkts.
+Für jedes Fahrzeug wird zu jedem Zeitpunkt eine Flexibilitätszeit errechnet. Diese gibt an, in wie vielen Zeitschritten das Fahrzeug spätestmöglich anfangen muss zu laden, um die nächste Fahrt erfüllen zu können.
+Das Fahrzeug mit der geringsten Flexibilitätszeit erhält die höchste Priorität bei der Vergabe der Ladepunkte.
+Fahrzeuge, deren Ladezustand während einer Fahrt auf 0 fällt, werden auf der Fahrt nachgeladen, jedoch nur soweit, dass sie mit einem Ladezustand von exakt 0% wieder am Depot ankommen.
+
+Kosten:
+	- Investitionen pro Fahrzeug (c_FZG, ls_FZG)
+	-
+
+
+Wirkungsgrade sind in der Simulation nicht berücksichtigt.
+
+
+
+Ergebnisse dieser Simulation sind die folgenden Größen:
+
+Grid:
+ - aus dem Netz bezogene Energie
+ - in das Netz eingespeiste Energie
+ - Peakleistung der bezogenen Energie
+
+PV:
+ - Theoretisch mögliche PV-Energie
+ - Nicht-abgerufene PV-Energie
+
+Standortverbrauch:
+ - Benötigte Energie über den Simulationszeitraum
+
+Flotte:
+ - Summe der am Depot geladenen Energie
+ - Summe der nicht am Depot geladenen Energie
+ - Gefahrene Distanzen: aufgeschlüsselt nach Subflotte und Antriebsart (Elektrisch/Diesel)
+
+
+
+T_sim: 365 Tage
+T_step: 1 Stunde
+
+
+LIFT is based on a timestep simulation, which models and simulates the energies within the energy system for a specific timespan, usually set to one year.
+The energy system consists of
+- a grid connection
+- a PV array
+- a Stationary energy storage
+- Charging Infrastructure:
+	- LIFT can handle several types of chargers
+- Vehicles
+
+
+\section{References}
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
