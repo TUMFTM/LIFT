@@ -1,5 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{authblk}
 \usepackage[ngerman]{babel}
 \usepackage{graphicx}
@@ -7,6 +8,9 @@
 \usepackage{cite}
 \usepackage{todonotes}
 \usepackage{geometry}
+\usepackage{siunitx}
+\DeclareSIUnit{\peak}{\text{p}}
+\usepackage{eurosym}
 
 % Set page margins
 \geometry{top=1in, bottom=1in, left=1in, right=1in}
@@ -120,9 +124,25 @@ Im Energiesystem von LIFT existieren folgende Komponententypen:
 \subsection{Konzept}
 \label{subsec:concept}
 
-Den Kern von LIFT stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots beginnend ab $T_{start}$ über einen Simulationszeitraum $T_{sim}$ mit einem Zeitschritt von $T_{step}$ simuliert.
-Diese Simulation erzeugt technische Kennwerte des Energiesystems und der Flotte im Simulationszeitraum.
-Diese sind
+Den Kern von LIFT stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots simuliert.
+In \autoref{subsec:sim_calc} erfolgt eine detaillierte Beschreibung der Simulation der einzelnen Komponenten.
+Dabei wird sowohl auf die dabei getroffenen methodischen Annahmen und Vereinfachungen als auch die Berechnung der für die einzelnen Komponenten entstehenden Kosten und Emissionen eingegangen.
+
+Basierend darauf werden anschließend techno-ökonomische Kennzahlen berechnet, die für die Bewertung des Szenarios herangezogen werden können.
+Anschließend werden die Simulationsergebnisse und zuvor berechnete Kosten und Emissionen auf den Projektzeitraum $T_{prj}$, der den Simulationszeitraum üblicherweise deutlich übersteigt, extrapoliert.
+Der Ursprung der wirtschaftlichen und ökologischen Kennzahlen lässt sich in zwei Kategorien aufteilen: Investitionen und Betrieb.
+Da die Investitionskosten direkt von den Eingangsparametern abhängen, können diese unabhängig von der Zeitschrittsimulation für die einzelnen Komponenten berechnet werden.
+Die Betriebskosten der Komponenten ergeben sich jedoch erst durch die simulierten Energieflüsse und sind somit auf die Ergebnisse der Zeitschrittsimulation angewiesen.
+Im gegensatz zu den Kostenwerten erfolgt die Berechnung der technischen Kennzahlen des Systems auf der Ebene des Gesamtsystems und nicht komponentenspezifisch.
+Für die Berechnung der technischen Kennzahlen werden die aus der Simulation erhaltenen Energiewerte verwendet.
+In den folgenden Kapiteln wird zuerst die Berechnung der aggregierten technischen (\autoref{subsec:kpi_tech}), wirtschaftlichen (\autoref{subsec:kpi_econ}) und ökologischen (\autoref{subsec:kpi_ecol}) Kennzahlen aufgezeigt.
+
+\subsection{Zeitschrittsimulation und komponentenweise Kosten- und Emissionsberechnung}
+\label{subsec:sim_calc}
+
+Die in LIFT verwendete Zeitschrittsimulation simuliert die Energieflüsse im Energiesystem des Depots und der zugehörigen Flotte beginnend ab $T_{start}$ über einen Simulationszeitraum $T_{sim}$ mit einem Zeitschritt von $T_{step}$.
+Wirkungsgrade sind in der Simulation nicht berücksichtigt.
+Für die weitere Berechnung werden die folgenden Ergebnisse der Simulation herangezogen:
 \begin{itemize}
     \item die aus dem öffentlichen Netz bezogene ($E^{Netz}_{Bezug}$) und die ins öffentliche Netz eingespeiste Energie ($E^{Netz}_{Einspeisung}$)
     \item die Lastspitze der aus dem Netz bezogenen Energie ($P^{Netz}_{max}$)
@@ -133,16 +153,171 @@ Diese sind
     \item die von den Fahrzeugen zurückgelegten Distanzen aufgeteilt nach Subflotte und Antriebsart ($d^{f}_{a}$ mit Subflotte $f$ und Antriebsart (konventionell oder elektrisch) $a$)
 \end{itemize}
 
-Basierend auf diesen Ergebnissen werden anschließend techno-ökonomische Kennzahlen berechnet und für einen Projektzeitraum $T_{project}$, der den Simulationszeitraum üblicherweise übersteigt, extrapoliert.
+In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
+Dabei wird die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika abgebildet werden.
+Dazu zählen beispielsweise saisonale Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie.
+Wird LIFT nicht über die GUI verwendet, ist diese Annahme bei der Definition des Simulationszeitraums zu beachten.
 
-\todo[inline]{Beschreibung der Zeitsimulation und aller Komponenten inklusive der Annahmen und Kostenberechnungen einfügen}
+Die Zeitschrittsimulation selbst simuliert alle im Energiesystem vertretenen Komponenten.
+Die folgenden Abschnitte erklären detailliert die Annahmen, die für die einzelnen Komponenten getroffen wurden und wie für diese Komponenten Kosten und Emissionen berechnet werden.
+Dabei werden basierend auf der Simulation die jährlichen Betriebskosten berechnet und unabhängig von der Simulation die einmalig auftretenden Investitionskosten einer Komponente mit der vorgegebenen Größe.
+Das Vorgehen für die Berücksichtigung der Lebensdauer und von Ersatzinvestitionen ist für alle Komponenten identisch und wird in \autoref{subsec:kpi_econ} beschrieben.
+
+Für die Errichtung \text{bzw.} beim Kauf einer Komponente $k$ entstehen bis auf den Standortverbrauch sowohl Kosten $C^k_{Invest, einmalig}$ als auch Emissionen, jeweils in Abhängigkeit der Dimensionierung der Komponente $S^k$ sowie den spezifischen Kosten $c^k_{Invest}$ und Emissionen $co2^k_{Invest}$ pro Größeneinheit der Komponente.
+Sowohl die verursachten Kosten also auch Emissionen werden durch Multiplikation der spezifischen Kosten \text{bzw.} Emissionen mit der Dimensionierung der Komponente berechnet:
+\begin{equation}
+    Y^k_{Invest, einmalig} = S^k \cdot y^k_{Invest} \quad \text{mit } Y \in \{C, CO2\} \text{ und } y \in \{c, co2\}
+    \label{eq:capex_capem}
+\end{equation}
+
+\subsubsection{Standortverbrauch}
+\label{subsubsec:sitedemand}
+Der Standortverbrauch modelliert den Energieverbrauch des Gebäudes und sonstiger Infrastruktur des Depots exklusive möglicherweise vorhandenen Ladepunkte.
+Für den Standortverbrauch werden Standardlastprofile des BDEW verwendet, die auf den jährlichen Energieverbrauch des Standorts skaliert werden.
+Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
+Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
+Da die Zielsetzung von LIFT jedoch darin besteht, mit einer möglichst geringen Datengrundlage erste Ergebnisse zu erzielen, kann in diesem Schritt des Planungsprozesses mit Standardlastprofilen gearbeitet werden.
+In weiteren Planungsphasen ist davon jedoch abzuraten, um ein realistischeres Verhalten abbilden zu können.
+Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen durch die aus der PV-Anlage und über den Netzanschlusspunkt bezogene Energie an.
+Diese sind somit in den beiden genannten Komponenten abgebildet.
+
+\subsubsection{Netzanschluss}
+\label{subsubsec:grid}
+Die Dimensionierung des Netzanschlusses wird in kW angegeben, da Blindleistung in der Simulation nicht berücksichtigt wird.\\\\
+\textbf{Investitionskosten und -emissionen}\\
+Für die Errichtung des Netzanschlusspunktes mit der in der GUI definierten Größe $S^{Netz}$ entstehen sowohl Kosten $C^{Netz}_{Invest, einmalig}$ als auch Emissionen $CO2^{Netz}_{Invest, einmalig}$.
+Diese werden nach \autoref{eq:capex_capem} berechnet.
+Die angenommenen spezifischen Kosten $c^{Netz}_{Invest}$, spezifischen Emissionen $c^{PV}_{Invest}$ und die Lebensdauer $ls^{Netz}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+\textbf{Betriebskosten und -emissionen}\\
+In Abhängigkeit des Energiedurchsatzes in Bezugs- und Einspeiserichtung sowie der Spitzenlast fallen Betriebskosten für den Netzanschlusspunkt an:
+\begin{equation}
+    \begin{aligned}
+    C^{Netz}_{Betrieb, jrl} = & \, E^{Netz}_{Bezug} \cdot c^{Netz}_{Bezug} \\
+    & + E^{Netz}_{Einspeisung} \cdot c^{Netz}_{Einspeisung} \\
+    & + P^{Netz}_{max} \cdot c^{Netz}_{Spitzenlast}
+    \end{aligned}
+    \label{eq:opex_grid}
+\end{equation}
+Die spezifischen Kosten für den Bezug ($c^{Netz}_{Bezug}$ und die Einspeisung ($c^{Netz}_{Einspeisung}$ sowie die aufgetretene Spitzenlast ($c^{Netz}_{Spitzenlast}$ lassen sich über die GUI definieren.
+Die spezifischen Emissionen ($co2^{Netz}_{Bezug}$) hingegen sind als Annahme in der GUI hinterlegt und im Anhang aufgeführt.
+Für verkaufte Energie entstehen weder positive noch negative Emissionen.
+Die Betriebsemissionen berechnen sich analog zu \autoref{eq:opex_grid}:
+\begin{equation}
+    CO2^{Netz}_{Betrieb, jrl} = E^{Netz}_{Bezug} \cdot co2^{Netz}_{Bezug}
+    \label{eq:opem_grid}
+\end{equation}
+
+
+\subsubsection{PV-Anlage}
+\label{subsubsec:pv}
+Die potenzielle PV-Leistung wird für den angegebenen Standort und die optimale Ausrichtung einer nicht-beweglichen PV-Anlage in stündlicher Auflösung von PVGIS für das Jahr 2023 abgerufen.
+Neuere Daten oder Daten mit einer höheren zeitlichen Auflösung sind bei diesem Anbieter nicht verfügbar.\\\\
+\textbf{Investitionskosten und -emissionen}\\
+Für die Errichtung der PV-Anlage mit der in der GUI definierten Größe $S^{PV}$ entstehen sowohl Kosten $C^{PV}_{Invest, einmalig}$ als auch Emissionen $CO2^{PV}_{Invest, einmalig}$.
+Diese werden nach \autoref{eq:capex_capem} berechnet.
+Die angenommenen spezifischen Kosten $c^{PV}_{Invest}$, spezifischen Emissionen $c^{PV}_{Invest}$ und die Lebensdauer $ls^{PV}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+\textbf{Betriebskosten und -emissionen}\\
+Während des Betriebs entstehen weder Kosten noch Emissionen.
+
+\subsubsection{Stationärspeicher}
+\label{subsubsec:ess}
+Der Speicher wird mit einer Leistungslimitation von 0,5 C sowohl in Lade- als auch Entladerichtung betrieben.
+Dieser Wert entspricht gängigen Modellen für Stationärspeicher.
+Bei einem 10 kWh Speicher entspricht das einer maximalen Leistung von 5 kW.
+Die Betriebsstrategie des Speichers sieht eine sogenannte Nulllastregelung am Netzanschlusspunkt vor.
+Dabei versucht der Speicher im lokalen Netz überschüssige Energie, die durch die PV-Anlage erzeugt, aber nicht lokal verbraucht werden kann, einzuspeichern.
+Nur, wenn die maximale Ladeleistung des Speichers überschritten wird oder er aufgrund eines zu hohen Ladezustands keine weitere Energie einspeichern kann, wird die überschüssige Energie über den Netzanschlusspunkt ins öffentliche Stromnetz eingespeist.
+Sollte der Bedarf im lokalen Energiesystems des Depots nicht aus lokalen Quallen gedeckt werden können, wird zuerst der Speicher entladen, bevor zusätzliche Energie aus dem öffentlichen Netz bezogen wird.\\\\
+\textbf{Investitionskosten und -emissionen}\\
+Für die Errichtung des Stationärspeichers mit der in der GUI definierten Größe $S^{Speicher}$ entstehen sowohl Kosten $C^{Speicher}_{Invest, einmalig}$ als auch Emissionen $CO2^{Speicher}_{Invest, einmalig}$.
+Diese werden nach \autoref{eq:capex_capem} berechnet.
+Die angenommenen spezifischen Kosten $c^{Speicher}_{Invest}$, spezifischen Emissionen $c^{Speicher}_{Invest}$ und die Lebensdauer $ls^{Speicher}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+\textbf{Betriebskosten und -emissionen}\\
+Während des Betriebs entstehen weder Kosten noch Emissionen.
+
+
+\subsubsection{Ladeinfrastruktur}
+\label{subsubsec:ci}
+LIFT unterstützt unterschiedliche Typen von Ladeinfrastruktur.
+Die in der GUI vordefinierten Ladepunkttypen sind im \todo[inline]{Anhang} aufgeführt.
+Von jedem Ladepunkttyp können mehrere Ladepunkte existieren.
+Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement.
+Dieses kann entweder statisch oder dynamisch ausgelegt sein.
+Das statische Lastmanagement begrenzt in jedem Zeitschritt die für die gesamte Ladeinfrastruktur typübergreifend zur Verfügung stehende Ladeleistung auf einen in der GUI definierten Wert.
+Dieser wird normalerweise bestimmt, indem die Spitzenlast des Standortverbrauchs von der maximalen Leistung des Netzanschlusspunktes abgezogen wird.
+Für große Simulationszeitschritte ($>\SI{15}{\minute}$) verhält sich das statische Lastmanagement nicht realistisch.
+Grund hierfür ist die starke Glättung des Standortlastgangs, dessen Lastspitzen normalerweise maßgeblich zur Definition der maximalen Leistung des statischen Lastmanagements berücksichtigt werden.
+Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung.
+Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
+Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.\\\\
+\textbf{Investitionskosten und -emissionen}\\
+Für die Errichtung eines einzelnen Ladepunktes $n$ vom Typ $m$ entstehen die in der GUI definierten Kosten $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$.
+Zur Berechnung der Investitionskosten aller Ladepunkte eines Typs $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Ladepunkte desselben Typs aufsummiert.
+Eine Aggregation der verschiedenen Ladepunkttypen ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Typ keinen Sinn.
+Die bei der Herstellung eines Ladepunkts entstehenden Emissionen $CO2^{\text{Ladepunkt}, m n}_\text{Invest, einmalig}$ sind im \todo[inline]{Anhang} aufgeführt.
+Die Berechnung der Emissionen aller Ladepunkte eines Typs erfolgt analog zu den Kosten.\\\\
+\textbf{Betriebskosten und -emissionen}\\
+Während des Betriebs entstehen weder Kosten noch Emissionen, da die Energie vom lokalen Energiesystem bereitgestellt wird.
+
+
+\subsubsection{Flotte}
+\label{subsubsec:fleet}
+Eine Flotte besteht aus mehreren Subflotten, die jeweils Fahrzeuge des gleichen Typs beinhalten.
+Die Mobilitätsprofile einer Subflotte beinhalten eine Zeitreihe, in der die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
+Diese Profile werden stochastisch gesamplet.
+Die maximale Ladeleistung eines Fahrzeugs berechnet sich aus dem fahrzeugspezifischen Limit und dem Limit des für das Fahrzeug definierten Ladepunkts.
+Beide Werte lassen sich in der GUI einstellen.
+Je nach Konfiguration sind sowohl die Anzahl zur Verfügung stehender Ladepunkte als auch die im Zeitschritt zur Verfügung stehende Ladeleistung eine knappe Resource.
+Aus diesem Grund werden die Fahrzeuge priorisiert und erhalten gemäß dieser Priorisierung Zugriff auf Ladeinfrastruktur und Ladeleistung.
+Dazu wird für jedes Fahrzeug zu jedem Zeitpunkt der Simulation eine Flexibilitätszeit errechnet.
+Diese gibt an, in wie vielen Zeitschritten das Fahrzeug spätestmöglich mit dem Laden beginnen muss, um die nächste Fahrt ohne On-Route Laden erfüllen zu können.
+Das Fahrzeug mit der geringsten Flexibilitätszeit erhält die höchste Priorität bei der Vergabe der Ladepunkte und Ladeleistung.
+Jedes Fahrzeug ist nur mit dem in der GUI definierten Ladepunkt kompatibel.
+Ist kein Ladepunkt dieses Typs mehr vorhanden, kann das Fahrzeug in diesem Zeitschritt nicht laden.
+Aufgrund des Priorisierungsalgorithmus' können Fahrzeuge in jedem Zeitschritt einem anderen Ladepunkt zugeordnet sein, was in der Realität mit einem hohen manuellen Aufwand für das Umstecken und -parken der Fahrzeuge verbunden wäre.
+Fahrzeuge, deren Ladezustand während einer Fahrt auf oder unter \SI{0}{\percent} fällt, werden auf der Fahrt nachgeladen, jedoch nur soweit, dass sie mit einem Ladezustand von exakt \SI{0}{\percent} wieder am Depot ankommen.\\\\
+\textbf{Investitionskosten und -emissionen}\\
+Beim Kauf eines einzelnen Fahrzeugs $n$ in der Subflotte $f$ entstehen die in der GUI definierten Kosten $C^{\text{Fahrzeug}, f, n}_\text{Invest, einmalig}$.
+Zur Berechnung der Investitionskosten aller Fahrzeuge einer Subflotte $C^{\text{fahrzeug}, f, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Fahrzeuge derselben Subflotte aufsummiert.
+Eine Aggregation der verschiedenen Subflotten ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Subflotte keinen Sinn.
+Die bei der Herstellung eines Fahrzeugs entstehenden Emissionen $CO2^{\text{Fahrzeug}, f n}_\text{Invest, einmalig}$ sind im \todo[inline]{Anhang} aufgeführt.
+Die Berechnung der Emissionen aller Fahrzeuge einer Subflotte erfolgt analog zu den Kosten.\\\\
+\textbf{Betriebskosten und -emissionen}\\
+Bei der Berechnung der Betriebskosten und Emissionen muss nach der Antriebsart des Fahrzeugs unterschieden werden.
+Für konventionell angetriebene Fahrzeuge einer Subflotte $f$ berechnen sich die Kosten zu:
+\begin{equation}
+    C^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{ICEV}} \cdot \left(c^{f, \text{ICEV}}_\text{Wartung} + c^{f, \text{ICEV}}_\text{Maut} \cdot x^{f, \text{ICEV}}_{Maut} + c^{Diesel} \cdot v^{f, \text{icev}} / 100\right)
+    \label{eq:opex_icev}
+\end{equation}
+Dabei bezeichnet $d^{f}_{\text{ICEV}}$ die gefahrene Distanz der Fahrzeuge der Subflotte, $c^{f, \text{ICEV}}_\text{Wartung}$ die spezifischen Wartungskosten pro Kilometer, $c^{f, \text{ICEV}}_\text{Maut}$ die spezifischen Mautkosten pro Kilometer, $x^{f, \text{ICEV}}_{Maut}$ den Anteil der mautpflichtigen Distanz an der Gesamtdistanz, $c^{Diesel}$ die spezifischen Dieselkosten pro Liter und $v^{f, \text{icev}}$ den spezifischen Dieselverbrauch der Fahrzeuge auf \SI{100}{\kilo\meter}.
+Bis auf den Anteil der mautpflichtigen Strecke und den spezifischen Diesel- und Mautkosten, die in der GUI eingestellt werden können, werden alle Parameter mit vordefinierten Werten parametriert, die im \todo[inline]{Anhang} aufgeführt sind.
+Die im Betrieb entstehenden Emissionen der Dieselfahrzeuge lassen sich aus dem benötigten Dieselvolumen und den spezifischen Emissionen für Diesel pro Liter $co2^{Diesel}$ (vordefiniert und im \todo[inline]{Anhang} aufgeführt) berechnen:
+\begin{equation}
+    CO2^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{ICEV}} \cdot v^{f, \text{icev}} / 100 \cdot co2^{Diesel}
+    \label{eq:opem_icev}
+\end{equation}
+Für batterieelektrisch angetriebene Fahrzeuge einer Subflotte $f$ berechnen sich die Kosten zu:
+\begin{equation}
+    C^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{BEV}} \cdot \left(c^{f, \text{BEV}}_\text{Wartung} + c^{f, \text{BEV}}_\text{Maut} \cdot x^{f, \text{BEV}}_{Maut}\right)
+    \label{eq:opex_bev}
+\end{equation}
+Emissionen treten für batterieelektrische Fahrzeuge nicht auf.
+Die beim On-Route laden entstehenden Kosten und Emissionen werden lediglich auf Flottenebene berechnet.
+\begin{equation}
+    C^{Flotte}_{Betrieb, jrl, On-Route} = E^{Flotte}_{On-Route} \cdot c^{Flotte}_{On-Route}
+    \label{eq:opex_on-route}
+\end{equation}
+Für die Kosten werden die in der GUI definierten spezifischen On-Route Ladekosten $c^{Flotte}_{On-Route}$ verwendet, während für die Berechnung der beim On-Route Laden verursachten  Emissionen die spezifischen Emissionen des öffentlichen Netzes herangezogen werden.
+\begin{equation}
+    CO2^{Flotte}_{Betrieb, jrl, On-Route} = E^{Flotte}_{On-Route} \cdot co2^{Netz}_{Betrieb}
+    \label{eq:opem_on-route}
+\end{equation}
 
 
 \subsection{Technische Kennzahlen}
-\label{subsec:tec_kpi}
+\label{subsec:kpi_tech}
 
-Die aus der Simulation erhaltenen Energiewerte werden direkt für die Berechnung der technischen Kennzahlen des Systems verwendet.
-Diese Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für Netzanschluss, PV-Anlage und Stationärspeicher sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
+Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für Netzanschluss, PV-Anlage und Stationärspeicher sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
 
 Die \textbf{Eigenverbrauchsquote} $\gamma_{Eigenverbrauch}$ gibt an, welcher Anteil der potenziell lokal erzeugbaren PV-Energie am Standort selbst verbraucht wurde.
 Dazu zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
@@ -175,151 +350,88 @@ Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer 
 \end{equation}
 
 \subsection{Wirtschaftliche Kennzahlen}
-\label{subsec:econ_kpi}
+\label{subsec:kpi_econ}
 
 Bei der Berechnung der wirtschaftlichen Kennzahlen wird zwischen Investitions- und Betriebskosten unterschieden.
 Während Investitionskosten immer am Anfang eines Jahres auftreten, fallen Betriebskosten erst am Ende des Jahres an.
 Für jedes Jahr im betrachteten Projektzeitraum werden beide Kostenarten getrennt berechnet und anschließend diskontiert.
-Der Diskontierungsfaktor $v_j$ für das Jahr $j$ berechnet sich für eine Abzinsungsrate $r$ zu
+Der Diskontierungsfaktor $v^j$ für das Jahr $j$ berechnet sich für eine Abzinsungsrate $r$ zu
 \begin{equation}
-    v_j = \frac{1}{(1 + r)^{j-z}}, \quad \text{where } z =
+    v^j = \frac{1}{\left(1 + r\right)^{j-z}}, \quad \text{mit } z =
     \begin{cases}
         1 & \text{Investitionskosten}\\
         0 & \text{Betriebskosten}
     \end{cases}
+    \text{ und }
+    j \in \{1, 2, \dots\}
     \label{eq:discounting}
 \end{equation}
-
-Die Investitionskosten werden basierend auf den in der GUI Komponentengrößen $S_k$ und den vordefinierten spezifischen Kosten $c_k$ und Lebenszeiten $ls_k$ \todo{Anhang verlinken} der Komponente $k$ berechnet.
 Die initialen Investitionskosten für eine Komponente entstehen am Anfang des Projektzeitraums, also am Beginn des ersten Jahres.
-Ersatzinvestitionen werden dann immer nach Ablauf der Lebensdauer der Komponente getätigt.
+Nach Ablauf der Lebensdauer der Komponente wird dann eine entsprechende Ersatzinvestition getätigt.
 Damit ergeben sich die Zeitpunkte der Investitionen zu den Anfängen der Jahre $n \cdot ls_k, \quad n \in \{0, 1, 2, \dots\}$.
+Unter der Annahme, dass sich der Wertverlust einer Komponente über deren Lebensdauer linear verhält, ergibt sich am Ende der Projektlaufzeit der Restwert
+\begin{equation}
+    C^{k}_\text{Restwert} = \begin{cases}
+    -C^{k}_\text{Invest, einmalig} \cdot \left( 1 - \frac{(T_{prj} \bmod \text{ls})}{\text{ls}} \right) & \text{if } T_{prj} \bmod \text{ls} \neq 0 \\
+    0 & \text{if } T_{prj} \bmod \text{ls} = 0
+    \end{cases}
+    \label{eq:salvage}
+\end{equation}
+Der so berechnete Restwert wird am Beginn des auf den Projektzeitraum folgenden Jahres verbucht.
+Nach der zuvor gegebenen Definition wird der Restwert als negative Kosten dargestellt.
+Deshalb gilt:
+\begin{equation}
+    C^{k}_{Restwert} \le 0 \quad \forall k
+    \label{eq:neg_salvage}
+\end{equation}
+Damit ergeben sich für eine Komponente $k$ die zwei Kostenvektoren $C^k_\text{Invest}$ und $C^k_\text{Betrieb}$:
+\begin{equation}
+    C^k_\text{Invest} =
+    \begin{pmatrix}
+        C^k_\text{Invest, einmalig}\\0\\\vdots\\C^k_\text{Invest, einmalig}\\0\\\vdots\\C^k_\text{Restwert}
+    \end{pmatrix},
+    \quad
+    C^k_\text{Betrieb} =
+    \begin{pmatrix}
+        C^k_\text{Betrieb, jrl}\\C^k_\text{Betrieb, jrl}\\\vdots\\C^k_\text{Betrieb, jrl}\\0
+    \end{pmatrix}
+    \quad
+    \text{mit }
+    C^k_\text{Invest}, C^k_\text{Betrieb} \in \mathbb{R}^{T_{prj} + 1 \times 1}
+    \label{eq:cost_vectors}
+\end{equation}
+Jährliche Betriebskosten $C^k_\text{Betrieb, jrl}$ treten dabei jedes Jahr unverändert auf.
+Lediglich im letzten Eintrag des Vektors, der das Jahr nach der Projektlaufzeit darstellt, treten keine Kosten mehr auf.
+Dieser Eintrag dient lediglich der Restwertgutschrift.
+
+Die diskontierten Kostenvektoren ergeben sich somit aus \autoref{eq:discounting} und\autoref{eq:cost_vectors} zu
+\begin{equation}
+    C^k_{u\text{, diskontiert}} =
+    C^k_u
+    \circ
+    \begin{pmatrix}
+        v^1_u\\
+        v^2_u\\
+        \vdots\\
+        v^{T_{prj}}_u\\
+    \end{pmatrix}
+    \quad
+    \text{mit }
+    u \in \{\text{Invest}, \text{Betrieb}\}
+    \label{eq:cost_vectors_discounted}
+\end{equation}
+Diese beiden Vektoren werden als Grundlage für die Kostendarstellung in den Ergebnissen verwendet.
+Entweder als Zeitreihe, wie im Fall des Gesamtkostendiagramms, in dem die Gesamtkosten über die Projektlaufzeit aufgetragen sind, oder bereits aufsummiert, wie zur Berechnung der Projektgesamtkosten.
+
+\subsection{Ökologische Kennzahlen}
+\label{subsec:kpi_ecol}
+
+Die ökologischen Kennzahlen werden analog zu den wirtschaftlichen Kennzahlen berechnet.
+Jedoch entfällt bei der Berechnung der ökologischen Kennzahlen die Diskontierung.
 
 \section{Standardwerte}
 \label{sec:defaultvalues}
-
-\section{Inhaltsspeicher}
-\label{sec:contentstorage}
-
-
-Basierend auf diesen Ergebnissen werden techno-ökonomische Kennzahlen für einen Projektzeitraum $T_{project}$ extrapoliert.
-
-Die einzelnen Komponenten des simulierten Energiesystems und die dafür berechneten Kosten und Emissionen werden im Folgenden aufgeschlüsselt:
-
-Standortverbrauch:
-Der Standortverbrauch modelliert den Energieverbrauch des Gebäudes und sonstiger Infrastruktur des Depots exklusive möglicherweise vorhandenen Ladepunkte.
-Für den Standortverbrauch werden skalierte Standardlastprofile des BDEW verwendet.
-Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
-Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
-
-Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen über die dafür bezogene Energie an.
-Diese Kosten und Emissionen werden
-
-Kosten:
-	- keine
-
-Emissionen:
-	- keine
-
-Netzanschluss:
-Der Netzanschluss wird in kW angegeben, da Blindleistung in der Simulation nicht berücksichtigt wird.
-
-Kosten:
-	- Investition (c_Grid, ls_Grid)
-	- Energiebezug (c_Grid,opex,buy, E_Grid,buy)
-	- Energieeinspeisung (c_Grid,opex,buy, E_Grid,buy)
-	- Spitzenlast (c_Grid,opex,peak, P_Grid,max)
-
-Emissionen:
-	- Investition (co2_Grid, ls_Grid)
-	- Energiebezug (co2_Grid,opex,buy, E_Grid,buy)
-
-
-PV-Anlage:
-Die potenzielle PV-Leistung wird für den angegebenen Standort und die optimale Ausrichtung einer nicht-beweglichen PV-Anlage von PVGIS für das Jahr 2023 abgerufen.
-Neuere Daten sind bei diesem Anbieter nicht verfügbar. Die Daten liegen in einem stündlichen Intervall vor.
-
-Kosten:
-	- Investition (c_PV,spec, ls_PV)
-
-Emissionen:
-	- Investition (co2_PV_spec, ls_PV)
-
-
-Stationärspeicher:
-Der Speicher wird mit einer Leistungslimitation von 0,5 C sowohl in Lade- als auch Entladerichtung betrieben. Bei einem 10 kWh Speicher entspricht das einer maximalen Leistung von 5 kW.
-
-Kosten:
-	- Investition (c_ESS_spec, ls_ESS)
-
-Emissionen:
-	- Investition (c_ESS_spec, ls_ESS)
-
-
-
-Ladeinfrastruktur:
-Die verfügbaren Ladepunkte werden gemäß der unter Flotte definierten Logik priorisiert.
-Das an einem Ladepunkt angeschlossene Fahrzeuge kann von Zeitschritt zu Zeitschritt variieren.
-Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement. Dieses kann entweder statisch oder dynamisch ausgelegt sein.
-Für große Simulationszeitschritte (>15 Minuten) verhält sich das statische Lastmanagement nicht realistisch.
-Grund hierfür ist die starke Glättung des Standortlastgangs, dessen Lastspitzen normalerweise maßgeblich zur Definition der maximalen Leistung des statischen Lastmanagements berücksichtigt werden.
-Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung. Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
-
-Kosten:
-	- Investition pro Ladestation (c_CHG, ls_CHG)
-
-Emissionen:
-	- Investition pro Ladestation (c_CHG, ls_CHG)
-
-Flotte:
-Eine Flotte besteht aus mehreren Subflotten, die jeweils Fahrzeuge des gleichen Typs beinhalten. Die Mobilitätsprofile einer Subflotte werden stochastisch gesamplet.
-Die maximale Ladeleistung eines Fahrzeugs berechnet sich aus dem Fahrzeugspezifischen Limit und dem Limit des für das Fahrzeug definierten Ladepunkts.
-Für jedes Fahrzeug wird zu jedem Zeitpunkt eine Flexibilitätszeit errechnet. Diese gibt an, in wie vielen Zeitschritten das Fahrzeug spätestmöglich anfangen muss zu laden, um die nächste Fahrt erfüllen zu können.
-Das Fahrzeug mit der geringsten Flexibilitätszeit erhält die höchste Priorität bei der Vergabe der Ladepunkte.
-Fahrzeuge, deren Ladezustand während einer Fahrt auf 0 fällt, werden auf der Fahrt nachgeladen, jedoch nur soweit, dass sie mit einem Ladezustand von exakt 0% wieder am Depot ankommen.
-
-Kosten:
-	- Investitionen pro Fahrzeug (c_FZG, ls_FZG)
-	-
-
-
-Wirkungsgrade sind in der Simulation nicht berücksichtigt.
-
-
-
-Ergebnisse dieser Simulation sind die folgenden Größen:
-
-Grid:
- - aus dem Netz bezogene Energie
- - in das Netz eingespeiste Energie
- - Peakleistung der bezogenen Energie
-
-PV:
- - Theoretisch mögliche PV-Energie
- - Nicht-abgerufene PV-Energie
-
-Standortverbrauch:
- - Benötigte Energie über den Simulationszeitraum
-
-Flotte:
- - Summe der am Depot geladenen Energie
- - Summe der nicht am Depot geladenen Energie
- - Gefahrene Distanzen: aufgeschlüsselt nach Subflotte und Antriebsart (Elektrisch/Diesel)
-
-
-
-T_sim: 365 Tage
-T_step: 1 Stunde
-
-
-LIFT is based on a timestep simulation, which models and simulates the energies within the energy system for a specific timespan, usually set to one year.
-The energy system consists of
-- a grid connection
-- a PV array
-- a Stationary energy storage
-- Charging Infrastructure:
-	- LIFT can handle several types of chargers
-- Vehicles
+\todo[inline]{Hier noch alle verwendete Werte aus den JSON Files eintragen}
 
 
 \section{References}
