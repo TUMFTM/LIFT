@@ -1,3 +1,46 @@
+# Ignore latex aux files
+# LaTeX build files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.dvi
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.idx
+*.ind
+*.glo
+*.gls
+*.ist
+
+# Temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# MacOS files
+.DS_Store
+
+# Windows files
+Thumbs.db
+
+# Editor directories (e.g., vim, emacs, etc.)
+.vscode/
+.idea/
+*.kate-swp
+
+# Latexmk specific
+latexmk.pdf
+latexmk.ps
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
