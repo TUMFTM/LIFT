@@ -35,14 +35,13 @@ Das Softwaretool LIFT dient zur Unterstützung des Planungsprozesses der Elektri
 Basierend auf einer Energiesystem-Zeitschrittsimulation berechnet LIFT techno-ökonomische Kennzahlen für beide Szenarien und vergleicht diese.
 Dadurch lassen sich ersten Erkenntnisse über den Effekt der beabsichtigten Maßnahmen treffen und bereits eine erste Planung der Depot-Erweiterung ableiten.
 \end{abstract}
-
+\newpage
 \tableofcontents
 \newpage
 
 \section{Ausgangslage und Zielsetzung}
 \label{sec:target}
-Das Softwaretool LIFT wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München entwickelt.
-LIFT soll die Elektrifizierung von Flotten und dem begleitenden Ausbau des Depot-Energiesystems inklusive Ladeinfrastruktur mit techno-ökonomischen Kennwerten unterstützen.
+Das Softwaretool LIFT wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München entwickelt, um die Elektrifizierung von Flotten und dem begleitenden Ausbau des Depot-Energiesystems inklusive Ladeinfrastruktur mit techno-ökonomischen Kennwerten zu unterstützen.
 Ziel des Tools ist es hierbei, bereits in der frühen Planungsphase Effekte beabsichtigter Maßnahmen abschätzen zu können und dadurch eine Entscheidungsgrundlage für den weiteren Planungsprozess zu schaffen.
 
 Bereits existierende, optimierungsbasierte Tools verfügen verglichen mit LIFT über eine realistischere Modellierung der Gegebenheiten und durch die integrierte Optimierung eine kostenoptimale Energiesystem-Auslegung.
@@ -187,7 +186,7 @@ Die Dimensionierung des Netzanschlusses wird in kW angegeben, da Blindleistung i
 \textbf{Investitionskosten und -emissionen}\\
 Für die Errichtung des Netzanschlusspunktes mit der in der GUI definierten Größe $S^{Netz}$ entstehen sowohl Kosten $C^{Netz}_{Invest, einmalig}$ als auch Emissionen $CO2^{Netz}_{Invest, einmalig}$.
 Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{Netz}_{Invest}$, spezifischen Emissionen $c^{PV}_{Invest}$ und die Lebensdauer $ls^{Netz}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+Die angenommenen spezifischen Kosten $c^{Netz}_{Invest}$, spezifischen Emissionen $co2^{Netz}_{Invest}$ und die Lebensdauer $ls^{Netz}$ sind in \autoref{subsubsec:default_grid} aufgeführt.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 In Abhängigkeit des Energiedurchsatzes in Bezugs- und Einspeiserichtung sowie der Spitzenlast fallen Betriebskosten für den Netzanschlusspunkt an:
 \begin{equation}
@@ -215,7 +214,7 @@ Neuere Daten oder Daten mit einer höheren zeitlichen Auflösung sind bei diesem
 \textbf{Investitionskosten und -emissionen}\\
 Für die Errichtung der PV-Anlage mit der in der GUI definierten Größe $S^{PV}$ entstehen sowohl Kosten $C^{PV}_{Invest, einmalig}$ als auch Emissionen $CO2^{PV}_{Invest, einmalig}$.
 Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{PV}_{Invest}$, spezifischen Emissionen $c^{PV}_{Invest}$ und die Lebensdauer $ls^{PV}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+Die angenommenen spezifischen Kosten $c^{PV}_{Invest}$, spezifischen Emissionen $co2^{PV}_{Invest}$ und die Lebensdauer $ls^{PV}$ sind in \autoref{subsubsec:default_pv} aufgeführt.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 Während des Betriebs entstehen weder Kosten noch Emissionen.
 
@@ -231,7 +230,7 @@ Sollte der Bedarf im lokalen Energiesystems des Depots nicht aus lokalen Quallen
 \textbf{Investitionskosten und -emissionen}\\
 Für die Errichtung des Stationärspeichers mit der in der GUI definierten Größe $S^{Speicher}$ entstehen sowohl Kosten $C^{Speicher}_{Invest, einmalig}$ als auch Emissionen $CO2^{Speicher}_{Invest, einmalig}$.
 Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{Speicher}_{Invest}$, spezifischen Emissionen $c^{Speicher}_{Invest}$ und die Lebensdauer $ls^{Speicher}$ sind im \todo[inline]{Anhang verlinken} aufgeführt.\\\\
+Die angenommenen spezifischen Kosten $c^{Speicher}_{Invest}$, spezifischen Emissionen $co2^{Speicher}_{Invest}$ und die Lebensdauer $ls^{Speicher}$ sind in \autoref{subsubsec:default_ess} aufgeführt.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 Während des Betriebs entstehen weder Kosten noch Emissionen.
 
@@ -239,7 +238,7 @@ Während des Betriebs entstehen weder Kosten noch Emissionen.
 \subsubsection{Ladeinfrastruktur}
 \label{subsubsec:ci}
 LIFT unterstützt unterschiedliche Typen von Ladeinfrastruktur.
-Die in der GUI vordefinierten Ladepunkttypen sind im \todo[inline]{Anhang} aufgeführt.
+Die in der GUI vordefinierten Ladepunkttypen sind in \autoref{subsubsec:default_ci} aufgeführt.
 Von jedem Ladepunkttyp können mehrere Ladepunkte existieren.
 Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement.
 Dieses kann entweder statisch oder dynamisch ausgelegt sein.
@@ -254,7 +253,7 @@ Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.\\\\
 Für die Errichtung eines einzelnen Ladepunktes $n$ vom Typ $m$ entstehen die in der GUI definierten Kosten $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$.
 Zur Berechnung der Investitionskosten aller Ladepunkte eines Typs $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Ladepunkte desselben Typs aufsummiert.
 Eine Aggregation der verschiedenen Ladepunkttypen ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Typ keinen Sinn.
-Die bei der Herstellung eines Ladepunkts entstehenden Emissionen $CO2^{\text{Ladepunkt}, m n}_\text{Invest, einmalig}$ sind im \todo[inline]{Anhang} aufgeführt.
+Die bei der Herstellung eines Ladepunkts entstehenden Emissionen $CO2^{\text{Ladepunkt}, m n}_\text{Invest, einmalig}$ sind in \autoref{subsubsec:default_ci} aufgeführt.
 Die Berechnung der Emissionen aller Ladepunkte eines Typs erfolgt analog zu den Kosten.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 Während des Betriebs entstehen weder Kosten noch Emissionen, da die Energie vom lokalen Energiesystem bereitgestellt wird.
@@ -280,7 +279,7 @@ Fahrzeuge, deren Ladezustand während einer Fahrt auf oder unter \SI{0}{\percent
 Beim Kauf eines einzelnen Fahrzeugs $n$ in der Subflotte $f$ entstehen die in der GUI definierten Kosten $C^{\text{Fahrzeug}, f, n}_\text{Invest, einmalig}$.
 Zur Berechnung der Investitionskosten aller Fahrzeuge einer Subflotte $C^{\text{fahrzeug}, f, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Fahrzeuge derselben Subflotte aufsummiert.
 Eine Aggregation der verschiedenen Subflotten ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Subflotte keinen Sinn.
-Die bei der Herstellung eines Fahrzeugs entstehenden Emissionen $CO2^{\text{Fahrzeug}, f n}_\text{Invest, einmalig}$ sind im \todo[inline]{Anhang} aufgeführt.
+Die bei der Herstellung eines Fahrzeugs entstehenden Emissionen $CO2^{\text{Fahrzeug}, f n}_\text{Invest, einmalig}$ sind im \autoref{subsubsec:default_fleet} aufgeführt.
 Die Berechnung der Emissionen aller Fahrzeuge einer Subflotte erfolgt analog zu den Kosten.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 Bei der Berechnung der Betriebskosten und Emissionen muss nach der Antriebsart des Fahrzeugs unterschieden werden.
@@ -290,8 +289,8 @@ Für konventionell angetriebene Fahrzeuge einer Subflotte $f$ berechnen sich die
     \label{eq:opex_icev}
 \end{equation}
 Dabei bezeichnet $d^{f}_{\text{ICEV}}$ die gefahrene Distanz der Fahrzeuge der Subflotte, $c^{f, \text{ICEV}}_\text{Wartung}$ die spezifischen Wartungskosten pro Kilometer, $c^{f, \text{ICEV}}_\text{Maut}$ die spezifischen Mautkosten pro Kilometer, $x^{f, \text{ICEV}}_{Maut}$ den Anteil der mautpflichtigen Distanz an der Gesamtdistanz, $c^{Diesel}$ die spezifischen Dieselkosten pro Liter und $v^{f, \text{icev}}$ den spezifischen Dieselverbrauch der Fahrzeuge auf \SI{100}{\kilo\meter}.
-Bis auf den Anteil der mautpflichtigen Strecke und den spezifischen Diesel- und Mautkosten, die in der GUI eingestellt werden können, werden alle Parameter mit vordefinierten Werten parametriert, die im \todo[inline]{Anhang} aufgeführt sind.
-Die im Betrieb entstehenden Emissionen der Dieselfahrzeuge lassen sich aus dem benötigten Dieselvolumen und den spezifischen Emissionen für Diesel pro Liter $co2^{Diesel}$ (vordefiniert und im \todo[inline]{Anhang} aufgeführt) berechnen:
+Bis auf den Anteil der mautpflichtigen Strecke und den spezifischen Diesel- und Mautkosten, die in der GUI eingestellt werden können, werden alle Parameter mit vordefinierten Werten parametriert, die in \autoref{subsubsec:default_fleet} aufgeführt sind.
+Die im Betrieb entstehenden Emissionen der Dieselfahrzeuge lassen sich aus dem benötigten Dieselvolumen und den spezifischen Emissionen für Diesel pro Liter $co2^{Diesel}$ (vordefiniert und in \autoref{subsubsec:default_fleet} aufgeführt) berechnen:
 \begin{equation}
     CO2^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{ICEV}} \cdot v^{f, \text{icev}} / 100 \cdot co2^{Diesel}
     \label{eq:opem_icev}
@@ -413,7 +412,7 @@ Die diskontierten Kostenvektoren ergeben sich somit aus \autoref{eq:discounting}
         v^1_u\\
         v^2_u\\
         \vdots\\
-        v^{T_{prj}}_u\\
+        v^{T_{prj}+1}_u\\
     \end{pmatrix}
     \quad
     \text{mit }
@@ -431,10 +430,93 @@ Jedoch entfällt bei der Berechnung der ökologischen Kennzahlen die Diskontieru
 
 \section{Standardwerte}
 \label{sec:defaultvalues}
-\todo[inline]{Hier noch alle verwendete Werte aus den JSON Files eintragen}
+\subsection{Simulationsparameter}
+\label{subsec:default_sim}
+$T^{sim}_{Start}$: 01.01.2023 00:00 +01:00\\
+$T^{sim}_{Dauer}$: 365 Tage\\
+$T^{sim}_{Zeitschritt}$: 1 Stunde\\
+
+\subsection{Komponenten}
+\label{subsec:default_components}
+\subsubsection{Netzanschluss}
+\label{subsubsec:default_grid}
+$c^{Netz}_{Invest}$: 200 €/kW\\
+$co2^{Netz}_{Invest}$: 0,0 kg/kW\\
+$co2^{Netz}_{Betrieb}$: 0.400 kg/kWh\\
+$ls^{Netz}$: 18 Jahre\\
+
+\subsubsection{PV-Anlage}
+\label{subsubsec:default_pv}
+$c^{PV}_{Invest}$: 900 €/kWp\\
+$co2^{PV}_{Invest}$: 798,0 kg/kWp\\
+$ls^{PV}$: 18 Jahre\\
+
+\subsubsection{Stationärspeicher}
+\label{subsubsec:default_ess}
+$c^{Speicher}_{Invest}$: 450 €/kWh\\
+$co2^{Speicher}_{Invest}$: 69,0 kg/kWh\\
+$ls^{Speicher}$: 9 Jahre\\
+
+\subsubsection{Ladeinfrastruktur}
+\label{subsubsec:default_ci}
+\textbf{AC-Ladepunkte}\\
+$CO2^{Ladepunkt, AC}_{Invest}$: 65,4 kg\\
+$ls^{SLadepunkt, AC}$: 6 Jahre\\
+
+\textbf{DC-Ladepunkte}\\
+$CO2^{Ladepunkt, DC}_{Invest}$: 6520 kg\\
+$ls^{SLadepunkt, DC}$: 6 Jahre\\
+
+\subsubsection{Flotte}
+$co2^{Diesel}$: 3,08 kg CO2-eq./l\\
+
+\label{subsubsec:default_fleet}
+\textbf{Schwere Lkw}\\
+$S_{Batterie}$: 480 kWh\\
+$CO2^{Fahrzeug, BEV}_{Invest}$: 84600 kg\\
+$CO2^{Fahrzeug, ICEV}_{Invest}$: 54000 kg\\
+$c^{BEV}_{Maut}$: 0,0 €/km\\
+$c^{ICEV}_{Maut}$: 0,269 €/km\\
+$c^{BEV}_{Wartung}$: 0,1324 €/km\\
+$c^{ICEV}_{Wartung}$: 0,185 €/km\\
+$v^{ICEV}$: 27 l/100km\\
+$ls$: 6 Jahre\\
+
+\textbf{Schwerer Verteilverkehr}\\
+$S_{Batterie}$: 400 kWh\\
+$CO2^{Fahrzeug, BEV}_{Invest}$: 59000 kg\\
+$CO2^{Fahrzeug, ICEV}_{Invest}$: 31200 kg\\
+$c^{BEV}_{Maut}$: 0,0 €/km\\
+$c^{ICEV}_{Maut}$: 0,242 €/km\\
+$c^{BEV}_{Wartung}$: 0,1324 €/km\\
+$c^{ICEV}_{Wartung}$: 0,185 €/km\\
+$v^{ICEV}$: 23 l/100km\\
+$ls$: 6 Jahre\\
+
+\textbf{Urbaner Verteilverkehr}\\
+$S_{Batterie}$: 160 kWh\\
+$CO2^{Fahrzeug, BEV}_{Invest}$: 26700 kg\\
+$CO2^{Fahrzeug, ICEV}_{Invest}$: 16200 kg\\
+$c^{BEV}_{Maut}$: 0,0 €/km\\
+$c^{ICEV}_{Maut}$: 0,137 €/km\\
+$c^{BEV}_{Wartung}$: 0,1051 €/km\\
+$c^{ICEV}_{Wartung}$: 0,1577 €/km\\
+$v^{ICEV}$: 19 l/100km\\
+$ls$: 6 Jahre\\
+
+\textbf{Lieferwagen}\\
+$S_{Batterie}$: 81 kWh\\
+$CO2^{Fahrzeug, BEV}_{Invest}$: 13870 kg\\
+$CO2^{Fahrzeug, ICEV}_{Invest}$: 8622 kg\\
+$c^{BEV}_{Maut}$: 0,0 €/km\\
+$c^{ICEV}_{Maut}$: 0,0 €/km\\
+$c^{BEV}_{Wartung}$: 0,0275 €/km\\
+$c^{ICEV}_{Wartung}$: 0,0339 €/km\\
+$v^{ICEV}$: 15 l/100km\\
+$ls$: 6 Jahre\\
 
 
-\section{References}
+\section{Quellen}
 \bibliographystyle{plain}
 \bibliography{references}
 
