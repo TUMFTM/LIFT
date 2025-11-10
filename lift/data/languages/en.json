@@ -191,22 +191,27 @@
     "kpi_diagrams": {
       "costs": {
         "title": "Costs",
+        "help": "Costs",
         "axis": "Total Costs"
       },
       "emissions": {
         "title": "CO₂ Emissions",
+        "help": "CO₂ Emissions",
         "axis": "CO₂ Emissions"
       },
       "self_consumption": {
         "title": "Self Consumption Rate",
+        "help": "Self Consumption Rate",
         "axis": "Self Consumption Rate"
       },
       "self_sufficiency": {
         "title": "Self Sufficiency Rate",
+        "help": "Self Sufficiency Rate",
         "axis": "Self Sufficiency Rate"
       },
       "home_charging": {
         "title": "Home Charging",
+        "help": "Home Charging",
         "axis": "Share of Energy Charged at the Depot"
       }
     },

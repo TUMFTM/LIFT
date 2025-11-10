@@ -28,8 +28,16 @@ def display_results(results):
     phases = (get_label("main.name_baseline"), get_label("main.name_expansion"))
 
     def _show_kpis(phases: tuple[str, str]):
-        def _centered_heading(text: str, domain=st) -> None:
-            domain.markdown(f"<h5 style='text-align:center; margin:0'>{text}</h5>", unsafe_allow_html=True)
+        def _centered_heading(title: str, help_msg: str, domain=st) -> None:
+            domain.markdown(
+                f"""
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <h5 style="margin: 0; margin-left: 23px;">{title}</h5>
+                    <span title="{help_msg}" style="margin-left: 0px; cursor: pointer;">&#x1F6C8;</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         def _create_bar_comparison(
             val_baseline: float,
@@ -178,7 +186,11 @@ def display_results(results):
 
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
-        _centered_heading(text=get_label("main.kpi_diagrams.costs.title"), domain=col1)
+        _centered_heading(
+            title=get_label("main.kpi_diagrams.costs.title"),
+            help_msg=get_label("main.kpi_diagrams.costs.help"),
+            domain=col1,
+        )
         col1.altair_chart(
             _create_bar_comparison(
                 val_baseline=results.baseline.cashflow_dis["totex"].sum(),
@@ -189,7 +201,11 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(text=get_label("main.kpi_diagrams.emissions.title"), domain=col2)
+        _centered_heading(
+            title=get_label("main.kpi_diagrams.emissions.title"),
+            help_msg=get_label("main.kpi_diagrams.emissions.help"),
+            domain=col2,
+        )
         col2.altair_chart(
             _create_bar_comparison(
                 val_baseline=results.baseline.emissions["totex"].sum(),
@@ -201,7 +217,11 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(text=get_label("main.kpi_diagrams.self_consumption.title"), domain=col3)
+        _centered_heading(
+            title=get_label("main.kpi_diagrams.self_consumption.title"),
+            help_msg=get_label("main.kpi_diagrams.self_consumption.help"),
+            domain=col3,
+        )
         col3.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.self_consumption,
@@ -212,7 +232,11 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(text=get_label("main.kpi_diagrams.self_sufficiency.title"), domain=col4)
+        _centered_heading(
+            title=get_label("main.kpi_diagrams.self_sufficiency.title"),
+            help_msg=get_label("main.kpi_diagrams.self_sufficiency.help"),
+            domain=col4,
+        )
         col4.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.self_sufficiency,
@@ -223,7 +247,11 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(text=get_label("main.kpi_diagrams.home_charging.title"), domain=col5)
+        _centered_heading(
+            title=get_label("main.kpi_diagrams.home_charging.title"),
+            help_msg=get_label("main.kpi_diagrams.home_charging.help"),
+            domain=col5,
+        )
         col5.altair_chart(
             _create_ring_comparison(
                 val_baseline=results.baseline.site_charging,

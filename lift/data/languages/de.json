@@ -191,22 +191,27 @@
     "kpi_diagrams": {
       "costs": {
         "title": "Kosten",
+        "help": "Kosten",
         "axis": "Gesamtkosten"
       },
       "emissions": {
         "title": "CO₂-Emissionen",
+        "help": "CO₂-Emissionen",
         "axis": "CO₂-Emissionen"
       },
       "self_consumption": {
         "title": "Eigenverbrauchsquote",
+        "help": "Eigenverbrauchsquote",
         "axis": "Eigenverbrauchsquote"
       },
       "self_sufficiency": {
         "title": "Autarkiegrad",
+        "help": "Autarkiegrad",
         "axis": "Autarkiegrad"
       },
       "home_charging": {
         "title": "Heim-Laden",
+        "help": "Heim-Laden",
         "axis": "Anteil am Depot geladener Energie"
       }
     },
