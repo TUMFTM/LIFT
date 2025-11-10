@@ -107,14 +107,38 @@
     "fleet": {
       "title": "Fleet",
       "subfleet": {
-        "weight_total": "Permissible Gross Weight",
-        "num_total": "Vehicles Total",
-        "num_bev_existing": "Existing Electric Vehicles",
-        "num_bev_expansion": "Additional Electric Vehicles",
-        "charger": "Charger",
-        "pwr_max": "max. Charging Power",
-        "capex": "Anschaffungspreis",
-        "share_toll": "Anteil mautpflichtiger Strecken"
+        "weight_total": {
+          "label": "Permissible Gross Weight",
+          "help": "XXX"
+        },
+        "num_total": {
+          "label": "Vehicles Total",
+          "help": "XXX"
+        },
+        "num_bev_existing": {
+          "label": "Existing Electric Vehicles",
+          "help": "XXX"
+        },
+        "num_bev_expansion": {
+          "label": "Additional Electric Vehicles",
+          "help": "XXX"
+        },
+        "charger": {
+          "label": "Charger",
+          "help": "XXX"
+        },
+        "pwr_max": {
+          "label": "max. Charging Power",
+          "help": "XXX"
+        },
+        "capex": {
+          "label": "Anschaffungspreis",
+          "help": "XXX"
+        },
+        "share_toll": {
+          "label": "Anteil mautpflichtiger Strecken",
+          "help": "XXX"
+        }
       }
     },
     "chargers": {
@@ -123,17 +147,37 @@
         "title": "Load Management",
         "baseline": "Current Load Management",
         "expansion": "Expansion Load Management",
-        "static": "static",
-        "dynamic": "dynamic",
-        "type": "Type",
-        "pwr_max": "max. Power"
+        "type": {
+          "label": "Type",
+          "help": "XXX",
+          "options": {
+            "static": "static",
+            "dynamic": "dynamic"
+          }
+        },
+        "pwr_max": {
+          "label": "max. Power",
+          "help": "XXX"
+        }
       },
       "charger": {
         "title_suffix": " Chargers",
-        "existing": "Existing",
-        "expansion": "Additional",
-        "pwr_max": "max. Charging Power",
-        "capex": "Cost per Charger"
+        "existing": {
+          "label": "Existing",
+          "help": "XXX"
+        },
+        "expansion": {
+          "label": "Additional",
+          "help": "XXX"
+        },
+        "pwr_max": {
+          "label": "max. Charging Power",
+          "help": "XXX"
+        },
+        "capex": {
+          "label": "Cost per Charger",
+          "help": "XXX"
+        }
       }
     },
     "autorefresh": "Auto Refresh",

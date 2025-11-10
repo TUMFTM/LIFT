@@ -107,14 +107,38 @@
     "fleet": {
       "title": "Flotte",
       "subfleet": {
-        "weight_total": "Zulässiges Gesamtgewicht",
-        "num_total": "Fahrzeuge gesamt",
-        "num_bev_existing": "Vorhandene E-Fahrzeuge",
-        "num_bev_expansion": "Zusätzliche E-Fahrzeuge",
-        "charger": "Ladepunkt",
-        "pwr_max": "max. Ladeleistung",
-        "capex": "Anschaffungspreis",
-        "share_toll": "Anteil mautpflichtiger Strecken"
+        "weight_total": {
+          "label": "Zulässiges Gesamtgewicht",
+          "help": "XXX"
+        },
+        "num_total": {
+          "label": "Fahrzeuge gesamt",
+          "help": "XXX"
+        },
+        "num_bev_existing": {
+          "label": "Vorhandene E-Fahrzeuge",
+          "help": "XXX"
+        },
+        "num_bev_expansion": {
+          "label": "Zusätzliche E-Fahrzeuge",
+          "help": "XXX"
+        },
+        "charger": {
+          "label": "Ladepunkt",
+          "help": "XXX"
+        },
+        "pwr_max": {
+          "label": "max. Ladeleistung",
+          "help": "XXX"
+        },
+        "capex": {
+          "label": "Anschaffungspreis",
+          "help": "XXX"
+        },
+        "share_toll": {
+          "label": "Anteil mautpflichtiger Strecken",
+          "help": "XXX"
+        }
       }
     },
     "chargers": {
@@ -123,19 +147,37 @@
         "title": "Lastmanagement",
         "baseline": "Vorhandenes Lastmanagement",
         "expansion": "Erweitertes Lastmanagement",
-        "static": "statisch",
-        "dynamic": "dynamisch",
-        "type": "Typ",
-        "pwr_max": "max. Leistung"
+        "type": {
+          "label": "Typ",
+          "help": "XXX",
+          "options": {
+            "static": "statisch",
+            "dynamic": "dynamisch"
+          }
+        },
+        "pwr_max": {
+          "label": "max. Leistung",
+          "help": "XXX"
+        }
       },
       "charger": {
         "title_suffix": "-Ladepunkte",
-        "existing": "Vorhandene",
-        "expansion": "Zusätzliche",
-        "static": "statisch",
-        "dynamic": "dynamisch",
-        "pwr_max": "max. Ladeleistung",
-        "capex": "Kosten pro Ladepunkt"
+        "existing": {
+          "label": "Vorhandene",
+          "help": "XXX"
+        },
+        "expansion": {
+          "label": "Zusätzliche",
+          "help": "XXX"
+        },
+        "pwr_max": {
+          "label": "max. Ladeleistung",
+          "help": "XXX"
+        },
+        "capex": {
+          "label": "Kosten pro Ladepunkt",
+          "help": "XXX"
+        }
       }
     },
     "autorefresh": "Automatisch aktualisieren",

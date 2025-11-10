@@ -242,69 +242,76 @@ def _get_input_economic() -> ComparisonInputEconomics:
 def _get_params_subfleet(subfleet: FrontendSubFleetInterface) -> ComparisonInputSubfleet:
     with st.sidebar.expander(
         label=f"**{subfleet.get_label(st.session_state['language'])}**  \n"
-        f"{subfleet.weight_max_t} t {get_label('sidebar.fleet.subfleet.weight_total')}",
+        f"{subfleet.weight_max_t} t {get_label('sidebar.fleet.subfleet.weight_total.label')}",
         icon=subfleet.icon,
         expanded=False,
     ):
         num_total = st.number_input(
-            label=get_label("sidebar.fleet.subfleet.num_total"),
+            label=get_label("sidebar.fleet.subfleet.num_total.label"),
             key=f"num_{subfleet.name}",
             min_value=0,
             max_value=50,
             value=0,
             step=1,
+            help=get_label("sidebar.fleet.subfleet.num_total.help"),
         )
 
         col1, col2 = st.columns(2)
         preexisting = col1.number_input(
-            label=get_label("sidebar.fleet.subfleet.num_bev_existing"),
+            label=get_label("sidebar.fleet.subfleet.num_bev_existing.label"),
             key=f"num_bev_preexisting_{subfleet.name}",
             min_value=0,
             max_value=num_total,
             value=0,
             step=1,
+            help=get_label("sidebar.fleet.subfleet.num_bev_existing.help"),
         )
 
         expansion = col2.number_input(
-            label=get_label("sidebar.fleet.subfleet.num_bev_expansion"),
+            label=get_label("sidebar.fleet.subfleet.num_bev_expansion.label"),
             key=f"num_bev_expansion_{subfleet.name}",
             min_value=0,
             max_value=num_total - preexisting,
             value=0,
             step=1,
+            help=get_label("sidebar.fleet.subfleet.num_bev_expansion.help"),
         )
 
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         charger_type = col1.selectbox(
-            label=get_label("sidebar.fleet.subfleet.charger"),
+            label=get_label("sidebar.fleet.subfleet.charger.label"),
             key=f"charger_{subfleet.label}",
             options=[x.label for x in DEF_CHARGERS.values()],
+            help=get_label("sidebar.fleet.subfleet.charger.help"),
         ).lower()
         max_value = DEF_CHARGERS[charger_type].settings_pwr_max.max_value
         pwr_max_w = (
             col2.slider(
-                label=f"{get_label('sidebar.fleet.subfleet.pwr_max')} (kW)",
+                label=f"{get_label('sidebar.fleet.subfleet.pwr_max.label')} (kW)",
                 key=f"pwr_max_{subfleet.name}",
                 min_value=0.0,
                 max_value=max_value,
                 value=max_value,
                 step=1.0,
                 format="%.0f",
+                help=get_label("sidebar.fleet.subfleet.pwr_max.help"),
             )
             * 1e3
         )
-
         capex_bev_eur = subfleet.settings_capex_bev.get_streamlit_element(
-            label=f"{get_label('sidebar.fleet.subfleet.capex')} BEV (EUR)",
+            label=f"{get_label('sidebar.fleet.subfleet.capex.label')} BEV (EUR)",
             key=f"capex_bev_{subfleet.name}",
+            help_msg=get_label("sidebar.fleet.subfleet.capex.help"),
         )
         capex_icev_eur = subfleet.settings_capex_icev.get_streamlit_element(
-            label=f"{get_label('sidebar.fleet.subfleet.capex')} ICEV (EUR)",
+            label=f"{get_label('sidebar.fleet.subfleet.capex.label')} ICEV (EUR)",
             key=f"capex_icev_{subfleet.name}",
+            help_msg=get_label("sidebar.fleet.subfleet.capex.help"),
         )
         toll_frac = subfleet.settings_toll_share.get_streamlit_element(
-            label=f"{get_label('sidebar.fleet.subfleet.share_toll')} (%)",
+            label=f"{get_label('sidebar.fleet.subfleet.share_toll.label')} (%)",
             key=f"toll_frac_{subfleet.name}",
+            help_msg=get_label("sidebar.fleet.subfleet.share_toll.help"),
         )
 
     return ComparisonInputSubfleet(
@@ -332,13 +339,16 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]) -> float:
     st.markdown(f"**{get_label(f'sidebar.chargers.load_mngmnt.{phase}')}**")
     col1, col2 = st.columns(2)
     col1.radio(
-        label=get_label("sidebar.chargers.load_mngmnt.type"),
-        label_visibility="collapsed",
-        options=[get_label("sidebar.chargers.load_mngmnt.static"), get_label("sidebar.chargers.load_mngmnt.dynamic")],
+        label=get_label("sidebar.chargers.load_mngmnt.type.label"),
+        options=[
+            get_label("sidebar.chargers.load_mngmnt.type.options.static"),
+            get_label("sidebar.chargers.load_mngmnt.type.options.dynamic"),
+        ],
         index=1,
         key=f"load_mngmnt_{phase}",
+        help=get_label("sidebar.chargers.load_mngmnt.type.help"),
     )
-    if st.session_state[f"load_mngmnt_{phase}"] == get_label("sidebar.chargers.load_mngmnt.static"):
+    if st.session_state[f"load_mngmnt_{phase}"] == get_label("sidebar.chargers.load_mngmnt.type.options.static"):
         pwr_max_grid = (
             st.session_state.grid_preexisting
             if phase == "baseline"
@@ -346,7 +356,7 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]) -> float:
         )
         return (
             col2.slider(
-                label=f"{get_label('sidebar.chargers.load_mngmnt.pwr_max')} (kW)",
+                label=f"{get_label('sidebar.chargers.load_mngmnt.pwr_max.label')} (kW)",
                 min_value=0.0,
                 max_value=pwr_max_grid,
                 value=(
@@ -357,6 +367,7 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]) -> float:
                 step=1.0,
                 format="%.0f",
                 key=f"load_mngmnt_slider_{phase}",
+                help=get_label("sidebar.chargers.load_mngmnt.pwr_max.help"),
             )
             * 1e3
         )  # convert kW to W
@@ -373,25 +384,29 @@ def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCha
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         num = ExistExpansionValue(
             preexisting=charger.settings_preexisting.get_streamlit_element(
-                label=get_label("sidebar.chargers.charger.existing"),
+                label=get_label("sidebar.chargers.charger.existing.label"),
                 key=f"chg_{charger.name.lower()}_preexisting",
                 domain=col1,
+                help_msg=get_label("sidebar.chargers.charger.existing.help"),
             ),
             expansion=charger.settings_expansion.get_streamlit_element(
-                label=get_label("sidebar.chargers.charger.expansion"),
+                label=get_label("sidebar.chargers.charger.expansion.label"),
                 key=f"chg_{charger.name.lower()}_expansion",
                 domain=col2,
+                help_msg=get_label("sidebar.chargers.charger.expansion.help"),
             ),
         )
 
         pwr_max_w = charger.settings_pwr_max.get_streamlit_element(
-            label=f"{get_label('sidebar.chargers.charger.pwr_max')} (kW)",
+            label=f"{get_label('sidebar.chargers.charger.pwr_max.label')} (kW)",
             key=f"chg_{charger.name.lower()}_pwr",
+            help_msg=get_label("sidebar.chargers.charger.pwr_max.help"),
         )
 
         cost_per_charger_eur = charger.settings_cost_per_unit_eur.get_streamlit_element(
-            label=f"{get_label('sidebar.chargers.charger.capex')} (EUR)",
+            label=f"{get_label('sidebar.chargers.charger.capex.label')} (EUR)",
             key=f"chg_{charger.name.lower()}_cost",
+            help_msg=get_label("sidebar.chargers.charger.capex.help"),
         )
 
         return ComparisonInputCharger(
