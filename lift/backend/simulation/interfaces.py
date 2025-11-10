@@ -46,8 +46,10 @@ class SimInputSettings(BaseInput):
     period_sim: pd.Timedelta
     start_sim: pd.Timestamp
     freq_sim: pd.Timedelta
+    # ToDo: move freq_hours to property
     freq_hours: float
-    # dti: pd.DatetimeIndex
+    # dti is initialized in __post_init__() to make class object hashable for streamlit caching
+    # dti: pd.DatetimeIndex = field(default=None, init=False)
 
     @classmethod
     def from_phase_input(cls, phase_input: "InputEconomics | PhaseInputEconomics") -> Self:
@@ -56,17 +58,10 @@ class SimInputSettings(BaseInput):
             start_sim=phase_input.start_sim,
             freq_sim=phase_input.freq_sim,
             freq_hours=phase_input.freq_sim.total_seconds() / 3600.0,
-            # dti=pd.date_range(
-            #     start=phase_input.start_sim,
-            #     end=phase_input.start_sim + phase_input.period_sim,
-            #     freq=phase_input.freq_sim,
-            #     tz="Europe/Berlin",
-            #     inclusive="left",
-            # )
         )
 
     def __post_init__(self):
-        # Define dti here instead of passing it to the constructor: make class hashable for streamlit for caching
+        # Define dti here instead of passing it to the constructor: make class hashable for streamlit caching
         self.dti = pd.date_range(
             start=self.start_sim,
             end=self.start_sim + self.period_sim,

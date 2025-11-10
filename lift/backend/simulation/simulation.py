@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from .blocks import (
     FixedDemand,
@@ -25,6 +26,7 @@ def simulate(
     location: SimInputLocation,
     subfleets: dict[str, SimInputSubfleet],
     charging_infrastructure: SimInputChargingInfrastructure,
+    scale2year: bool = True,
 ) -> SimResults:
     dem = FixedDemand.from_parameters(
         settings=settings,
@@ -70,16 +72,18 @@ def simulate(
         for block in blocks_supply:
             pwr_demand_w = block.satisfy_demand(demand_w=pwr_demand_w)
 
-    dist_km = fleet.distances
+    # calculate conversion factor to one year
+    sim2year = pd.Timedelta(days=365) / settings.period_sim if scale2year == True else 1
 
+    # scale results to one year
     return SimResults(
-        energy_pv_pot_wh=pv.energy_pot_wh,
-        energy_pv_curt_wh=grid.energy_curt_wh,
-        energy_grid_buy_wh=grid.energy_buy_wh,
-        energy_grid_sell_wh=grid.energy_sell_wh,
+        energy_pv_pot_wh=pv.energy_pot_wh * sim2year,
+        energy_pv_curt_wh=grid.energy_curt_wh * sim2year,
+        energy_grid_buy_wh=grid.energy_buy_wh * sim2year,
+        energy_grid_sell_wh=grid.energy_sell_wh * sim2year,
         pwr_grid_peak_w=grid.pwr_peak_w,
-        energy_dem_site_wh=dem.energy_wh,
-        energy_fleet_site_wh=fleet.energy_site_wh,
-        energy_fleet_route_wh=fleet.energy_route_wh,
-        dist_km=dist_km,
+        energy_dem_site_wh=dem.energy_wh * sim2year,
+        energy_fleet_site_wh=fleet.energy_site_wh * sim2year,
+        energy_fleet_route_wh=fleet.energy_route_wh * sim2year,
+        dist_km=fleet.get_distances(scale_factor=sim2year),
     )
