@@ -216,32 +216,42 @@
       }
     },
     "cost_diagram": {
-      "title": "Total costs",
+      "title": {
+        "label": "Total costs",
+        "help": "XXX"
+      },
       "xaxis": "Year",
       "yaxis": "Cumulative Discounted Costs",
       "paybackperiod": {
         "title": "Payback Period",
+        "help": "Payback Period",
         "years": "years",
         "negative_result": "Investment does not pay off."
       },
       "saving": {
         "title": "Cost Reduction",
+        "help": "Cost Reduction",
         "after": "after",
         "years": "years"
       }
     },
     "co2_diagram": {
-      "title": "CO₂ Emissions",
+      "title": {
+        "label": "CO₂ Emissions",
+        "help": "XXX"
+      },
       "expander": "Analysis CO₂ Emissions",
       "xaxis": "Year",
       "yaxis": "Cumulative CO₂ Emissions",
       "paybackperiod": {
         "title": "CO₂ Payback Period",
+        "help": "CO₂ Payback Period",
         "years": "Years",
         "negative_result": "Investment does not pay off."
       },
       "saving": {
         "title": "CO₂ Reduction",
+        "help": "CO₂ Reduction",
         "after": "after",
         "years": "years"
       }

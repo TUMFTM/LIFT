@@ -216,32 +216,42 @@
       }
     },
     "cost_diagram": {
-      "title": "Gesamtkosten",
+      "title": {
+        "label": "Gesamtkosten",
+        "help": "XXX"
+      },
       "xaxis": "Jahr",
       "yaxis": "Kumulierte, diskontierte Kosten",
       "paybackperiod": {
         "title": "Amortisationsdauer",
+        "help": "Amortisationsdauer",
         "years": "Jahre",
         "negative_result": "Investition amortisiert sich nicht."
       },
       "saving": {
         "title": "Kosteneinsparung",
+        "help": "Kosteneinsparung",
         "after": "nach",
         "years": "Jahren"
       }
     },
     "co2_diagram": {
-      "title": "CO₂-Emissionen",
+      "title": {
+        "label": "CO₂-Emissionen",
+        "help": "XXX"
+      },
       "expander": "Analyse CO₂-Emissionen",
       "xaxis": "Jahr",
       "yaxis": "Kumulierte CO₂-Emissionen",
       "paybackperiod": {
         "title": "CO₂-Paritätsdauer",
+        "help": "CO₂-Paritätsdauer",
         "years": "Jahre",
         "negative_result": "Investition amortisiert sich nicht."
       },
       "saving": {
         "title": "CO₂-Einsparung",
+        "help": "CO₂-Einsparung",
         "after": "nach",
         "years": "Jahren"
       }

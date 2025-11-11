@@ -19,6 +19,22 @@ from .utils import get_label
 PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
 
 
+def _heading_with_help(
+    label: str, help_msg: str = None, adjust: str = "left", margin_left: int = 0, size: int = 4, domain=st
+):
+    domain.markdown(
+        f"""
+        <div style="display: flex; justify-content: {adjust}; align-items: center;">
+            <h{size} style="margin: 0; margin-left: {margin_left}px;">{label}</h{size}>
+            <span title="{help_msg}" style="margin-left: 0px; cursor: pointer;">
+                &#x1F6C8;
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def display_results(results):
     st.markdown(
         f"### <span style='color:{COLOR_BL}'>{get_label('main.name_baseline')}</span> vs. <span style='color:{COLOR_EX}'>{get_label('main.name_expansion')}</span>",
@@ -186,9 +202,12 @@ def display_results(results):
 
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
 
-        _centered_heading(
-            title=get_label("main.kpi_diagrams.costs.title"),
+        _heading_with_help(
+            label=get_label("main.kpi_diagrams.costs.title"),
             help_msg=get_label("main.kpi_diagrams.costs.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
             domain=col1,
         )
         col1.altair_chart(
@@ -201,9 +220,12 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(
-            title=get_label("main.kpi_diagrams.emissions.title"),
+        _heading_with_help(
+            label=get_label("main.kpi_diagrams.emissions.title"),
             help_msg=get_label("main.kpi_diagrams.emissions.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
             domain=col2,
         )
         col2.altair_chart(
@@ -217,9 +239,12 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(
-            title=get_label("main.kpi_diagrams.self_consumption.title"),
+        _heading_with_help(
+            label=get_label("main.kpi_diagrams.self_consumption.title"),
             help_msg=get_label("main.kpi_diagrams.self_consumption.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
             domain=col3,
         )
         col3.altair_chart(
@@ -232,9 +257,12 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(
-            title=get_label("main.kpi_diagrams.self_sufficiency.title"),
+        _heading_with_help(
+            label=get_label("main.kpi_diagrams.self_sufficiency.title"),
             help_msg=get_label("main.kpi_diagrams.self_sufficiency.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
             domain=col4,
         )
         col4.altair_chart(
@@ -247,9 +275,12 @@ def display_results(results):
             use_container_width=True,
         )
 
-        _centered_heading(
-            title=get_label("main.kpi_diagrams.home_charging.title"),
+        _heading_with_help(
+            label=get_label("main.kpi_diagrams.home_charging.title"),
             help_msg=get_label("main.kpi_diagrams.home_charging.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
             domain=col5,
         )
         col5.altair_chart(
@@ -264,7 +295,12 @@ def display_results(results):
 
     _show_kpis(phases=phases)
 
-    st.markdown(f"#### {get_label('main.cost_diagram.title')}")
+    # Show heading
+    _heading_with_help(
+        label=get_label("main.cost_diagram.title.label"),
+        help_msg=get_label("main.cost_diagram.title.help"),
+    )
+
     col1, col2 = st.columns([4, 1])
     with col1:
         plot_flow(
@@ -277,19 +313,33 @@ def display_results(results):
             phase_labels=phases,
         )
     with col2:
-        st.markdown(f"#### {get_label('main.cost_diagram.paybackperiod.title')}")
+        _heading_with_help(
+            label=get_label("main.cost_diagram.paybackperiod.title"),
+            help_msg=get_label("main.cost_diagram.paybackperiod.help"),
+            adjust="left",
+            size=5,
+        )
         if results.payback_period_yrs is None:
             st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
         else:
             st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
 
-        st.markdown(f"#### {get_label('main.cost_diagram.saving.title')}")
+        _heading_with_help(
+            label=get_label("main.cost_diagram.saving.title"),
+            help_msg=get_label("main.cost_diagram.saving.help"),
+            adjust="left",
+            size=5,
+        )
         st.markdown(
             f"{results.npc_delta:,.0f} EUR {get_label('main.cost_diagram.saving.after')} {PERIOD_ECO} {get_label('main.cost_diagram.saving.years')}"
         )
 
     with st.expander(f"#### {get_label('main.co2_diagram.expander')}"):
-        st.markdown(f"#### {get_label('main.co2_diagram.title')}")
+        # Show heading
+        _heading_with_help(
+            label=get_label("main.co2_diagram.title.label"),
+            help_msg=get_label("main.co2_diagram.title.help"),
+        )
         col1, col2 = st.columns([4, 1])
         with col1:
             plot_flow(
@@ -302,13 +352,23 @@ def display_results(results):
                 phase_labels=phases,
             )
         with col2:
-            st.markdown(f"#### {get_label('main.co2_diagram.paybackperiod.title')}")
+            _heading_with_help(
+                label=get_label("main.co2_diagram.paybackperiod.title"),
+                help_msg=get_label("main.co2_diagram.paybackperiod.help"),
+                adjust="left",
+                size=5,
+            )
             if results.payback_period_co2_yrs is None:
                 st.markdown(get_label("main.co2_diagram.paybackperiod.negative_result"))
             else:
                 st.markdown(f"{results.payback_period_co2_yrs:.2f} {get_label('main.co2_diagram.paybackperiod.years')}")
 
-            st.markdown(f"#### {get_label('main.co2_diagram.saving.title')}")
+            _heading_with_help(
+                label=get_label("main.co2_diagram.saving.title"),
+                help_msg=get_label("main.co2_diagram.saving.help"),
+                adjust="left",
+                size=5,
+            )
             st.markdown(
                 f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.co2_diagram.saving.after')} {PERIOD_ECO} {get_label('main.co2_diagram.saving.years')}"
             )
