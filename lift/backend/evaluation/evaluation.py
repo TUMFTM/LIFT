@@ -155,24 +155,16 @@ def evaluate(
             num_bev * sf.capem_bev * replacements + num_icev * sf.capem_icev * replacements
         )
 
-        cashflow[CONV["vehicles"]]["opex"][:period_eco] += (
-            num_bev * economics.insurance_frac * sf.capex_bev_eur  # insurance
-            + result_sim.dist_km[sf_name]["bev"]
-            * (
-                sf.mntex_eur_km_bev  # maintenance
-                + sf.toll_eur_per_km_bev * sf.toll_frac  # toll
-            )
+        cashflow[CONV["vehicles"]]["opex"][:period_eco] += result_sim.dist_km[sf_name]["bev"] * (
+            sf.mntex_eur_km_bev  # maintenance
+            + sf.toll_eur_per_km_bev * sf.toll_frac  # toll
         )
 
         # icev
-        cashflow[CONV["vehicles"]]["opex"][:period_eco] += (
-            num_icev * economics.insurance_frac * sf.capex_icev_eur  # insurance
-            + result_sim.dist_km[sf_name]["icev"]
-            * (
-                sf.mntex_eur_km_icev  # maintenance
-                + sf.toll_eur_per_km_icev * sf.toll_frac  # toll
-                + economics.opex_fuel * sf.consumption_icev / 100  # fuel
-            )
+        cashflow[CONV["vehicles"]]["opex"][:period_eco] += result_sim.dist_km[sf_name]["icev"] * (
+            sf.mntex_eur_km_icev  # maintenance
+            + sf.toll_eur_per_km_icev * sf.toll_frac  # toll
+            + economics.opex_fuel * sf.consumption_icev / 100  # fuel
         )
         emissions[CONV["vehicles"]]["opex"][:period_eco] += (
             result_sim.dist_km[sf_name]["icev"] * sf.consumption_icev / 100 * economics.co2_per_liter_diesel_kg

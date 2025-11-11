@@ -89,18 +89,6 @@
         "opexfuel": {
           "label": "Dieselkosten",
           "help": "Das ist der Hilfe-Text für den Parameter"
-        },
-        "insurance": {
-          "label": "Versicherung (%*Anschaffungspreis)",
-          "help": "Das ist der Hilfe-Text für den Parameter"
-        },
-        "salvagebev": {
-          "label": "Restwert BET (%) (In Berechnung noch unberücksichtigt)",
-          "help": "Das ist der Hilfe-Text für den Parameter"
-        },
-        "salvageicev": {
-          "label": "Restwert ICET (%) (In Berechnung noch unberücksichtigt)",
-          "help": "Das ist der Hilfe-Text für den Parameter"
         }
       }
     },

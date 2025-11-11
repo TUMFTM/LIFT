@@ -92,9 +92,6 @@ class ComparisonInputEconomics:
     opex_fuel: float = 1.7
     mntex_bev_eur_km: float = 0.05
     mntex_icev_eur_km: float = 0.1
-    insurance_frac: float = 0.02
-    salvage_bev_frac: float = 40.0
-    salvage_icev_frac: float = 40.0
     period_eco: int = 18
     discount_rate: float = 0.05
     co2_per_liter_diesel_kg: float = 3.08

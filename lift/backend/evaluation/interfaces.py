@@ -27,9 +27,6 @@ class PhaseInputEconomics(PhaseInputBase):
     opex_fuel: float = 1.7
     mntex_bev_eur_km: float = 0.05
     mntex_icev_eur_km: float = 0.1
-    insurance_frac: float = 0.02
-    salvage_bev_frac: float = 40.0
-    salvage_icev_frac: float = 40.0
     period_eco: int = 18
     discount_rate: float = 0.05
     co2_per_liter_diesel_kg: float = 3.08
@@ -51,9 +48,6 @@ class PhaseInputEconomics(PhaseInputBase):
             opex_fuel=comparison_input.opex_fuel,
             mntex_bev_eur_km=comparison_input.mntex_bev_eur_km,
             mntex_icev_eur_km=comparison_input.mntex_icev_eur_km,
-            insurance_frac=comparison_input.insurance_frac,
-            salvage_bev_frac=comparison_input.salvage_bev_frac,
-            salvage_icev_frac=comparison_input.salvage_icev_frac,
             period_eco=comparison_input.period_eco,
             discount_rate=comparison_input.discount_rate,
             co2_per_liter_diesel_kg=comparison_input.co2_per_liter_diesel_kg,

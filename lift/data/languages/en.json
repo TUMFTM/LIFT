@@ -89,18 +89,6 @@
         "opexfuel": {
           "label": "Fuel Costs",
           "help": "This is the help message for this parameter"
-        },
-        "insurance": {
-          "label": "Insurance (%*Anschaffungspreis)",
-          "help": "This is the help message for this parameter"
-        },
-        "salvagebev": {
-          "label": "Salvage Value BEV (%) (Ignored)",
-          "help": "This is the help message for this parameter"
-        },
-        "salvageicev": {
-          "label": "Salvage Value ICEV (%) (Ignored)",
-          "help": "This is the help message for this parameter"
         }
       }
     },
