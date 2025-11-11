@@ -1,3 +1,25 @@
+"""Time-series energy and fleet simulation.
+
+Purpose:
+- Simulate site demand, fleet charging, PV generation, stationary storage, and grid exchange
+  over a discrete time index; optionally scale results to one year.
+
+Relationships:
+- Consumes typed inputs from `.interfaces` and composes block models from `.blocks`.
+- Used by `lift.backend.evaluation.evaluate` to produce simulation KPIs for economics.
+- Decorated with `safe_cache_data` to memoize deterministic runs.
+
+Key Logic / Formulations:
+- At each timestep t in settings.dti:
+  1) Site demand (FixedDemand) yields P_dem(t).
+  2) Fleet sets charging demand P_fleet(t) under a dynamic limit P_lim(t).
+     If grid connection is effectively unbounded (pwr_max_w = inf), then
+       P_lim(t) = sum(PV_max(t), ESS_max(t), Grid_max(t)) - P_dem(t).
+  3) Supply blocks satisfy total demand in priority order (PV → ESS → Grid).
+- Aggregates energies (Wh) and grid peak power over the simulation horizon; optionally
+  scales integrated quantities by sim2year = 365 days / period_sim.
+"""
+
 import numpy as np
 import pandas as pd
 
@@ -62,6 +84,16 @@ def simulate(
         pwr_demand_w = dem.demand_w
 
         # Update available power for dynamic load management
+        # Note (design rationale):
+        # - Current behavior sets a dynamic fleet power limit ONLY when the charging infrastructure
+        #   has no explicit cap (pwr_max_w == inf).
+        # - When the infrastructure has a finite cap, we rely on downstream block logic (incl. Grid)
+        #   and domain constraints to handle any exceedance, which keeps the fleet logic simpler and
+        #   makes violations explicit via domain errors where applicable.
+        # Potential TODO: Consider applying a unified limit for all cases, e.g.:
+        # - Apply a unified limit for all cases, e.g.:
+        #     fleet.pwr_lim_w = min(charging_infrastructure.pwr_max_w,
+        #                           sum(block.generation_max_w for block in blocks_supply) - pwr_demand_w)
         if charging_infrastructure.pwr_max_w == np.inf:
             fleet.pwr_lim_w = sum(block.generation_max_w for block in blocks_supply) - pwr_demand_w
 

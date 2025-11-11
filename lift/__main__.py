@@ -1,3 +1,19 @@
+"""LIFT entry-point module.
+
+Purpose:
+- Starts the Streamlit frontend for the LIFT application when invoked via
+  `python -m lift` or the console script entry point `lift`.
+
+Relationships:
+- Launches `lift/frontend/app.py` in a Streamlit process.
+- Ensures the working directory is the package root so Streamlit can load
+  configuration and static resources.
+
+Key Logic:
+- Resolve package root, chdir to it, compute path to `frontend/app.py`,
+  and execute `python -m streamlit run <app.py>` using the current interpreter.
+"""
+
 import os
 from pathlib import Path
 import sys

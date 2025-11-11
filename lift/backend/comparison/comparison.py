@@ -1,3 +1,21 @@
+"""Comparison orchestrator for LIFT.
+
+Purpose:
+- Runs a two-phase comparison (baseline vs. expansion) and aggregates results.
+
+Relationships:
+- Converts high-level `ComparisonInput` into phase-specific inputs via
+  `lift.backend.evaluation` (aliased as `eval`) factories.
+- Delegates per-phase evaluation to `eval.evaluate(...)`, which internally calls
+  simulation and economics phases.
+- Returns a `ComparisonResult` bundling both phases and convenience metrics.
+
+Key Logic:
+- Memoized with `safe_cache_data` to avoid recomputation for identical inputs.
+- Iterates phases `["baseline", "expansion"]`, builds phase inputs, evaluates,
+  collects results, logs timing, and returns a structured result.
+"""
+
 from time import time
 
 import pandas as pd

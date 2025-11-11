@@ -1,3 +1,20 @@
+"""Streamlit frontend for LIFT.
+
+Purpose:
+- Provides the user interface to configure comparison scenarios and visualize results.
+- Manages language/labels, session state, and page styling.
+
+Relationships:
+- Calls `lift.backend.comparison.comparison.run_comparison(comparison_input)` to execute the backend.
+- Handles domain exceptions from `lift.backend.simulation.interfaces` to present actionable messages.
+- Uses UI helpers from `lift.frontend.sidebar`, `lift.frontend.results`, `lift.frontend.design`,
+  and label/version helpers from `lift.frontend.utils`.
+
+Key Logic:
+- Initializes session state and language, applies styles, and builds `comparison_input` via the sidebar.
+- On run, executes the comparison, displays results, and renders a localized footer with version info.
+"""
+
 from __future__ import annotations
 import os
 import traceback
