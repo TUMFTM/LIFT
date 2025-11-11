@@ -4,11 +4,13 @@
 \usepackage{amssymb}
 \usepackage{authblk}
 \usepackage[ngerman]{babel}
+\usepackage{booktabs}
+\usepackage{cite}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{cite}
-\usepackage{todonotes}
 \usepackage{geometry}
+\usepackage{makecell}
+\usepackage{todonotes}
 \usepackage{siunitx}
 \usepackage{eurosym}
 
@@ -20,8 +22,12 @@
 \DeclareSIUnit{\peak}{\text{p}}
 
 % acro
-\DeclareAcronym{lift}{short=LIFT, long=Logistics Infrastructure and Fleet Transformation,}
+\DeclareAcronym{capex}{short=CAPEX, long=capital expenditures,}
 \DeclareAcronym{gui}{short=GUI, long=grafische Benutzeroberfläche,}
+\DeclareAcronym{lift}{short=LIFT, long=Logistics Infrastructure and Fleet Transformation,}
+\DeclareAcronym{opex}{short=OPEX, long=operational expenditures,}
+\DeclareAcronym{pv}{short=PV, long=Photovoltaik,}
+\DeclareAcronym{utc}{short=UTC, long=koordinierte Weltzeit,}
 
 % Set page margins
 \geometry{top=1in, bottom=1in, left=1in, right=1in}
@@ -62,7 +68,7 @@ Die mit \acs*{lift} erarbeitete Ersteinschätzung ist die Basis für weitere Sch
 \section{Ausgangslage und Zielsetzung}
 \label{sec:target}
 Das Softwaretool \ac{lift} wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München in Zusammenarbeit mit der Rödl GmbH entwickelt.
-Es unterstützt die Elektrifizierung von Flotten und den begleitenden Ausbau des Depot-Energiesystems (inkl.\,Ladeinfrastruktur) bereits in der frühen Phase mit techno-ökonomischen Potentialabschätzungen und schafft so eine Entscheidungsgrundlage für die Fortsetzung des Planungsprozesses.
+Es unterstützt die Elektrifizierung von Flotten und den begleitenden Ausbau des Depot-Energiesystems (inkl.^\,Ladeinfrastruktur) bereits in der frühen Phase mit techno-ökonomischen Potentialabschätzungen und schafft so eine Entscheidungsgrundlage für die Fortsetzung des Planungsprozesses.
 Sein Zielanwendungsgebiet ist das initiale Auslegungsgespräch zwischen Kundenberater und Flottenbetreiber.
 Dafür muss es einerseits mit wenigen, schnell abzuschätzenden Eingangsparametern arbeiten und seine Ergebnisse schnell und intuitiv darstellen.
 
@@ -76,8 +82,8 @@ Die Anwendung solcher Tools, die oft nicht über eine grafische Benutzeroberflä
 
 \section{Verwendung und grafische Benutzeroberfläche}
 \label{sec:gui}
-\ac{lift} ist in Python programmiert und verfügt über eine browserbasierte \ac{gui}, die auf der streamlit-Bibliothek basiert.
-Die Installation von \ac{lift}, entweder auf einem lokalen Computer oder auf einem Server ist im \texttt{README} des dazugehörigen git repository beschrieben.
+\ac{lift} ist in Python programmiert und verfügt über eine browserbasierte \ac{gui}, die auf der \textit{streamlit}-Bibliothek basiert.
+Die Installation von \ac{lift}, entweder auf einem lokalen Rechner oder auf einem Server ist im \textit{readme} des dazugehörigen \textit{git repository} beschrieben.
 Es zeigt zusätzlich, wie der Berechnungsalgorithmus von \ac{lift} losgelöst von der \ac{gui} für eine skalierbare Bewertung vieler Szenarien eingesetzt werden kann.
 Dieses Dokument beschränkt sich auf die Verwendung von \ac{lift} zur Simulation einzelner Szenarien über die integrierte und in \autoref{fig:gui} dargestellte \ac{gui}.
 
@@ -94,57 +100,53 @@ Hierbei wird nach allgemeinen Parametern (Standort, Energiesystem und wirtschaft
 Für jeden Eingabeparameter stehen in der \ac{gui} Hilfetexte zur genaueren Erklärung zur Verfügung, die bei Positionierung des Mauszeigers über dem jeweiligen Fragezeichensymbol erscheinen.
 Die Simulation und Berechnung der Ergebnisse (siehe \autoref{sec:methods}) wird am unteren Ende der Seitenleiste ausgelöst.
 Der rechte Hauptbereich der \ac{gui} visualisiert daraufhin die Ergebnisse.
-Berechnete Kennwerte werden jeweils vergleichend für Baseline- und Expansions-Szenario verglichen, um Effekte der getroffenen Maßnahmen intuitiv beurteilen zu können.
-Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfetexte vorhanden.
+Berechnete Kennwerte werden jeweils vergleichend für Baseline- und Expansions-Szenario dargestellt, um Effekte der getroffenen Maßnahmen intuitiv beurteilen zu können.
+Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfetexte durch Bewegung des Mauszeigers über das Fragezeichensymbol verfügbar.
 
 \section{Methodik}
 \label{sec:methods}
 
-Dieses Kapitel beschreibt die dem Tool \ac{lift} zugrundeliegende Methodik.
-Wie bereits beschrieben, basiert \ac{lift} auf einigen Annahmen, die sich in methodische Annahmen und quantitative Annahmen unterteilen lassen.
-Als methodische Annahmen werden inhärente Bestandteile der zugrundeliegenden Berechnungsmethodik bezeichnet.
-Diese werden in diesem Kapitel erläutert.
-Quantitative Annahmen beschreiben lediglich die Parametrierung des Berechnungsalgorithmus' und können bei einer skalierten Nutzung desselben nutzerspezifisch angepasst werden.
-Sie sind somit nur bei einer Benutzung von \ac{lift} durch die \ac{gui} zutreffend und separat in \autoref{sec:defaultvalues} aufgeführt.
+Dieses Kapitel beschreibt die dem Tool \ac{lift} zugrundeliegende Methodik sowie die methodischen Annahmen (inhärente Bestandteile der zugrundeliegenden Berechnungsmethodik).
+Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind in \autoref{sec:defaultvalues} beschrieben.
 
 \subsection{Energiesystem}
 \label{subsec:energysystem}
 
-Das von \ac{lift} abgebildete Energiesystem besteht aus verschiedenen Komponenten, von denen bis auf Ladeinfrastruktur und Fahrzeuge genau ein Element in definierbarer Größe vorhanden ist.
-Im Energiesystem von \ac{lift} existieren folgende Komponententypen:
+Das von \ac{lift} modellierte Energiesystem besteht aus folgenden Komponenten:
 \begin{itemize}
     \item \textbf{Netzanschluss\\}
     Der Netzanschluss stellt die Verbindung des lokalen Energiesystems zum öffentlichen Stromnetz dar und dient somit sowohl als Energiequelle (Bezug aus dem Netz) als auch -senke (Einspeisung in das Netz).
-    \item \textbf{PV-Anlage\\}
-    Die PV-Anlage dient zur Erzeugung lokaler erneuerbarer Energie und wird somit als Energiequelle modelliert.
+    Jedes modellierte Energiesystem beinhaltet genau einen Netzanschluss.
+    \item \textbf{\acs*{pv}-Anlage\\}
+    Die \ac{pv}-Anlage dient zur Bereitstellung lokaler erneuerbarer Energie und wird somit als Energiequelle modelliert.
+    Jedes modellierte Energiesystem beinhaltet genau eine \ac{pv}-Anlage, deren Größe und damit Kosten auch mit Null parametriert werden können.
     \item \textbf{Stationärspeicher\\}
     Im Stationärspeicher stellt einen stationären batterieelektrischen Speicher dar.
+    Jedes modellierte Energiesystem beinhaltet genau einen Stationärspeicher, desen Größe und damit Kosten auch mit Null parametriert werden können.
     \item \textbf{Standortverbrauch\\}
     Der Standortverbrauch beinhaltet den Verbrauch elektrischer Energie des Standorts (Gebäude, Werkstätten sowie sonstige Infrastruktur) exklusive der Energie für Ladeinfrastruktur \text{bzw.} Mobilität und wird im Energiesystem als Energiesenke modelliert.
+    Jedes modellierte Energiesystem beinhaltet genau einen Standortverbrauch.
     \item \textbf{Ladeinfrastruktur\\}
-    In \ac{lift} können verschiedene Typen von Ladeinfrastruktur modelliert werden.
-    Von jedem Typen können eine unterschiedliche Anzahl Ladepunkte definiert werden.
+    In \ac{lift} können mehrere Klassen von Ladeinfrastruktur mit unterschiedlichen Leistungen in das Energiesystem integriert werden.
+    Von jeder Klasse kann eine beliebige positive Anzahl von Ladepunkten (oder Null) definiert werden.
     \item \textbf{Flotte\\}
-    Eine Flotte setzt sich aus unterschiedlichen Subflotten zusammen, in der jeweils Fahrzeuge des gleichen Typs \test{bzw.} Nutzungsprofils zusammengefasst werden.
+    Eine Flotte setzt sich aus unterschiedlichen Subflotten zusammen, in der jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammengefasst werden.
     Innerhalb der gleichen Subflotte können sowohl konventionell als auch batterieelektrisch angetriebene Fahrzeuge definiert werden.
-    Jede Subflotte kann aus einer unterschiedlichen Anzahl Fahrzeuge bestehen.
+    Jede Subflotte kann aus einer individuellen positiven Anzahl Fahrzeuge bestehen.
 \end{itemize}
 
 \subsection{Konzept}
 \label{subsec:concept}
 
-Den Kern von \ac{lift} stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots simuliert.
-In \autoref{subsec:sim_calc} erfolgt eine detaillierte Beschreibung der Simulation der einzelnen Komponenten.
-Dabei wird sowohl auf die dabei getroffenen methodischen Annahmen und Vereinfachungen als auch die Berechnung der für die einzelnen Komponenten entstehenden Kosten und Emissionen eingegangen.
-
-Basierend darauf werden anschließend techno-ökonomische Kennzahlen berechnet, die für die Bewertung des Szenarios herangezogen werden können.
-Anschließend werden die Simulationsergebnisse und zuvor berechnete Kosten und Emissionen auf den Projektzeitraum $T_{prj}$, der den Simulationszeitraum üblicherweise deutlich übersteigt, extrapoliert.
-Der Ursprung der wirtschaftlichen und ökologischen Kennzahlen lässt sich in zwei Kategorien aufteilen: Investitionen und Betrieb.
-Da die Investitionskosten direkt von den Eingangsparametern abhängen, können diese unabhängig von der Zeitschrittsimulation für die einzelnen Komponenten berechnet werden.
-Die Betriebskosten der Komponenten ergeben sich jedoch erst durch die simulierten Energieflüsse und sind somit auf die Ergebnisse der Zeitschrittsimulation angewiesen.
-Im gegensatz zu den Kostenwerten erfolgt die Berechnung der technischen Kennzahlen des Systems auf der Ebene des Gesamtsystems und nicht komponentenspezifisch.
-Für die Berechnung der technischen Kennzahlen werden die aus der Simulation erhaltenen Energiewerte verwendet.
-In den folgenden Kapiteln wird zuerst die Berechnung der aggregierten technischen (\autoref{subsec:kpi_tech}), wirtschaftlichen (\autoref{subsec:kpi_econ}) und ökologischen (\autoref{subsec:kpi_ecol}) Kennzahlen aufgezeigt.
+Den Kern von \ac{lift} stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots regelbasiert simuliert.
+\autoref{subsec:sim_calc} beschreibt die dabei angewandten Regeln und Kosten-\,/\,Emissionsberechnungen der jeweiligen Komponenten.
+Die Ergebnisse letzterer lassen sich zwei distinkten Quellen zuordnen: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
+\ac{capex} hängen direkt von den Eingangsparametern ab und werden daher unabhängig von der Zeitschrittsimulation für die einzelnen Komponenten berechnet.
+Die \ac{opex} jeder Komponente ergeben sich jedoch erst durch die simulierten Energieflüsse und sind somit auf die Ergebnisse der Zeitschrittsimulation angewiesen.
+Kosten und Emissionen werden über alle Komponenten im Simulationszeitraum addiert (\autoref{subsec:kpi_ecol}) und Kosten werden zusätzlich unter Annahme eines Kapitalkostensatzes über den deutlich längeren Projektzeitraum $T_{prj}$ diskontiert und extrapoliert (siehe \autoref{subsec:kpi_econ}).
+Im Gegensatz zu den Kosten und Emissionen erfolgt die Berechnung der technischen Kennzahlen des Systems auf System- statt Komponentenebene und basierend auf geflossenen Energien, da sie teilweise von Interaktionen der Komponenten abhängen (siehe \autoref{subsec:kpi_tech}).
+In Kombination der technischen und ökonomischen Ergebnisse werden techno-ökonomische Kennzahlen berechnet, die für die Bewertung des Szenarios herangezogen werden können.
+In den folgenden Kapiteln wird zuerst die Berechnung der aggregierten technischen (), wirtschaftlichen  und ökologischen (\autoref{subsec:kpi_ecol}) Kennzahlen aufgezeigt.
 
 \subsection{Zeitschrittsimulation und komponentenweise Kosten- und Emissionsberechnung}
 \label{subsec:sim_calc}
@@ -438,13 +440,31 @@ Entweder als Zeitreihe, wie im Fall des Gesamtkostendiagramms, in dem die Gesamt
 Die ökologischen Kennzahlen werden analog zu den wirtschaftlichen Kennzahlen berechnet.
 Jedoch entfällt bei der Berechnung der ökologischen Kennzahlen die Diskontierung.
 
-\section{Standardwerte}
+\section{Parameter und Standardwerte}
 \label{sec:defaultvalues}
+
+\begin{table}[!hbt]
+\centering
+\makebox[\linewidth]{
+\begin{tabular}{rlll}
+\toprule
+\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert} & \textbf{Quelle}\\
+\midrule
+$T^{sim}_{Start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)} &\\
+$T^{sim}_{Dauer}$ & Simulationszeitraum & Tag & 365 Tage &\\
+$T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde &\\
+\bottomrule
+\end{tabular}
+}
+\caption{Parameterdefinition, Formelzeichen und Standardwerte in \ac{lift}. Wenn kein \ac{gui}-Wert angegeben ist, dann ist dieser Parameter in der GUI anpassbar.}
+\label{tab:parameters}
+\end{table}
+
 \subsection{Simulationsparameter}
 \label{subsec:default_sim}
-$T^{sim}_{Start}$: 01.01.2023 00:00 +01:00\\
-$T^{sim}_{Dauer}$: 365 Tage\\
-$T^{sim}_{Zeitschritt}$: 1 Stunde\\
+
+
+
 
 \subsection{Komponenten}
 \label{subsec:default_components}
