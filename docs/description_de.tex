@@ -14,20 +14,39 @@
 \usepackage{siunitx}
 \usepackage{eurosym}
 
+%acro
+\acsetup{make-links = true,}
+
 % authblk
 \renewcommand\Authand{, }
 \renewcommand\Authands{, }
+
+% babel
+\addto\extrasngerman{
+    \def\sectionautorefname{Abschnitt}
+    \def\subsectionautorefname{Abschnitt}
+    \def\subsubsectionautorefname{Abschnitt}
+}
 
 % siunitx
 \DeclareSIUnit{\peak}{\text{p}}
 
 % acro
-\DeclareAcronym{capex}{short=CAPEX, long=capital expenditures,}
+\DeclareAcronym{capex}{short=CAPEX, long=investitionsbedingte Kosten\,/\,Emissionen,}
+\DeclareAcronym{co2}{short=CO\textsubscript{2}, long=Kohlenstoffdioxid,}
+\DeclareAcronym{dem}{short=DEM, long=Standortverbrauch,}
+\DeclareAcronym{ess}{short=ESS, long=stationärer Energiespeicher,}
+\DeclareAcronym{flt}{short=FLT, long=Flotte,}
+\DeclareAcronym{gcp}{short=GCP, long=Netzanschlusspunkt,}
 \DeclareAcronym{gui}{short=GUI, long=grafische Benutzeroberfläche,}
+\DeclareAcronym{kpi}{short=KPI, long=Leistungskennzahl, plural-form=Leistungskennzahlen}
 \DeclareAcronym{lift}{short=LIFT, long=Logistics Infrastructure and Fleet Transformation,}
-\DeclareAcronym{opex}{short=OPEX, long=operational expenditures,}
+\DeclareAcronym{cis}{short=CIS, long=Ladeinfrastruktur,}
+\DeclareAcronym{opex}{short=OPEX, long=betriebsbedingte Kosten\,/\,Emissionen,}
 \DeclareAcronym{pv}{short=PV, long=Photovoltaik,}
+\DeclareAcronym{pvgis}{short=PVGIS, long=Photovoltaic Geographical Information System,}
 \DeclareAcronym{utc}{short=UTC, long=koordinierte Weltzeit,}
+
 
 % Set page margins
 \geometry{top=1in, bottom=1in, left=1in, right=1in}
@@ -57,18 +76,16 @@ Die mit \acs*{lift} erarbeitete Ersteinschätzung ist die Basis für weitere Sch
 \tableofcontents
 \printacronyms
 
-\newpage
-\textbf{Offene ToDos:}\\
 \todo[inline]{Formelzeichen glattziehen: Sowohl den Aufbau der verwendeten Zeichen prüfen als auch deren konsitente Verwendung durch das ganze Dokument}
 \todo[inline]{Berechnung/Formelzeichen für Ladeinfrastruktur/Flotte konsitent gestalten}
-\todo[inline]{Standardwerte mit Quellen belegen}
+
 \todo[inline]{Standardwerte in Tabelle mit sinnvoller Formatierung überführen}
 
 \newpage
 \section{Ausgangslage und Zielsetzung}
 \label{sec:target}
 Das Softwaretool \ac{lift} wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München in Zusammenarbeit mit der Rödl GmbH entwickelt.
-Es unterstützt die Elektrifizierung von Flotten und den begleitenden Ausbau des Depot-Energiesystems (inkl.\,Ladeinfrastruktur) bereits in der frühen Phase mit techno-ökonomischen Potentialabschätzungen und schafft so eine Entscheidungsgrundlage für die Fortsetzung des Planungsprozesses.
+Es unterstützt die Elektrifizierung von Flotten und den begleitenden Ausbau des Depot-Energiesystems (inkl.~Ladeinfrastruktur) bereits in der frühen Phase mit techno-ökonomischen Potentialabschätzungen und schafft so eine Entscheidungsgrundlage für die Fortsetzung des Planungsprozesses.
 Sein Zielanwendungsgebiet ist das initiale Auslegungsgespräch zwischen Kundenberater und Flottenbetreiber.
 Dafür muss \ac{lift} mit wenigen, schnell abzuschätzenden oder bekannten Eingangsparametern arbeiten und die berechneten Ergebnisse schnell und intuitiv darstellen.
 
@@ -80,7 +97,7 @@ Komplexere Szenarien wie aktive Flexibilitätssteuerung durch Energiemanagement 
 Diese Schritte sind mit anderen Werkzeugen als \ac{lift} im Nachgang des Beratungsgespräches durchzuführen.
 Die Anwendung solcher Tools, die oft nicht über eine grafische Benutzeroberfläche verfügen und ggf.\,an die jeweilige Anwendung angepasst werden müssen, und vor allem die Interpretation ihrer Ergebnisse erfordert Expertenwissen und Rechenzeit.
 
-\section{Verwendung und grafische Benutzeroberfläche}
+\section{Verwendung und \acl*{gui}}
 \label{sec:gui}
 \ac{lift} ist in Python programmiert und verfügt über eine browserbasierte \ac{gui}, die auf der \textit{streamlit}-Bibliothek basiert.
 Die Installation von \ac{lift}, entweder auf einem lokalen Rechner oder auf einem Server ist im \textit{readme} des dazugehörigen \textit{git repository} beschrieben.
@@ -100,59 +117,81 @@ Hierbei wird nach allgemeinen Parametern (Standort, Energiesystem und wirtschaft
 Für jeden Eingabeparameter stehen in der \ac{gui} Hilfetexte zur genaueren Erklärung zur Verfügung, die bei Positionierung des Mauszeigers über dem jeweiligen Fragezeichensymbol erscheinen.
 Die Simulation und Berechnung der Ergebnisse (siehe \autoref{sec:methods}) wird am unteren Ende der Seitenleiste ausgelöst.
 Der rechte Hauptbereich der \ac{gui} visualisiert daraufhin die Ergebnisse.
-Berechnete Kennwerte werden jeweils vergleichend für Baseline- und Expansions-Szenario dargestellt, um Effekte der getroffenen Maßnahmen intuitiv beurteilen zu können.
+Berechnete Kennwerte werden jeweils vergleichend für Baseline- und Expansions-Szenario dargestellt, um Effekte der getroffenen Maßnahmen intuitiv beurteilen zu können
 Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfetexte durch Bewegung des Mauszeigers über das Fragezeichensymbol verfügbar.
 
 \section{Methodik}
 \label{sec:methods}
 
-Dieses Kapitel beschreibt die dem Tool \ac{lift} zugrundeliegende Methodik sowie die methodischen Annahmen (inhärente Bestandteile der zugrundeliegenden Berechnungsmethodik).
-Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind in \autoref{sec:defaultvalues} beschrieben.
+Dieses Kapitel beschreibt den grundsätzlichen Ablauf einer Berechnung mit LIFT sowie die damit getroffenen qualitativen  bzw. methodischen Annahmen.
+Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind hingegen in \autoref{sec:defaultvalues} definiert.
 
-\subsection{Energiesystem}
-\label{subsec:energysystem}
+\ac{lift} berechnet für \textit{Baseline}- und \textit{Expansion}-Szenario jeweils Kosten und \ac{co2}-Emissionen.
+Diese lassen sich jeweils nach zwei Quellen unterscheiden: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
+Die ursprünglich ökonomischen Begriffe \ac{capex} und \ac{opex} sind im Kontext von \ac{lift} aufgrund dieser Parallelität stets gleichermaßen für Emissionen zu verstehen.
+\ac{capex} hängen unmittelbar von den Eingangsparametern ab und können daher unabhängig von Simulation (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
 
-Das von \ac{lift} modellierte Energiesystem besteht aus folgenden Komponenten:
-\begin{itemize}
-    \item \textbf{Netzanschluss\\}
-    Der Netzanschluss stellt die Verbindung des lokalen Energiesystems zum öffentlichen Stromnetz dar und dient somit sowohl als Energiequelle (Bezug aus dem Netz) als auch -senke (Einspeisung in das Netz).
-    Jedes modellierte Energiesystem beinhaltet genau einen Netzanschluss.
-    \item \textbf{\acs*{pv}-Anlage\\}
-    Die \ac{pv}-Anlage dient zur Bereitstellung lokaler erneuerbarer Energie und wird somit als Energiequelle modelliert.
-    Jedes modellierte Energiesystem beinhaltet genau eine \ac{pv}-Anlage, deren Größe und damit Kosten auch mit Null parametriert werden können.
-    \item \textbf{Stationärspeicher\\}
-    Im Stationärspeicher stellt einen stationären batterieelektrischen Speicher dar.
-    Jedes modellierte Energiesystem beinhaltet genau einen Stationärspeicher, desen Größe und damit Kosten auch mit Null parametriert werden können.
-    \item \textbf{Standortverbrauch\\}
-    Der Standortverbrauch beinhaltet den Verbrauch elektrischer Energie des Standorts (Gebäude, Werkstätten sowie sonstige Infrastruktur) exklusive der Energie für Ladeinfrastruktur \text{bzw.} Mobilität und wird im Energiesystem als Energiesenke modelliert.
-    Jedes modellierte Energiesystem beinhaltet genau einen Standortverbrauch.
-    \item \textbf{Ladeinfrastruktur\\}
-    In \ac{lift} können mehrere Klassen von Ladeinfrastruktur mit unterschiedlichen Leistungen in das Energiesystem integriert werden.
-    Von jeder Klasse kann eine beliebige positive Anzahl von Ladepunkten (oder Null) definiert werden.
-    \item \textbf{Flotte\\}
-    Eine Flotte setzt sich aus unterschiedlichen Subflotten zusammen, in der jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammengefasst werden.
-    Innerhalb der gleichen Subflotte können sowohl konventionell als auch batterieelektrisch angetriebene Fahrzeuge definiert werden.
-    Jede Subflotte kann aus einer individuellen positiven Anzahl Fahrzeuge bestehen.
-\end{itemize}
+Zur Ermittlung von \ac{opex} modelliert und simuliert \ac{lift} je Szenario ein Energiesystem, das aus den Komponenten \ac{gcp}, \ac{pv}-Anlage, \ac{ess}, \ac{dem}, \ac{flt} und \ac{cis} besteht.
+Jede dieser Komponenten existiert genau einfach im modellierten Energiesystem, kann aber durch entsprechende Parameterwertwahl (z.B. $P_{max}=0$) auch deaktiviert werden.
+Flotte und \ac{cis} können variable Anzahlen an Subkomponenten (Ladepunkt-Leistungsklassen und Subflotten) enthalten.
+Eine Subflotte fasst variable Anzahlen von Fahrzeugen des gleichen Typs und Nutzungsprofils zusammen.
+In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) und technischen \acp{kpi} (\autoref{subsec:kpi_tech}) sind.
 
-\subsection{Konzept}
-\label{subsec:concept}
+Gesamtkosten und -emissionen werden unter Annahme von Komponentenlebensdauern und entsprechenden Ersatzbeschaffungen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpi_econ}).
+Dabei wird inhärent die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika, z.\,B. Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie, abgebildet werden.
 
-Den Kern von \ac{lift} stellt eine Zeitschrittsimulation dar, die die Energieflüsse im Energiesystem und der Flotte des Depots regelbasiert simuliert.
-\autoref{subsec:sim_calc} beschreibt die dabei angewandten Regeln und Kosten-\,/\,Emissionsberechnungen der jeweiligen Komponenten.
-Die Ergebnisse letzterer lassen sich zwei distinkten Quellen zuordnen: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
-\ac{capex} hängen direkt von den Eingangsparametern ab und werden daher unabhängig von der Zeitschrittsimulation für die einzelnen Komponenten berechnet.
-Die \ac{opex} jeder Komponente ergeben sich jedoch erst durch die simulierten Energieflüsse und sind somit auf die Ergebnisse der Zeitschrittsimulation angewiesen.
-Kosten und Emissionen werden über alle Komponenten im Simulationszeitraum addiert (\autoref{subsec:kpi_ecol}) und Kosten werden zusätzlich unter Annahme eines Kapitalkostensatzes über den deutlich längeren Projektzeitraum $T_{prj}$ diskontiert und extrapoliert (siehe \autoref{subsec:kpi_econ}).
-Im Gegensatz zu den Kosten und Emissionen erfolgt die Berechnung der technischen Kennzahlen des Systems auf System- statt Komponentenebene und basierend auf geflossenen Energien, da sie teilweise von Interaktionen der Komponenten abhängen (siehe \autoref{subsec:kpi_tech}).
-In Kombination der technischen und ökonomischen Ergebnisse werden techno-ökonomische Kennzahlen berechnet, die für die Bewertung des Szenarios herangezogen werden können.
-In den folgenden Kapiteln wird zuerst die Berechnung der aggregierten technischen (), wirtschaftlichen  und ökologischen (\autoref{subsec:kpi_ecol}) Kennzahlen aufgezeigt.
+\subsection{Energiesystemkomponenten}
+\label{subsec:system}
 
-\subsection{Zeitschrittsimulation und komponentenweise Kosten- und Emissionsberechnung}
-\label{subsec:sim_calc}
+Der \textbf{\acf{gcp}} modelliert die Schnittstelle zum elektrischen Netz, unabhängig von dessen Spannungsebene, also die örtliche Messstelle.
+Blindleistung im Wechselstromnetz wird nicht berücksichtigt.
+
+Die \textbf{\ac{pv}-Anlage} modellieret ein homogen und unbeweglich für maximales Energiepotential ausgerichtetes und augeständertes Array von polykristallinen \ac{pv}-Modulen inklusive ihres Wechselrichters.
+Das entsprechende zeitvariable Leistungspotential wird für den angegebenen Standort in stündlicher Auflösung vom \ac{pvgis} der Europäischen Union für das Jahr 2023 abgerufen.
+Neuere oder zeitlich feiner aufgelöste Daten sind bei diesem Anbieter nicht verfügbar.
+Während des Betriebs entstehen typischerweise weder Kosten noch Emissionen. \todo{verifizieren, dass der Code das theoretisch kann - brauchts diesen Satz überhaupt oder ist das nicht inhärent in Standardwerten}
+
+Der \textbf{\acf{dem}} modelliert den Energieverbrauch der Gebäude und sonstiger Infrastruktur am Standort exklusive möglicherweise vorhandener Ladepunkte.
+Für den Standortverbrauch werden Standardlastprofile des BDEW verwendet, die auf den jährlichen Energieverbrauch des Standorts skaliert werden.
+Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
+Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
+Da die Zielsetzung von \ac{lift} jedoch darin besteht, mit einer möglichst geringen Datengrundlage erste Ergebnisse zu erzielen, kann in diesem Schritt des Planungsprozesses mit Standardlastprofilen gearbeitet werden.
+In weiteren Planungsphasen ist davon jedoch abzuraten, um ein realistischeres Verhalten abbilden zu können.
+Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen durch die aus der PV-Anlage und über den Netzanschlusspunkt bezogene Energie an.
+Diese sind somit in den beiden genannten Komponenten abgebildet.
+
+
+\subsection{\ac{capex}-Berechnung}
+\label{subsec:capex}
+
+Beim Aufbau einer Komponente $k$ (mit Ausnahme des Standortverbrauchs, der Ladeinfrastruktur und der Flotte) entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die jeweils in Abhängigkeit der Dimensionierung der Komponente $S^k$ sowie den spezifischen Werten $c^k_{cap}$ und $e^k_{cap}$ pro Größeneinheit der Komponente berechnet und über alle Komponenten addiert werden.
+Für Ladeinfrastruktur und Flotte ist keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen fixe \ac{capex} pro Element $n$ (Fahrzeug oder Ladepunkt) einer Subkomponente bzw. -klasse $m$ (Fahrzeug- oder Ladepunkttyp).
+Spezifische Kosten einer $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
+
+\begin{subequations}
+    \label{eq:capex_init}
+    \begin{align}
+        C_{cap, init} = \sum_{k}{S^k \cdot c^k_{cap}} + \sum_{m,n}{c^n_{cap, m}} \label{eq:capex_init_econ}\\
+        E_{cap, init} = \sum_{k}{S^k \cdot e^k_{cap}} + \sum_{m,n}{e^n_{cap, m}}\label{eq:capex_init_ecol}
+    \end{align}
+\end{subequations}
+
+
+\subsection{Zeitschrittsimulation}
+\label{subsec:sim}
 
 Die in \ac{lift} verwendete Zeitschrittsimulation simuliert die Energieflüsse im Energiesystem des Depots und der zugehörigen Flotte beginnend ab $T_{start}$ über einen Simulationszeitraum $T_{sim}$ mit einem Zeitschritt von $T_{step}$.
-Wirkungsgrade sind in der Simulation nicht berücksichtigt.
+In jedem Zeitschritt wird der addierte Leistungsbedarf von Standortverbrauches und Flotte, der unter der Annahme eines dynamischen Flotten-Ladelastmanagements für jede gewählte Energiesystemkonfiguration neu berechnet wird (\todo{ref dyn LM}), in absteigender Priorität aus \ac{pv} (soweit zum jeweiligen Zeitpunkt verfügbar), Stationärspeicher (soweit zum jeweiligen Zeitpunkt geladen) und Netzanschluss gedeckt.
+Im Fall, dass die \ac{pv} den Leistungsbedarf alleine erfüllen kann, wird der Stationärspeicher mit der durch Leistungsbeschränkung oder Ladezustand limitierten maximalen Leistung geladen.
+Weitere überschüssige Leistung wird bis zur Leistungsgrenze des Netzanschlusses ins Netz eingespeist, bevor \ac{pv}-Potential abgeregelt wird.
+
+Trotz des szenarioadpativen Vorgehens kann zu kleine Dimensionierung der drei Quellenkomponenten in unerfüllbaren Anforderungen resultieren und eine entsprechende Fehlermeldung (``Netzanschlussfehler'') hervorrufen.
+Wirkungsgrade, dynamische Strompreise und Flexibilitäten werden nicht berücksichtigt. \todo{Aussage prüfen}
+Die beiden letzteren Dynamiken sind mit regelbasierten Strategien nicht sinnvoll ausschöpfbar und erfordern intelligentere und situationsadaptivere Strategien wie Optimierung und/oder Machine Learning zur Steuerung.
+
+\subsection{\acs{opex}-Berechnung}
+\label{sec:opex}
+
 Für die weitere Berechnung werden die folgenden Ergebnisse der Simulation herangezogen:
 \begin{itemize}
     \item die aus dem öffentlichen Netz bezogene ($E^{Netz}_{Bezug}$) und die ins öffentliche Netz eingespeiste Energie ($E^{Netz}_{Einspeisung}$)
@@ -164,41 +203,51 @@ Für die weitere Berechnung werden die folgenden Ergebnisse der Simulation heran
     \item die von den Fahrzeugen zurückgelegten Distanzen aufgeteilt nach Subflotte und Antriebsart ($d^{f}_{a}$ mit Subflotte $f$ und Antriebsart (konventionell oder elektrisch) $a$)
 \end{itemize}
 
-In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
-Dabei wird die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika abgebildet werden.
-Dazu zählen beispielsweise saisonale Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie.
-Wird \ac{lift} nicht über die \ac{gui} verwendet, ist diese Annahme bei der Definition des Simulationszeitraums zu beachten.
+\subsection{Technische \acfp{kpi}}
+\label{subsec:kpi_tech}
 
-Die Zeitschrittsimulation selbst simuliert alle im Energiesystem vertretenen Komponenten.
-Die folgenden Abschnitte erklären detailliert die Annahmen, die für die einzelnen Komponenten getroffen wurden und wie für diese Komponenten Kosten und Emissionen berechnet werden.
-Dabei werden basierend auf der Simulation die jährlichen Betriebskosten berechnet und unabhängig von der Simulation die einmalig auftretenden Investitionskosten einer Komponente mit der vorgegebenen Größe.
-Das Vorgehen für die Berücksichtigung der Lebensdauer und von Ersatzinvestitionen ist für alle Komponenten identisch und wird in \autoref{subsec:kpi_econ} beschrieben.
+Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für Netzanschluss, PV-Anlage und Stationärspeicher sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
 
-Für die Errichtung \text{bzw.} beim Kauf einer Komponente $k$ entstehen bis auf den Standortverbrauch sowohl Kosten $C^k_{Invest, einmalig}$ als auch Emissionen, jeweils in Abhängigkeit der Dimensionierung der Komponente $S^k$ sowie den spezifischen Kosten $c^k_{Invest}$ und Emissionen $co2^k_{Invest}$ pro Größeneinheit der Komponente.
-Sowohl die verursachten Kosten also auch Emissionen werden durch Multiplikation der spezifischen Kosten \text{bzw.} Emissionen mit der Dimensionierung der Komponente berechnet:
+Die \textbf{Eigenverbrauchsquote} $\gamma_{Eigenverbrauch}$ gibt an, welcher Anteil der potenziell lokal erzeugbaren PV-Energie am Standort selbst verbraucht wurde.
+Dazu zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
+Ein zu hoher Eigenverbrauch deutet meist auf eine für den Verbrauch am Standort zu klein dimensionierte PV-Anlage hin.
+Die Eigenverbrauchsquote berechnet sich zu:
 \begin{equation}
-    Y^k_{Invest, einmalig} = S^k \cdot y^k_{Invest} \quad \text{mit } Y \in \{C, CO2\} \text{ und } y \in \{c, co2\}
-    \label{eq:capex_capem}
+    \gamma_{Eigenverbrauch} = 1 - \frac{E^{PV}_{Kappung} + E^{Netz}_{Einspeisung}}{E^{PV}_{Pot}}
+    \label{eq:selfconsumption}
+\end{equation}\\
+
+Der \textbf{Autarkiegrad} $\gamma_{Autarkie}$ gibt an, welcher Anteil der lokal verbrauchten Energie am Standort selbst, im Fall von \ac{lift} lediglich über die PV-Anlage, erzeugt wurde.
+Zur lokal verbrauchten Energie zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
+Ein zu hoher Autarkiegrad deutet meist auf eine für den Verbrauch am Standort zu groß dimensionierte PV-Anlage hin.
+Der Autarkiegrad berechnet sich zu:
+\begin{equation}
+    \gamma_{Autarkie} = \frac{E^{PV}_{Pot} - E^{PV}_{Kappung} - E^{Netz}_{Einspeisung}}{E^{Flotte}_{Depot} + E^{Standort}_{gesamt}}
+    \label{eq:selfsufficiency}
 \end{equation}
 
-\subsubsection{Standortverbrauch}
-\label{subsubsec:sitedemand}
-Der Standortverbrauch modelliert den Energieverbrauch des Gebäudes und sonstiger Infrastruktur des Depots exklusive möglicherweise vorhandenen Ladepunkte.
-Für den Standortverbrauch werden Standardlastprofile des BDEW verwendet, die auf den jährlichen Energieverbrauch des Standorts skaliert werden.
-Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
-Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
-Da die Zielsetzung von \ac{lift} jedoch darin besteht, mit einer möglichst geringen Datengrundlage erste Ergebnisse zu erzielen, kann in diesem Schritt des Planungsprozesses mit Standardlastprofilen gearbeitet werden.
-In weiteren Planungsphasen ist davon jedoch abzuraten, um ein realistischeres Verhalten abbilden zu können.
-Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen durch die aus der PV-Anlage und über den Netzanschlusspunkt bezogene Energie an.
-Diese sind somit in den beiden genannten Komponenten abgebildet.
+Eine hohe Eigenverbrauchsquote führt normalerweise zu einem niedrigen Autarkiegrad und umgekehrt.
+Zu einem gewissen Grad lässt sich dieser Zielkonflikt durch die Verwendung eines Stationärspeichers kompensieren.\\
+
+Der Wert \textbf{Heim-Laden} gibt an, welcher Anteil der von der Flotte insgesamt geladenen Energie am Depot geladen wurde.
+Ein geringer Anteil an am Depot geladener Energie deutet auf zu wenige Ladepunkte \text{bzw.} Ladepunkte mit zu geringer Ladeleistung oder eine Limitation durch einen zu geringen Netzanschluss hin.
+Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
+
+\begin{equation}
+    \gamma_{Heim-Laden} = \frac{E^{Flotte}_{Depot}}{E^{Flotte}_{Depot} + E^{Flotte}_{On-Route}}
+    \label{eq:homecharging}
+\end{equation}
+
+\subsection{Extrapolation}
+\label{subsec:extrapolation}
+
+In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
+
+
 
 \subsubsection{Netzanschluss}
 \label{subsubsec:grid}
-Die Dimensionierung des Netzanschlusses wird in kW angegeben, da Blindleistung in der Simulation nicht berücksichtigt wird.\\\\
-\textbf{Investitionskosten und -emissionen}\\
-Für die Errichtung des Netzanschlusspunktes mit der in der \ac{gui} definierten Größe $S^{Netz}$ entstehen sowohl Kosten $C^{Netz}_{Invest, einmalig}$ als auch Emissionen $CO2^{Netz}_{Invest, einmalig}$.
-Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{Netz}_{Invest}$, spezifischen Emissionen $co2^{Netz}_{Invest}$ und die Lebensdauer $ls^{Netz}$ sind in \autoref{subsubsec:default_grid} aufgeführt.\\\\
+
 \textbf{Betriebskosten und -emissionen}\\
 In Abhängigkeit des Energiedurchsatzes in Bezugs- und Einspeiserichtung sowie der Spitzenlast fallen Betriebskosten für den Netzanschlusspunkt an:
 \begin{equation}
@@ -221,14 +270,7 @@ Die Betriebsemissionen berechnen sich analog zu \autoref{eq:opex_grid}:
 
 \subsubsection{PV-Anlage}
 \label{subsubsec:pv}
-Die potenzielle PV-Leistung wird für den angegebenen Standort und die optimale Ausrichtung einer nicht-beweglichen PV-Anlage in stündlicher Auflösung von PVGIS für das Jahr 2023 abgerufen.
-Neuere Daten oder Daten mit einer höheren zeitlichen Auflösung sind bei diesem Anbieter nicht verfügbar.\\\\
-\textbf{Investitionskosten und -emissionen}\\
-Für die Errichtung der PV-Anlage mit der in der \ac{gui} definierten Größe $S^{PV}$ entstehen sowohl Kosten $C^{PV}_{Invest, einmalig}$ als auch Emissionen $CO2^{PV}_{Invest, einmalig}$.
-Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{PV}_{Invest}$, spezifischen Emissionen $co2^{PV}_{Invest}$ und die Lebensdauer $ls^{PV}$ sind in \autoref{subsubsec:default_pv} aufgeführt.\\\\
-\textbf{Betriebskosten und -emissionen}\\
-Während des Betriebs entstehen weder Kosten noch Emissionen.
+
 
 \subsubsection{Stationärspeicher}
 \label{subsubsec:ess}
@@ -239,10 +281,6 @@ Die Betriebsstrategie des Speichers sieht eine sogenannte Nulllastregelung am Ne
 Dabei versucht der Speicher im lokalen Netz überschüssige Energie, die durch die PV-Anlage erzeugt, aber nicht lokal verbraucht werden kann, einzuspeichern.
 Nur, wenn die maximale Ladeleistung des Speichers überschritten wird oder er aufgrund eines zu hohen Ladezustands keine weitere Energie einspeichern kann, wird die überschüssige Energie über den Netzanschlusspunkt ins öffentliche Stromnetz eingespeist.
 Sollte der Bedarf im lokalen Energiesystems des Depots nicht aus lokalen Quallen gedeckt werden können, wird zuerst der Speicher entladen, bevor zusätzliche Energie aus dem öffentlichen Netz bezogen wird.\\\\
-\textbf{Investitionskosten und -emissionen}\\
-Für die Errichtung des Stationärspeichers mit der in der \ac{gui} definierten Größe $S^{Speicher}$ entstehen sowohl Kosten $C^{Speicher}_{Invest, einmalig}$ als auch Emissionen $CO2^{Speicher}_{Invest, einmalig}$.
-Diese werden nach \autoref{eq:capex_capem} berechnet.
-Die angenommenen spezifischen Kosten $c^{Speicher}_{Invest}$, spezifischen Emissionen $co2^{Speicher}_{Invest}$ und die Lebensdauer $ls^{Speicher}$ sind in \autoref{subsubsec:default_ess} aufgeführt.\\\\
 \textbf{Betriebskosten und -emissionen}\\
 Während des Betriebs entstehen weder Kosten noch Emissionen.
 
@@ -261,12 +299,7 @@ Grund hierfür ist die starke Glättung des Standortlastgangs, dessen Lastspitze
 Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung.
 Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
 Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.\\\\
-\textbf{Investitionskosten und -emissionen}\\
-Für die Errichtung eines einzelnen Ladepunktes $n$ vom Typ $m$ entstehen die in der \ac{gui} definierten Kosten $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$.
-Zur Berechnung der Investitionskosten aller Ladepunkte eines Typs $C^{\text{Ladepunkt}, m, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Ladepunkte desselben Typs aufsummiert.
-Eine Aggregation der verschiedenen Ladepunkttypen ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Typ keinen Sinn.
-Die bei der Herstellung eines Ladepunkts entstehenden Emissionen $CO2^{\text{Ladepunkt}, m n}_\text{Invest, einmalig}$ sind in \autoref{subsubsec:default_ci} aufgeführt.
-Die Berechnung der Emissionen aller Ladepunkte eines Typs erfolgt analog zu den Kosten.\\\\
+
 \textbf{Betriebskosten und -emissionen}\\
 Während des Betriebs entstehen weder Kosten noch Emissionen, da die Energie vom lokalen Energiesystem bereitgestellt wird.
 
@@ -325,40 +358,7 @@ Für die Kosten werden die in der \ac{gui} definierten spezifischen On-Route Lad
 \end{equation}
 
 
-\subsection{Technische Kennzahlen}
-\label{subsec:kpi_tech}
 
-Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für Netzanschluss, PV-Anlage und Stationärspeicher sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
-
-Die \textbf{Eigenverbrauchsquote} $\gamma_{Eigenverbrauch}$ gibt an, welcher Anteil der potenziell lokal erzeugbaren PV-Energie am Standort selbst verbraucht wurde.
-Dazu zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
-Ein zu hoher Eigenverbrauch deutet meist auf eine für den Verbrauch am Standort zu klein dimensionierte PV-Anlage hin.
-Die Eigenverbrauchsquote berechnet sich zu:
-\begin{equation}
-    \gamma_{Eigenverbrauch} = 1 - \frac{E^{PV}_{Kappung} + E^{Netz}_{Einspeisung}}{E^{PV}_{Pot}}
-    \label{eq:selfconsumption}
-\end{equation}\\
-
-Der \textbf{Autarkiegrad} $\gamma_{Autarkie}$ gibt an, welcher Anteil der lokal verbrauchten Energie am Standort selbst, im Fall von \ac{lift} lediglich über die PV-Anlage, erzeugt wurde.
-Zur lokal verbrauchten Energie zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
-Ein zu hoher Autarkiegrad deutet meist auf eine für den Verbrauch am Standort zu groß dimensionierte PV-Anlage hin.
-Der Autarkiegrad berechnet sich zu:
-\begin{equation}
-    \gamma_{Autarkie} = \frac{E^{PV}_{Pot} - E^{PV}_{Kappung} - E^{Netz}_{Einspeisung}}{E^{Flotte}_{Depot} + E^{Standort}_{gesamt}}
-    \label{eq:selfsufficiency}
-\end{equation}
-
-Eine hohe Eigenverbrauchsquote führt normalerweise zu einem niedrigen Autarkiegrad und umgekehrt.
-Zu einem gewissen Grad lässt sich dieser Zielkonflikt durch die Verwendung eines Stationärspeichers kompensieren.\\
-
-Der Wert \textbf{Heim-Laden} gibt an, welcher Anteil der von der Flotte insgesamt geladenen Energie am Depot geladen wurde.
-Ein geringer Anteil an am Depot geladener Energie deutet auf zu wenige Ladepunkte \text{bzw.} Ladepunkte mit zu geringer Ladeleistung oder eine Limitation durch einen zu geringen Netzanschluss hin.
-Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
-
-\begin{equation}
-    \gamma_{Heim-Laden} = \frac{E^{Flotte}_{Depot}}{E^{Flotte}_{Depot} + E^{Flotte}_{On-Route}}
-    \label{eq:homecharging}
-\end{equation}
 
 \subsection{Wirtschaftliche Kennzahlen}
 \label{subsec:kpi_econ}
@@ -443,28 +443,37 @@ Jedoch entfällt bei der Berechnung der ökologischen Kennzahlen die Diskontieru
 \section{Parameter und Standardwerte}
 \label{sec:defaultvalues}
 
+\todo[inline]{Standardwerte in gleicher Spalte mit Quellen belegen}
+\todo[inline]{Alle (auch GUI-) Parameter in Tabelle integrieren}
+
 \begin{table}[!hbt]
 \centering
 \makebox[\linewidth]{
 \begin{tabular}{rlll}
 \toprule
-\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert} & \textbf{Quelle}\\
+\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert}\\
 \midrule
-$T^{sim}_{Start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)} &\\
-$T^{sim}_{Dauer}$ & Simulationszeitraum & Tag & 365 Tage &\\
-$T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde &\\
+\textbf{Simulation}\\
+$T^{sim}_{Start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)}\\
+$T^{sim}_{Dauer}$ & Simulationszeitraum & Tag & 365 Tage\\
+$T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde\\
+\midrule
+\textbf{Netzanschluss}\\
+\midrule
+\textbf{\ac{pv}-Anlage}\\
+\midrule
+\textbf{Stationärspeicher}\\
+\midrule
+\textbf{Ladeinfrastruktur}\\
+\midrule
+\textbf{Flotte}\\
+\midrule
 \bottomrule
 \end{tabular}
 }
-\caption{Parameterdefinition, Formelzeichen und Standardwerte in \ac{lift}. Wenn kein \ac{gui}-Wert angegeben ist, dann ist dieser Parameter in der GUI anpassbar.}
+\caption{Parameterdefinition, Formelzeichen und Standardwerte mit Quellenangabe in \ac{lift}. Wenn kein \ac{gui}-Wert angegeben ist, dann ist dieser Parameter in der GUI anpassbar.}
 \label{tab:parameters}
 \end{table}
-
-\subsection{Simulationsparameter}
-\label{subsec:default_sim}
-
-
-
 
 \subsection{Komponenten}
 \label{subsec:default_components}
@@ -545,9 +554,10 @@ $c^{ICEV}_{Wartung}$: 0,0339 €/km\\
 $v^{ICEV}$: 15 l/100km\\
 $ls$: 6 Jahre\\
 
-
 \section{Quellen}
 \bibliographystyle{plain}
 \bibliography{references}
+
+\listoftodos
 
 \end{document}

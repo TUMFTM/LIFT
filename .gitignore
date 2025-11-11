@@ -18,6 +18,7 @@
 *.glo
 *.gls
 *.ist
+*.tdo
 
 # Temporary files
 *.swp
