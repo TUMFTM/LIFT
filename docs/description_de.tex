@@ -260,37 +260,48 @@ Für die spezifischen Emissionen des öffentlichen Ladens wird der Wert des Stan
 \subsection{Technische \acp{kpi}}
 \label{subsec:kpi_tech}
 
-Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
+Die technischen \acp{kpi} werden über den Simulationszeitraum berechnet und dienen als Anhaltspunkt, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
+Dabei wird die lokal genutzte Energie $W^{cons}_\text{sim}$ gemäß \autoref{eq:energy_consumption} als die in \ac{dem} und \ac{flt} abgeflossene Energie definiert.
+Sinngemäß sind alle anderen Energieabflüsse, also das abgeregelte \ac{PV}-Energiepotential $W^{PV}_\text{curt,sim}$ und die am \ac{gcp} eingespeiste Energie $W^{GCP}_\text{sell}$ als extern genutzt zu werten.
 
-Die \textbf{Eigenverbrauchsquote} $\gamma_{Eigenverbrauch}$ gibt an, welcher Anteil der potenziell lokal erzeugbaren PV-Energie am Standort selbst verbraucht wurde.
-Dazu zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
-Ein zu hoher Eigenverbrauch deutet meist auf eine für den Verbrauch am Standort zu klein dimensionierte PV-Anlage hin.
-Die Eigenverbrauchsquote berechnet sich zu:
+\begin{subequations}
+    \label{eq:energy_boundaries}
+    \begin{align}
+        W^{loc}_\text{sim} = & W^{FLT}_\text{sim} + W^{DEM}_\text{sim} \label{eq:cons_loc} \\
+        W^{ext}_\text{sim} = & W^{PV}_\text{curt,sim} + W^{GCP}_\text{sell} \label{eq:cons_ext}
+    \end{align}
+\end{subequations}
+
+\todo[inline]{$W^{FLT}_\text{sim}$ ist nicht gut genug von externem Laden abgegrenzt}
+
+Die \textbf{Eigenverbrauchsquote} $\gamma_{sc}$ gemäß \autoref{eq:selfconsumption} gibt an, welcher Anteil des \ac{pv}-Energiepotentials lokal genutzt wurde.
+Dies kann entweder direkt oder auch indirekt über die extern genutzte Energie berechnet werden
+Sowohl sehr geringe als auch eine sehr hohe Werte von $\gamma_{sc}$  sind nicht vorteilhaft: Erstere deuten auf eine überdimensionierte, letztere auf eine unterdimensionierte \ac{pv}-Anlage hin.
+
 \begin{equation}
-    \gamma_{Eigenverbrauch} = 1 - \frac{E^{PV}_{Kappung} + E^{Netz}_{Einspeisung}}{E^{PV}_{Pot}}
+    \gamma_{sc} = \frac{W^{loc}_\text{sim}}{W^{PV}_\text{pot}} = 1 - \frac{W^{ext}_\text{sim}}{W^{PV}_\text{pot}}
     \label{eq:selfconsumption}
 \end{equation}\\
 
-Der \textbf{Autarkiegrad} $\gamma_{Autarkie}$ gibt an, welcher Anteil der lokal verbrauchten Energie am Standort selbst, im Fall von \ac{lift} lediglich über die PV-Anlage, erzeugt wurde.
-Zur lokal verbrauchten Energie zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
-Ein zu hoher Autarkiegrad deutet meist auf eine für den Verbrauch am Standort zu groß dimensionierte PV-Anlage hin.
-Der Autarkiegrad berechnet sich zu:
+Der \textbf{Autarkiegrad} $\gamma_{ss}$ gemäß \autoref{eq:selfsufficiency} gibt an, welcher Anteil der lokal genutzten Energie auch lokal bzw. aus \ac{pv} bereitgestellt wurde.
+Ein sehr hoher Autarkiegrad deutet auf eine für den Verbrauch am Standort aus ökonomischer Sicht zu überdimensionierte Kombination aus \ac{pv} und \ac{ess} hin.
+
 \begin{equation}
-    \gamma_{Autarkie} = \frac{E^{PV}_{Pot} - E^{PV}_{Kappung} - E^{Netz}_{Einspeisung}}{E^{Flotte}_{Depot} + E^{Standort}_{gesamt}}
+    \gamma_{ss} = \frac{W^{PV}_\text{pot, sim} - W^{PV}_\text{curt} - E^{GCP}_\text{sell}}{W^{loc}_\text{sim}}
     \label{eq:selfsufficiency}
 \end{equation}
 
-Eine hohe Eigenverbrauchsquote führt normalerweise zu einem niedrigen Autarkiegrad und umgekehrt.
-Zu einem gewissen Grad lässt sich dieser Zielkonflikt durch die Verwendung eines Stationärspeichers kompensieren.\\
-
-Der Wert \textbf{Heim-Laden} gibt an, welcher Anteil der von der Flotte insgesamt geladenen Energie am Depot geladen wurde.
-Ein geringer Anteil an am Depot geladener Energie deutet auf zu wenige Ladepunkte \text{bzw.} Ladepunkte mit zu geringer Ladeleistung oder eine Limitation durch einen zu geringen Netzanschluss hin.
-Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
+Der \textbf{Depotladegrad} $\gamma_{ch}$ gemäß \autoref{eq:homecharging} gibt an, welcher Energieanteil über die gesamte \ac{FLT} am Depot geladen wurde.
+Ein sehr geringer Wert deutet auf Limitationen durch Ladepunkt- oder Ladeleistungsverfügbarkeit.
+Für letztere können die Dimensionierungen von \ac{cis} und\,/\,oder \ac{gcp} ursächlich sein.
+Da die lokalen Energiekosten im Vergleich zum öffentlichen Laden meist geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
 
 \begin{equation}
-    \gamma_{Heim-Laden} = \frac{E^{Flotte}_{Depot}}{E^{Flotte}_{Depot} + E^{Flotte}_{On-Route}}
+    \gamma_{ch} = \frac{W^{FLT}_\text{sim}}{W^{FLT}_\text{sim} + W^{FLT}_\text{pub, sim}}
     \label{eq:homecharging}
 \end{equation}
+
+\todo[inline]{Hinweis verpacken: Diese KPIs sind mit Bidi-Fahrzeugen bald hinfällig}
 
 \subsection{Extrapolation}
 \label{subsec:extrapolation}
@@ -298,7 +309,7 @@ Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer 
 In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
 
 
-\subsection{Wirtschaftliche \acp{kpi}}
+\subsection{Ökonomische und ökologische \acp{kpi}}
 \label{subsec:kpi_econ}
 
 Bei der Berechnung der wirtschaftlichen Kennzahlen wird zwischen Investitions- und Betriebskosten unterschieden.
@@ -371,12 +382,6 @@ Die diskontierten Kostenvektoren ergeben sich somit aus \autoref{eq:discounting}
 \end{equation}
 Diese beiden Vektoren werden als Grundlage für die Kostendarstellung in den Ergebnissen verwendet.
 Entweder als Zeitreihe, wie im Fall des Gesamtkostendiagramms, in dem die Gesamtkosten über die Projektlaufzeit aufgetragen sind, oder bereits aufsummiert, wie zur Berechnung der Projektgesamtkosten.
-
-\subsection{Ökologische Kennzahlen}
-\label{subsec:kpi_ecol}
-
-Die ökologischen Kennzahlen werden analog zu den wirtschaftlichen Kennzahlen berechnet.
-Jedoch entfällt bei der Berechnung der ökologischen Kennzahlen die Diskontierung.
 
 \section{Parameter und Standardwerte}
 \label{sec:defaultvalues}
