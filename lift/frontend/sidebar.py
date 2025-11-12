@@ -1,3 +1,22 @@
+"""Streamlit sidebar for LIFT scenario input.
+
+Purpose:
+- Provide all UI controls to construct a complete `ComparisonInput`:
+  site/location, economics, fleet subfleets, and charging infrastructure.
+
+Relationships:
+- Emits `ComparisonInput` consumed by `lift.backend.comparison.run_comparison` via `frontend/app.py`.
+- Uses frontend definitions (`definitions.py`) for defaults and labels (`utils.get_label`).
+
+Key Logic:
+- Map widget values to typed comparison-layer inputs using factory helpers (e.g., `ExistExpansionValue`).
+- Location: interactive map with Folium; energy system (demand/grid/pv/ess) via invest components.
+- Fleet: per-subfleet counts (total/BEV baseline+expansion), charger type, power, costs and parameters.
+- Chargers: per-charger counts baseline/expansion, unit power, unit cost; overall load management
+  limit per phase (static slider or dynamic = infinity).
+- Sim settings: auto-refresh / calculate button toggles `st.session_state["run_backend"]`.
+"""
+
 from __future__ import annotations
 from typing import Literal
 

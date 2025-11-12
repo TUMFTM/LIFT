@@ -1,3 +1,25 @@
+"""Comparison-level interfaces for baseline vs. expansion scenarios.
+
+Purpose:
+- Defines the top-level input structures (`ComparisonInput`) that capture both baseline and expansion
+  phase parameters in a single configuration object.
+- Provides `ComparisonResult` which bundles phase results and computes comparative metrics (NPC delta,
+  payback periods, CO₂ delta).
+
+Relationships:
+- Consumed by `frontend/sidebar.py` to build user inputs; passed to `backend/comparison/comparison.py`
+  for orchestration.
+- `ComparisonInput*` classes are converted to phase-specific inputs via `evaluation.interfaces` factories.
+- `ComparisonResult` aggregates `PhaseResult` objects from the evaluation layer and exposes convenience
+  properties for frontend visualization.
+
+Key Logic:
+- `ExistExpansionValue` encapsulates values that differ between phases (preexisting vs. expansion capacity).
+  Its `get_value(phase)` method returns the appropriate value for baseline (preexisting) or expansion (total).
+- `ComparisonResult` computes payback periods via linear interpolation on cumulative cashflow differences.
+  NPC delta and CO₂ delta are simple differences of aggregated totals.
+"""
+
 from dataclasses import dataclass, field
 from typing import Literal
 

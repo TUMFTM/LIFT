@@ -1,3 +1,18 @@
+"""Streamlit results and plots for LIFT comparisons.
+
+Purpose:
+- Render KPIs and time-profiled charts comparing baseline vs. expansion scenarios.
+
+Relationships:
+- Consumes `ComparisonResult` (with `PhaseResult` for baseline/expansion) from the backend.
+- Uses frontend styles and labels for consistent presentation.
+
+Key Logic:
+- KPI tiles: discounted total costs (TOTEX), emissions totals, self-consumption/-sufficiency, site-charging share.
+- Cost and CO₂ time profiles: cumulative lines constructed from periodized CAPEX/OPEX (incl. salvage at end).
+- Plotting via Altair with minimal interactivity for tooltips and consistent color scheme.
+"""
+
 from __future__ import annotations
 import os
 

@@ -1,3 +1,19 @@
+"""Frontend default definitions and constants.
+
+Purpose:
+- Instantiate frontend interfaces with default ranges/options by reading packaged JSON data
+  and define global constants for simulation/economics horizons and factors.
+
+Relationships:
+- Consumed primarily by `frontend/sidebar.py` to build the UI; relies on `frontend/interfaces`
+  for structured widget definitions and `frontend/utils` for data loading.
+
+Key Logic:
+- Load JSON templates (`grid.json`, `pv.json`, `ess.json`, `chargers.json`, `subfleets.json`) from package data.
+- Use `Frontend*Interface.from_dict` helpers to map JSON into interactive settings (with scaling).
+- Expose period/frequency constants used to pre-fill economics inputs and align with backend defaults.
+"""
+
 import pandas as pd
 
 from .interfaces import (

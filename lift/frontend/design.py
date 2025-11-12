@@ -1,3 +1,14 @@
+"""Frontend design helpers (colors, CSS) for Streamlit app.
+
+Purpose:
+- Load custom color palette from `.streamlit/colors.toml` and provide CSS snippets
+  for consistent theming (sidebar width, footer, headings).
+
+Relationships:
+- Colors consumed by `frontend/results.py` and other UI modules; styles injected in `frontend/app.py`.
+- Uses Streamlit caching to avoid repeated file reads.
+"""
+
 import importlib.resources
 import toml
 from typing import Tuple

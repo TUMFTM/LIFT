@@ -1,3 +1,23 @@
+"""Frontend utility functions for internationalization, resource loading, and versioning.
+
+Purpose:
+- Provides internationalization (i18n) support via JSON-based language packages with dot-separated keys.
+- Loads JSON resources from package data (e.g., chargers, subfleets, labels) using importlib.resources.
+- Retrieves package version for display in the UI footer.
+
+Relationships:
+- Used by `frontend/sidebar.py`, `frontend/app.py`, `frontend/results.py` for localized labels via `get_label()`.
+- Used by `frontend/definitions.py` to load JSON definitions (chargers, subfleets, grid, PV, ESS).
+- Manages Streamlit session state for language selection and caching of language packages.
+
+Key Logic:
+- `_flatten_dict()` recursively converts nested label dictionaries to dot-separated keys (e.g., "sidebar.general.title").
+- `read_json_from_package_data()` loads JSON files from `lift.data` or `lift.data.languages` using importlib.resources.
+- `load_language()` loads and caches a language package into `st.session_state`; `get_label()` retrieves labels by key.
+- `get_version()` reads package metadata to display version in the footer; returns "dev" if not installed.
+- `get_supported_languages()` reads language options from `lift/data/languages/options.json` to populate the language selector.
+"""
+
 from __future__ import annotations
 
 import importlib.metadata
