@@ -19,44 +19,44 @@
           "title": "Electricity Site Demand",
           "slp": {
             "label": "Load Profile",
-            "help": "None"
+            "help": "Standard load profile (SLP) describing the annual electricity consumption pattern at the site. Different profiles (H0, G0-G7, L0-L2) represent various consumption patterns (households, commercial, agriculture). The profile determines the temporal distribution of consumption throughout the year."
           },
           "consumption": {
             "label": "Annual Consumption",
-            "help": "XX"
+            "help": "Total annual electricity consumption of the site in MWh. Used together with the load profile to scale the temporal pattern of electricity demand. This value corresponds to the base consumption without fleet charging."
           }
         },
         "grid": {
           "title": "Grid Connection",
           "existing": {
             "label": "Existing",
-            "help": "None"
+            "help": "Existing grid connection capacity in kW. This capacity is available in the baseline scenario and limits the maximum power that can be drawn from the grid simultaneously."
           },
           "expansion": {
             "label": "Additional",
-            "help": "XXXX"
+            "help": "Additional grid connection capacity in kW added in the expansion scenario. Increases the maximum power that can be drawn from the grid. Added to existing capacities and enables higher peak loads."
           }
         },
         "pv": {
           "title": "PV Array",
           "existing": {
             "label": "Existing",
-            "help": "None"
+            "help": "Existing installed capacity of the photovoltaic system in kWp. This capacity is available in the baseline scenario. Actual generation depends on solar irradiance at the site location (based on coordinates)."
           },
           "expansion": {
             "label": "Additional",
-            "help": "XXXX"
+            "help": "Additional installed PV capacity in kWp added in the expansion scenario. Increases local electricity generation and can improve self-consumption. Excess energy can be fed into the grid or stored in the battery."
           }
         },
         "ess": {
           "title": "Stationary Storage",
           "existing": {
             "label": "Existing",
-            "help": "None"
+            "help": "Existing storage capacity of the stationary battery system in kWh. This capacity is available in the baseline scenario. The storage can buffer PV surplus and discharge when needed."
           },
           "expansion": {
             "label": "Additional",
-            "help": "XXXX"
+            "help": "Additional storage capacity in kWh added in the expansion scenario. Enables better utilization of PV generation and peak shaving. Larger storage systems can buffer more energy and reduce grid load."
           }
         }
       },
@@ -64,31 +64,31 @@
         "title": "Economic Parameters",
         "discount": {
           "label": "WACC",
-          "help": "This is the help message for this parameter"
+          "help": "Interest rate in percent for discounting future cash flows. Typical values: 3-7%. Higher values reduce the present value of future investments more strongly. Used for calculating Net Present Cost (NPC)."
         },
         "fixcost": {
           "label": "Fix Expansion Costs",
-          "help": "This is the help message for this parameter"
+          "help": "One-time fixed costs in EUR for site expansion in the expansion scenario (e.g., planning, permits, infrastructure preparation, earthworks). Only considered in the expansion scenario and accounted as CAPEX in the first year."
         },
         "opexbuy": {
           "label": "Energy tariff",
-          "help": "This is the help message for this parameter"
+          "help": "Costs for purchasing electricity from the grid in EUR/kWh. Multiplied by the purchased energy amount and accounted as operating costs (OPEX). Typically includes energy price, grid fees, and taxes."
         },
         "opexfeedin": {
           "label": "Feed-in tariff renewable",
-          "help": "This is the help message for this parameter"
+          "help": "Compensation for feeding excess PV electricity into the grid in EUR/kWh. Negative values mean costs (e.g., grid fees for feed-in), positive values mean revenue. Multiplied by the fed-in energy amount."
         },
         "opexpeakpower": {
           "label": "Power tariff",
-          "help": "This is the help message for this parameter"
+          "help": "Costs for maximum power demand (power price) in EUR/kW. Calculated based on the highest peak load in the year and accounted as operating costs. Typically due monthly or annually."
         },
         "opexonroute": {
           "label": "On-Route Charging Tariff",
-          "help": "This is the help message for this parameter"
+          "help": "Costs for charging vehicles on the road (not at depot) in EUR/kWh. Multiplied by the energy charged on the route. Typically includes charging costs at public charging stations."
         },
         "opexfuel": {
           "label": "Fuel Costs",
-          "help": "This is the help message for this parameter"
+          "help": "Costs for diesel fuel in EUR/liter. Multiplied by the consumption of ICEV vehicles (Internal Combustion Engine Vehicles) and accounted as operating costs. Includes fuel price and potentially taxes."
         }
       }
     },
@@ -97,35 +97,35 @@
       "subfleet": {
         "weight_total": {
           "label": "Permissible Gross Weight",
-          "help": "XXX"
+          "help": "Permissible gross weight of vehicles in this subfleet in tons. Used for categorization and selection of appropriate vehicle types. Determines available mobility data and consumption values."
         },
         "num_total": {
           "label": "Vehicles Total",
-          "help": "XXX"
+          "help": "Total number of vehicles in this subfleet. Sum of existing and additional electric vehicles plus ICEV vehicles. Determines the total fleet size and energy demand."
         },
         "num_bev_existing": {
           "label": "Existing Electric Vehicles",
-          "help": "XXX"
+          "help": "Number of existing battery electric vehicles (BEV) in the baseline scenario. These vehicles are already in operation and are considered in both scenarios."
         },
         "num_bev_expansion": {
           "label": "Additional Electric Vehicles",
-          "help": "XXX"
+          "help": "Number of additional BEV added to the fleet in the expansion scenario. Total BEV count in expansion scenario is: existing + additional. These vehicles typically replace ICEV vehicles."
         },
         "charger": {
           "label": "Charger",
-          "help": "XXX"
+          "help": "Type of charging point used by vehicles in this subfleet (e.g., AC, DC). Determines the maximum charging power and available charging points. Each vehicle type can only charge with compatible charging points."
         },
         "pwr_max": {
           "label": "max. Charging Power",
-          "help": "XXX"
+          "help": "Maximum charging power of vehicles in this subfleet in kW. Actual charging power is the minimum of vehicle and charging point power. Determines charging duration and energy demand."
         },
         "capex": {
-          "label": "Anschaffungspreis",
-          "help": "XXX"
+          "label": "Purchase Price",
+          "help": "Purchase cost of a single vehicle in EUR. Separate values for BEV and ICEV. Multiplied by the number of vehicles and replacement cycles. Replacement cycles account for vehicle lifetime."
         },
         "share_toll": {
-          "label": "Anteil mautpflichtiger Strecken",
-          "help": "XXX"
+          "label": "Share of Toll Roads",
+          "help": "Share of distance traveled on toll roads (0-100%). Multiplied by toll costs per km. Affects fleet operating costs."
         }
       }
     },
@@ -137,7 +137,7 @@
         "expansion": "Expansion Load Management",
         "type": {
           "label": "Type",
-          "help": "XXX",
+          "help": "Static: Fixed maximum power limit for fleet charging (in kW). Dynamic: Power is automatically adjusted to available generation (PV, ESS, Grid). Dynamic load management optimizes the use of renewable energy.",
           "options": {
             "static": "static",
             "dynamic": "dynamic"
@@ -145,26 +145,26 @@
         },
         "pwr_max": {
           "label": "max. Power",
-          "help": "XXX"
+          "help": "Maximum total power for fleet charging in kW (only for static load management). Limits the simultaneous charging power of all vehicles at the site. Prevents peak loads and can reduce grid connection costs."
         }
       },
       "charger": {
         "title_suffix": " Chargers",
         "existing": {
           "label": "Existing",
-          "help": "XXX"
+          "help": "Number of existing charging points of this type in the baseline scenario. Determines how many vehicles can charge simultaneously. More charging points enable parallel charging of multiple vehicles."
         },
         "expansion": {
           "label": "Additional",
-          "help": "XXX"
+          "help": "Number of additional charging points of this type added in the expansion scenario. Increases simultaneous charging capacity at the site and enables charging of larger fleets."
         },
         "pwr_max": {
           "label": "max. Charging Power",
-          "help": "XXX"
+          "help": "Maximum charging power of a single charging point of this type in kW. Actual charging power is the minimum of vehicle and charging point power. Higher power enables shorter charging times."
         },
         "capex": {
           "label": "Cost per Charger",
-          "help": "XXX"
+          "help": "Purchase cost for a single charging point of this type in EUR. Multiplied by the number of charging points and replacement cycles. Typically includes hardware, installation, and potentially grid connection."
         }
       }
     },
@@ -179,46 +179,46 @@
     "kpi_diagrams": {
       "costs": {
         "title": "Costs",
-        "help": "Costs",
+        "help": "Direct comparison of discounted total costs (TOTEX = CAPEX + OPEX) of both scenarios over the entire analysis period. Shows the absolute cost values for baseline and expansion. Lower values mean lower total costs.",
         "axis": "Total Costs"
       },
       "emissions": {
         "title": "CO₂ Emissions",
-        "help": "CO₂ Emissions",
+        "help": "Direct comparison of cumulative CO₂ emissions of both scenarios over the entire analysis period. Accounts for emissions from vehicle manufacturing (embodied energy), operation (fuel/electricity), and energy procurement. Lower values mean lower emissions.",
         "axis": "CO₂ Emissions"
       },
       "self_consumption": {
         "title": "Self Consumption Rate",
-        "help": "Self Consumption Rate",
+        "help": "Share of generated PV energy that is directly consumed at the site (not fed into the grid or curtailed). Higher values mean better utilization of PV generation and reduce dependence on the grid. Given in percent.",
         "axis": "Self Consumption Rate"
       },
       "self_sufficiency": {
         "title": "Self Sufficiency Rate",
-        "help": "Self Sufficiency Rate",
+        "help": "Share of energy demand (site + fleet) covered by own PV generation. Shows independence from the electricity grid. 100% means complete self-sufficiency. Given in percent and also accounts for storage usage.",
         "axis": "Self Sufficiency Rate"
       },
       "home_charging": {
         "title": "Home Charging",
-        "help": "Home Charging",
+        "help": "Share of fleet energy charged at the depot (vs. on the road). Higher values mean less dependence on public charging stations and better utilization of depot infrastructure. Given in percent.",
         "axis": "Share of Energy Charged at the Depot"
       }
     },
     "cost_diagram": {
       "title": {
         "label": "Total costs",
-        "help": "XXX"
+        "help": "Temporal progression of cumulative, discounted total costs (TOTEX = CAPEX + OPEX) for both scenarios over the analysis period. The difference between the curves shows the economic advantage of the expansion. Steeper curves mean higher costs."
       },
       "xaxis": "Year",
       "yaxis": "Cumulative Discounted Costs",
       "paybackperiod": {
         "title": "Payback Period",
-        "help": "Payback Period",
+        "help": "Point in time in years when the additional investments of the expansion are balanced by cost savings. Calculated as the intersection of cumulative cost curves. Shorter payback period means faster return on investment.",
         "years": "years",
         "negative_result": "Investment does not pay off."
       },
       "saving": {
         "title": "Cost Reduction",
-        "help": "Cost Reduction",
+        "help": "Total cost savings (NPC difference) of the expansion compared to the baseline over the entire analysis period. Positive values mean the expansion is economically advantageous (lower total costs). Negative values indicate higher total costs in the expansion.",
         "after": "after",
         "years": "years"
       }
@@ -226,20 +226,20 @@
     "co2_diagram": {
       "title": {
         "label": "CO₂ Emissions",
-        "help": "XXX"
+        "help": "Temporal progression of cumulative CO₂ emissions for both scenarios over the analysis period. Accounts for emissions from vehicle manufacturing (embodied energy), operation (fuel/electricity), and energy procurement. The difference between the curves shows the CO₂ savings of the expansion."
       },
       "expander": "Analysis CO₂ Emissions",
       "xaxis": "Year",
       "yaxis": "Cumulative CO₂ Emissions",
       "paybackperiod": {
         "title": "CO₂ Payback Period",
-        "help": "CO₂ Payback Period",
+        "help": "Point in time in years when the additional CO₂ emissions of the expansion (e.g., from vehicle manufacturing) are balanced by operational savings. Calculated as the intersection of cumulative emission curves. Shorter payback period means faster CO₂ neutrality.",
         "years": "Years",
         "negative_result": "Investment does not pay off."
       },
       "saving": {
         "title": "CO₂ Reduction",
-        "help": "CO₂ Reduction",
+        "help": "Total CO₂ savings of the expansion compared to the baseline over the entire analysis period in tons of CO₂ equivalent. Positive values mean a reduction in emissions. Negative values indicate higher emissions in the expansion (e.g., from additional vehicle manufacturing).",
         "after": "after",
         "years": "years"
       }

@@ -1,3 +1,26 @@
+"""Phase evaluation pipeline: simulation + techno-economic aggregation.
+
+Purpose:
+- Execute the simulation for a given phase (baseline/expansion) and translate the
+  outputs into financial and emission cash flows, plus KPIs such as self-sufficiency.
+
+Relationships:
+- Consumes phase-specific inputs from `.interfaces` and converts them to simulation
+  inputs via `lift.backend.simulation` factories.
+- Relies on `encapsulated` simulation results to populate economics/emissions arrays
+  used downstream in comparisons and frontend visualizations.
+- Memoized with `safe_cache_data` to avoid recomputation for identical phase inputs.
+
+Key Logic / Formulations:
+- Self-sufficiency = (PV potential − curtailment − export) / (site demand + fleet site demand).
+- Self-consumption = 1 − (export + curtailment) / PV potential.
+- Site-charging share = fleet site energy / (site + route energy).
+- Replacement schedules generated via `calc_replacements` (lifespan multiples, salvages).
+- Discounting factors computed by `_calc_discount_factors(period, occurs_at, rate)` for CAPEX/OPEX.
+- Aggregates CAPEX, OPEX, TOTEX, and emissions across categories (general, grid, PV, ESS,
+  vehicles, chargers) and returns a structured `PhaseResult`.
+"""
+
 from typing import Literal
 
 import numpy as np

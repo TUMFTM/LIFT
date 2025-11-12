@@ -1,3 +1,24 @@
+"""Simulation blocks for depot energy system and fleet.
+
+Purpose:
+- Provide composable, time-stepped models for site demand, fleet units/aggregation,
+  PV generation, stationary storage, and grid connection, including constraint handling.
+
+Relationships:
+- Consumes typed inputs from `lift.backend.simulation.interfaces`.
+- Used by `lift.backend.simulation.simulation.simulate` to form the system and iterate over time.
+- Utilizes `safe_cache_data` for expensive, deterministic data retrieval (e.g., PVGIS, logs).
+
+Key Logic / Formulations:
+- Resampling utilities align external time series to the simulation index with strict frequency checks.
+- PVSource: uses PVGIS for normalized power (per 1 kWp) then scales to `pwr_wp` and aggregates potential.
+- StationaryStorage: symmetric c-rate limit; charge/discharge bounded by SOC window; updates SOC each step.
+- GridConnection: caps import/export, records peak demand; raises `GridPowerExceededError` on exceedance.
+- FixedDemand: constructs SLP-based site demand time series.
+- Fleet/FleetUnit: per-vehicle state (SOC, base presence, consumption); priority charging via time flexibility;
+  route charging tracked when SOC would go negative off-base; raises `SOCError` on infeasible SOC.
+"""
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
