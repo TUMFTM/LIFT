@@ -10,11 +10,9 @@ from lift.backend.simulation.interfaces import Coordinates
 
 
 class StreamlitWrapper:
-    def __init__(self, element=None, name="app", parent=None):
+    def __init__(self, element=None):
         self.element = element
-        self.name = name
         self.elements = dict()
-        self.parent = parent
 
     def __getattr__(self, name):
         if name in self.elements:
@@ -23,18 +21,14 @@ class StreamlitWrapper:
             raise AttributeError(f"Attribute {name} is not defined in {self}")
 
     def __setattr__(self, name, value):
-        if name in ("element", "elements", "parent", "name"):
+        if name in ("element", "elements"):
             # Internal attributes. Need to be excluded otherwise initialization fails
             super().__setattr__(name, value)
         else:
-            self.elements[name] = StreamlitWrapper(element=value, name=name, parent=self)
+            self.elements[name] = StreamlitWrapper(element=value)
 
     def __call__(self, *args, **kwargs):
         return self.element
-
-    @property
-    def app_id(self):
-        return ".".join([self.parent.app_id, self.name]) if self.parent else self.name
 
 
 class SettingsInput(ABC):
