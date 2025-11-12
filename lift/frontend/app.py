@@ -111,13 +111,11 @@ def run_frontend():
 
     # Fleet inputs
     app.sidebar.fleet = app.sidebar().container()
-    app.sidebar.fleet.title = app.sidebar.fleet().container()
-    app.sidebar.fleet.title().subheader(get_label("sidebar.fleet.title"))
+    app.sidebar.fleet().subheader(get_label("sidebar.fleet.title"))
 
     # Charging Infrastructure inputs
     app.sidebar.chargers = app.sidebar().container()
-    app.sidebar.chargers.title = app.sidebar.chargers().container()
-    app.sidebar.chargers.title().subheader(get_label("sidebar.chargers.title"))
+    app.sidebar.chargers().subheader(get_label("sidebar.chargers.title"))
 
     # Calculation
     app.sidebar.calculation = app.sidebar().container()
