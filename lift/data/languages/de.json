@@ -71,7 +71,7 @@
             "help": "Einmalige Fixkosten in EUR für den Standortausbau im Expansion-Szenario (z.B. Planung, Genehmigungen, Infrastrukturvorbereitung, Erdarbeiten). Werden nur im Expansion-Szenario berücksichtigt und als CAPEX im ersten Jahr angesetzt."
         },
         "opexbuy": {
-          "label": "Strombezugskosten",
+          "label": "Arbeitspreis",
             "help": "Kosten für den Bezug von Strom aus dem Netz in EUR/kWh. Wird mit der bezogenen Energiemenge multipliziert und als Betriebskosten (OPEX) berücksichtigt. Enthält typischerweise Arbeitspreis, Netzentgelte und Steuern."
         },
         "opexfeedin": {

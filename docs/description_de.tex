@@ -29,13 +29,19 @@
 }
 
 % siunitx
-\DeclareSIUnit{\peak}{\text{p}}
+\DeclareSIUnit{\peak}{\textsubscript{p}}
+\sisetup{locale = DE}
 
 % acro
+\DeclareAcroEnding{possessive}{}{}
+\NewAcroCommand\acg{m}{\acropossessive\UseAcroTemplate{first}{#1}}
+\NewAcroCommand\acsg{m}{\acropossessive\UseAcroTemplate{short}{#1}}
+\NewAcroCommand\aclg{m}{\acropossessive\UseAcroTemplate{long}{#1}}
+\DeclareAcronym{bdew}{short=BDEW, long=Bundesverband der Energie- und Wasserwirtschaft, possessive-form=Bundesverbandes der Energie- und Wasserwirtschaft}
 \DeclareAcronym{capex}{short=CAPEX, long=investitionsbedingte Kosten\,/\,Emissionen,}
 \DeclareAcronym{co2}{short=CO\textsubscript{2}, long=Kohlenstoffdioxid,}
 \DeclareAcronym{dem}{short=DEM, long=Standortverbrauch,}
-\DeclareAcronym{ess}{short=ESS, long=stationärer Energiespeicher,}
+\DeclareAcronym{ess}{short=ESS, long=Stationärspeicher,}
 \DeclareAcronym{flt}{short=FLT, long=Flotte,}
 \DeclareAcronym{gcp}{short=GCP, long=Netzanschlusspunkt,}
 \DeclareAcronym{gui}{short=GUI, long=grafische Benutzeroberfläche,}
@@ -93,7 +99,7 @@ Dafür muss \ac{lift} mit wenigen, schnell abzuschätzenden oder bekannten Einga
 Für beide wird mit den definierten Parametern jeweils eine Zeitschrittsimulation der Energieflüsse in Depot und Flotte über ein Jahr ausgeführt, auf deren Grundlage alle weiteren techno-ökonomischen Kennzahlen und der Vergleich der beiden Szenarien erstellt wird.
 Um die beschriebenen Anforderungen zu erfüllen, arbeitet \ac{lift} mit Vereinfachungen und Annahmen, die in einer frühen Planungsphase der Elektrifizierung noch vertretbar sind.
 
-Komplexere Szenarien wie aktive Flexibilitätssteuerung durch Energiemanagement oder individuelle Mobilitätsprofile und/oder automatisierte Komponentendimensionierung erfordern dann einerseits detailliertere Daten als auch komplexere Modellierung mit mathematischer Optimierung zur Auflösung der getroffenen Vereinfachungen.
+Komplexere Szenarien wie aktive Flexibilitätssteuerung durch prädiktives Energiemanagement oder individuelle Mobilitätsprofile und/oder automatisierte Komponentendimensionierung erfordern dann einerseits detailliertere Daten als auch komplexere Modellierung mit mathematischer Optimierung zur Auflösung der getroffenen Vereinfachungen.
 Diese Schritte sind mit anderen Werkzeugen als \ac{lift} im Nachgang des Beratungsgespräches durchzuführen.
 Die Anwendung solcher Tools, die oft nicht über eine grafische Benutzeroberfläche verfügen und ggf.\,an die jeweilige Anwendung angepasst werden müssen, und vor allem die Interpretation ihrer Ergebnisse erfordert Expertenwissen und Rechenzeit.
 
@@ -129,84 +135,132 @@ Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) si
 \ac{lift} berechnet für \textit{Baseline}- und \textit{Expansion}-Szenario jeweils Kosten und \ac{co2}-Emissionen.
 Diese lassen sich jeweils nach zwei Quellen unterscheiden: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
 Die ursprünglich ökonomischen Begriffe \ac{capex} und \ac{opex} sind im Kontext von \ac{lift} aufgrund dieser Parallelität stets gleichermaßen für Emissionen zu verstehen.
-\ac{capex} hängen unmittelbar von den Eingangsparametern ab und können daher unabhängig von Simulation (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
 
-Zur Ermittlung von \ac{opex} modelliert und simuliert \ac{lift} je Szenario ein Energiesystem, das aus den Komponenten \ac{gcp}, \ac{pv}-Anlage, \ac{ess}, \ac{dem}, \ac{flt} und \ac{cis} besteht.
-Jede dieser Komponenten existiert genau einfach im modellierten Energiesystem, kann aber durch entsprechende Parameterwertwahl (z.B. $P_{max}=0$) auch deaktiviert werden.
-Flotte und \ac{cis} können variable Anzahlen an Subkomponenten (Ladepunkt-Leistungsklassen und Subflotten) enthalten.
-Eine Subflotte fasst variable Anzahlen von Fahrzeugen des gleichen Typs und Nutzungsprofils zusammen.
-In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) und technischen \acp{kpi} (\autoref{subsec:kpi_tech}) sind.
+Die Szenarien modellieren jeweils ein Energiesystem, das aus mehreren Blöcken besteht, die reale Systeme abbilden (\autoref{subsec:system}).
+\ac{capex} dieser Blöcke hängen unmittelbar von den Eingangsparametern ab und können daher direkt (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
+In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse heuristisch (regelbasiert) bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) und technischen \acp{kpi} (\autoref{subsec:kpi_tech}) sind.
+Gesamtkosten und -emissionen werden unter Annahme von Blocklebensdauern und entsprechenden Ersatzinvestitionen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpi_econ}).
 
-Gesamtkosten und -emissionen werden unter Annahme von Komponentenlebensdauern und entsprechenden Ersatzbeschaffungen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpi_econ}).
 Dabei wird inhärent die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika, z.\,B. Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie, abgebildet werden.
+Saisonale Schwankungen sind mit einer Simulationsdauer von einem Jahr, wie sie in der \ac{gui} verwendet wird, ausreichend abgebildet.
 
-\subsection{Energiesystemkomponenten}
+\subsection{Energiesystemblöcke}
 \label{subsec:system}
 
-Der \textbf{\acf{gcp}} modelliert die Schnittstelle zum elektrischen Netz, unabhängig von dessen Spannungsebene, also die örtliche Messstelle.
+Ein modelliertes Energiesystem beinhaltet stets die folgenden Blöcke.
+Sollte die Berücksichtigung eines Blocks bzw. Systems nicht gewünscht sein, dann kann dies durch entsprechende Parameterwahl (z.\,B.~$P=0$) erreicht werden.
+
+Der \textbf{\acf{gcp}} modelliert die leistungsbeschränkte Schnittstelle zum elektrischen Netz unabhängig von dessen Spannungsebene, also die örtliche Messstelle, an der Leistungspreis und Arbeitspreis anfallen.
+Der Leistungspreis wird grundsätzlich auf Jahresbasis berücksichtigt.
+Bei Zeitschritten über \SI{15}{\minute} (dem realen Bemessungszeitraum des Leistungspreises) ist zu berücksichtigen, dass reale Lastspitzen über den Zeitschritt gemittelt und damit gedämpft werden.
 Blindleistung im Wechselstromnetz wird nicht berücksichtigt.
 
-Die \textbf{\ac{pv}-Anlage} modellieret ein homogen und unbeweglich für maximales Energiepotential ausgerichtetes und augeständertes Array von polykristallinen \ac{pv}-Modulen inklusive ihres Wechselrichters.
-Das entsprechende zeitvariable Leistungspotential wird für den angegebenen Standort in stündlicher Auflösung vom \ac{pvgis} der Europäischen Union für das Jahr 2023 abgerufen.
+Die \textbf{\ac{pv}-Anlage} modelliert ein homogen und unbeweglich für maximales Energiepotential ausgerichtetes und aufgeständertes Array von polykristallinen \ac{pv}-Modulen inklusive ihres Wechselrichters.
+Das entsprechende zeitvariable Leistungspotential wird für den gewählten Standort in stündlicher Auflösung vom \ac{pvgis} der Europäischen Union für das Bezugsjahr 2023 abgerufen.
 Neuere oder zeitlich feiner aufgelöste Daten sind bei diesem Anbieter nicht verfügbar.
-Während des Betriebs entstehen typischerweise weder Kosten noch Emissionen. \todo{verifizieren, dass der Code das theoretisch kann - brauchts diesen Satz überhaupt oder ist das nicht inhärent in Standardwerten}
+Temperatureffekte sowie Verschattungen durch Wolken (im Bezugsjahr) oder Gelände sind berücksichtigt, Verschattungen durch Bäume und Gebäude jedoch nicht.
+Die heruntergeladenen Daten für einen Standort werden zwischengespeichert und in derselben Session nicht nochmals angefordert, was die Netzwerkanforderungen bei lokaler Ausführung reduziert.
 
-Der \textbf{\acf{dem}} modelliert den Energieverbrauch der Gebäude und sonstiger Infrastruktur am Standort exklusive möglicherweise vorhandener Ladepunkte.
-Für den Standortverbrauch werden Standardlastprofile des BDEW verwendet, die auf den jährlichen Energieverbrauch des Standorts skaliert werden.
-Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen.
-Das verfälscht die in der Simulation auftretenden Lastspitzen am Netzanschlusspunkt, die normalerweise gemittelt über einen 15-minütigen Zeitraum bestimmt werden.
-Da die Zielsetzung von \ac{lift} jedoch darin besteht, mit einer möglichst geringen Datengrundlage erste Ergebnisse zu erzielen, kann in diesem Schritt des Planungsprozesses mit Standardlastprofilen gearbeitet werden.
-In weiteren Planungsphasen ist davon jedoch abzuraten, um ein realistischeres Verhalten abbilden zu können.
-Für den Energieverbrauch des Standorts fallen nur indirekt Kosten und Emissionen durch die aus der PV-Anlage und über den Netzanschlusspunkt bezogene Energie an.
-Diese sind somit in den beiden genannten Komponenten abgebildet.
+Der \textbf{\acf{ess}} modelliert einen stationären und verlustfreien Batteriespeicher mit einer maximalen Lade- und Entladeleistung (``C-Rate'') von \SI{0.5}{\per\hour} bzw. \si{C}.
+Er kann also schnellstens innerhalb von \SI{2}{\hour} vollständig ge- oder entladen werden, was der Leistungsgrenze gängiger Modelle entspricht.
+Alterung und limitierte nutzbare Ladezustände sind nicht berücksichtigt.
 
+Der \textbf{\acf{dem}} modelliert den Energieumsatz der Gebäude und sonstiger Infrastruktur am Standort exklusive der vorhandenen oder aufzubauenden \acl{cis}.
+Hierfür werden auszuwählende Standardlastprofile des \acg{bdew} verwendet, die auf den angegebenen jährlichen Energieverbrauch des Standorts skaliert werden.
+Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen und verfälschen die in der Simulation auftretenden Lastspitzen am \ac{gcp} gegenüber der Realität.
+Im Rahmen einer Erstberatung ist diese Vereinfachung zwar nötig und zulässig, um schnell Potentiale abzuschätzen, in weiteren Planungsphasen ist davon jedoch abzuraten.
 
-\subsection{\ac{capex}-Berechnung}
+Die \textbf{\acf{cis}} modelliert mehrere (in der \ac{gui} zwei, siehe \autoref{subsubsec:default}) Klassen von Ladepunkten für Fahrzeuge, von der jeweils mehrere Ladepunkte existieren.
+Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement, das statisch oder dynamisch sein kann.
+Das statische Lastmanagement begrenzt in jedem Zeitschritt die für die gesamte \ac{cis} klassenübergreifend zur Verfügung stehende Ladeleistung auf einen in der \ac{gui} konstanten Wert.
+Dieser wird normalerweise bestimmt, indem die Spitzenlast des Standortverbrauchs von der maximalen Leistung des Netzanschlusspunktes abgezogen wird.
+Für große Simulationszeitschritte ($>\SI{15}{\minute}$) verhält sich das statische Lastmanagement nicht realistisch, da \ac{dem}-Lastspitzen, die die maximale Ladeleistung maßgeblich bestimmen, zu stark geglättet werden.
+Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung.
+Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
+Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.
+
+Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{subsubsec:default}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
+Dies können entweder rein verbrennungsmotorisch oder batterieelektrisch angetriebene Fahrzeuge sein, hybride Mischformen sind nicht abgebildet.
+Das Mobilitätsprofil einer Subflotte beinhaltet Zeitreihen, in denen für jedes Fahrzeug die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
+Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:defaultvalues}) vordefiniert und als Datei abgelegt.
+Jedes Fahrzeug ist nur mit der in der Subflotte definierten Ladepunktklasse kompatibel.
+Die tatsächlich maximale Ladeleistung eines Fahrzeugs entspricht dem Minimum aus in der Subflotte definierten Fahrzeugladeleistung und der in der assoziierten Ladepunktklasse definierten Leistung.
+Je nach Flottengröße und \ac{cis}-Konfiguration sind sowohl die Anzahl verfügbarer Ladepunkte als auch die aktuell zur Verfügung stehende Ladeleistung eine knappe Resource.
+Eine Priorisierung nach kleinster ``Flexibilitätszeit'' (Restzeit bis zum spätestmöglichen Ladebeginn, um die kommende Fahrt ohne öffentliches Laden zu erfüllen) verteilt beide Ressourcen in jedem Zeitschritt unter allen Fahrzeugen der Flotte.
+Öffentliches (On-Route-) Laden wird daher nur bei unbedingter Notwendigkeit und auch in geringstmöglichem Umfang genutzt, sodass solche Fahrten mit einem Ladezustand von \SI{0}{\percent} wieder am Depot enden.
+Dem Priorisierungsalgorithmus liegt die Annahme zugrunde, dass physische Ladepunkte und damit Parkplätze in jedem Zeitschritt neu verteilt werden können, was in der Realität bei kleinen Zeitschritten nicht möglich ist.
+
+\subsection{\acs{capex}-Berechnung}
 \label{subsec:capex}
 
-Beim Aufbau einer Komponente $k$ (mit Ausnahme des Standortverbrauchs, der Ladeinfrastruktur und der Flotte) entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die jeweils in Abhängigkeit der Dimensionierung der Komponente $S^k$ sowie den spezifischen Werten $c^k_{cap}$ und $e^k_{cap}$ pro Größeneinheit der Komponente berechnet und über alle Komponenten addiert werden.
-Für Ladeinfrastruktur und Flotte ist keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen fixe \ac{capex} pro Element $n$ (Fahrzeug oder Ladepunkt) einer Subkomponente bzw. -klasse $m$ (Fahrzeug- oder Ladepunkttyp).
+Beim Aufbau jedes Blocks $b$ (mit Ausnahme von \ac{dem}, \ac{cis} und \ac{flt}) entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die jeweils in Abhängigkeit der Dimensionierung des Blocks $S^b$ sowie den spezifischen Werten $c^b_{cap}$ und $e^b_{cap}$ pro Größeneinheit berechnet und über alle Blöcke addiert werden.
+Für Ladeinfrastruktur und Flotte ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen fixe \ac{capex} pro Element $n$ (Fahrzeug oder Ladepunkt) eines Subblocks $m$ (Fahrzeug- oder Ladepunktklasse).
 Spezifische Kosten einer $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
 
 \begin{subequations}
     \label{eq:capex_init}
     \begin{align}
-        C_{cap, init} = \sum_{k}{S^k \cdot c^k_{cap}} + \sum_{m,n}{c^n_{cap, m}} \label{eq:capex_init_econ}\\
-        E_{cap, init} = \sum_{k}{S^k \cdot e^k_{cap}} + \sum_{m,n}{e^n_{cap, m}}\label{eq:capex_init_ecol}
+        C_{cap, init} = & \sum_{k}{S^k \cdot c^k_{cap}} + \sum_{m,n}{c^n_{cap, m}} \label{eq:capex_init_econ}\\
+        E_{cap, init} = & \sum_{k}{S^k \cdot e^k_{cap}} + \sum_{m,n}{e^n_{cap, m}}\label{eq:capex_init_ecol}
     \end{align}
 \end{subequations}
 
+Ersatzinvestitionen nach den parametrierten Lebensdauern werden je Block mit konstanten Nominal-\ac{capex} berücksichtigt.
+Die ökonomischen \ac{capex} werden gemäß \autoref{subsec:extrapolation} diskontiert.
+Mögliche Unterschiede in Lebensdauern verhindern eine sinnvolle Aggregation von \ac{capex} über Subblöcke.
 
-\subsection{Zeitschrittsimulation}
+\subsection{Zeitschrittsimulation und Energiemanagement}
 \label{subsec:sim}
 
-Die in \ac{lift} verwendete Zeitschrittsimulation simuliert die Energieflüsse im Energiesystem des Depots und der zugehörigen Flotte beginnend ab $T_{start}$ über einen Simulationszeitraum $T_{sim}$ mit einem Zeitschritt von $T_{step}$.
-In jedem Zeitschritt wird der addierte Leistungsbedarf von Standortverbrauches und Flotte, der unter der Annahme eines dynamischen Flotten-Ladelastmanagements für jede gewählte Energiesystemkonfiguration neu berechnet wird (\todo{ref dyn LM}), in absteigender Priorität aus \ac{pv} (soweit zum jeweiligen Zeitpunkt verfügbar), Stationärspeicher (soweit zum jeweiligen Zeitpunkt geladen) und Netzanschluss gedeckt.
+Die in \ac{lift} verwendete Zeitschrittsimulation simuliert die Energieflüsse im Energiesystem des Depots und der zugehörigen Flotte über einen gleichmäßig in Zeitschritte geteilten Simulationszeitraum.
+In jedem Zeitschritt wird der addierte Leistungsbedarf von Standortverbrauches und Flotte, der mithilfe des  \ac{cis}-Lastmanagements ermittelt wird (\autoref{subsec:system}), in absteigender Priorität aus \ac{pv} (soweit zum jeweiligen Zeitpunkt verfügbar), Stationärspeicher (soweit zum jeweiligen Zeitpunkt geladen) und Netzanschluss gedeckt.
 Im Fall, dass die \ac{pv} den Leistungsbedarf alleine erfüllen kann, wird der Stationärspeicher mit der durch Leistungsbeschränkung oder Ladezustand limitierten maximalen Leistung geladen.
 Weitere überschüssige Leistung wird bis zur Leistungsgrenze des Netzanschlusses ins Netz eingespeist, bevor \ac{pv}-Potential abgeregelt wird.
+Diese Energiemanagementstrategie wird typischerweise ``Nulllastregelung'' genannt.
 
-Trotz des szenarioadpativen Vorgehens kann zu kleine Dimensionierung der drei Quellenkomponenten in unerfüllbaren Anforderungen resultieren und eine entsprechende Fehlermeldung (``Netzanschlussfehler'') hervorrufen.
-Wirkungsgrade, dynamische Strompreise und Flexibilitäten werden nicht berücksichtigt. \todo{Aussage prüfen}
+Trotz des szenarioadpativen Vorgehens kann zu kleine Dimensionierung der drei Quellenblöcke in unerfüllbaren Anforderungen resultieren und eine entsprechende Fehlermeldung (``Netzanschlussfehler'') hervorrufen.
+Wirkungsgrade, dynamische Strompreise und Flexibilitäten werden nicht berücksichtigt.
 Die beiden letzteren Dynamiken sind mit regelbasierten Strategien nicht sinnvoll ausschöpfbar und erfordern intelligentere und situationsadaptivere Strategien wie Optimierung und/oder Machine Learning zur Steuerung.
 
 \subsection{\acs{opex}-Berechnung}
-\label{sec:opex}
+\label{subsec:opex}
 
-Für die weitere Berechnung werden die folgenden Ergebnisse der Simulation herangezogen:
-\begin{itemize}
-    \item die aus dem öffentlichen Netz bezogene ($E^{Netz}_{Bezug}$) und die ins öffentliche Netz eingespeiste Energie ($E^{Netz}_{Einspeisung}$)
-    \item die Lastspitze der aus dem Netz bezogenen Energie ($P^{Netz}_{max}$)
-    \item die potenziell erzeugbare ($E^{PV}_{Pot}$) sowie die nicht abgerufene \text{bzw.} gekappte PV-Energie ($E^{PV}_{Kappung}$)
-    \item die vom Standortverbrauch benötigte Energie ($E^{Standort}_{gesamt}$)
-    \item die von der Flotte über die installierte Ladeinfrastruktur am Depot geladene Energie ($E^{Flotte}_{Depot}$)
-    \item die von der Flotte während der Fahrt geladene Energie ($E^{Flotte}_{On-Route}$)
-    \item die von den Fahrzeugen zurückgelegten Distanzen aufgeteilt nach Subflotte und Antriebsart ($d^{f}_{a}$ mit Subflotte $f$ und Antriebsart (konventionell oder elektrisch) $a$)
-\end{itemize}
+\ac{opex} fallen ausschließlich in den Blöcken \ac{gcp} und \ac{flt} an.
 
-\subsection{Technische \acfp{kpi}}
+Am \textbf{\ac{gcp}} fallen sowohl in Abhängigkeit des Energiedurchsatzes in Bezugs- ($W^{GCP}_\text{buy}$) und Einspeiserichtung ($W^{GCP}_\text{sell}$) als auch der Spitzenlast im Simulationszeitraum ($P^{GCP}_\text{peak}$) ökonomische \ac{opex} gemäß \autoref{eq:opex_gcp} an.
+Die spezifischen Kostenwerte $c^{GCP}_\text{buy}$ und $c^{GCP}_\text{sell}$ werden dabei sinngemäß positiv bzw. negativ verrechnet, obwohl letzterer in der \ac{gui} positiv definiert ist.
+Alle spezifischen Kostenwerte $c^{GCP}$ sind in der \ac{gui} anpassbar.
+Die ökologischen \ac{opex} bemessen sich hingegen ausschließlich nach dem Energiedurchsatz in Bezugsrichtung, da eingespeiste Energie nicht nicht mit Emissionen assoziiert wird.
+Der entsprechende spezifische Emissionswert $e^{GCP}_\text{buy}$ ist nicht in der \ac{gui} anpassbar.
+\todo[inline]{spezifischen Emissionswert in GUI auf Strommix anpassen und Quelle referenziern}
+
+\begin{subequations}
+    \label{eq:opex_gcp}
+    \begin{align}
+        C^{GCP}_{op, sim} = & \, W^{GCP}_\text{buy} \cdot c^{GCP}_\text{buy} + W^{GCP}_\text{sell} \cdot c^{GCP}_\text{sell} + P^{GCP}_\text{peak} \cdot c^{GCP}_\text{peak} \label{eq:opex_gcp_econ}\\
+        E^{GCP}_{op,sim} = & W^{GCP}_\text{buy} \cdot e^{GCP}_\text{buy} \label{eq:opex_gcp_ecol}
+    \end{align}
+\end{subequations}
+
+In der \textbf{\ac{flt}} muss zur Berechnung der \ac{opex} gemäß \autoref{eq:opex_flt} nach verbrennungsmotorischen Subflotten $i$ und batterieelektrischen Subflotten $j$ unterschieden werden.
+Die Kosten und Emissionen der am Depot geladenen Energie für letztere sind bereits im Energiesystem bzw. \ac{gcp} erfasst und daher im Gegensatz zum öffentlichen Laden nicht der Flotte zugeordnet.
+
+\begin{subequations}
+    \label{eq:opex_flt}
+    \begin{align}
+        C^{FLT}_{op, sim} = & \sum_{i}{d^{i} \left(c^{i}_\text{mnt} + c^{i}_\text{toll} \cdot x^{i}_\text{toll} + c_\text{fuel} \cdot b^{i}\right)} + \sum_{j}{d^{j}} \cdot \left(c^{j}_\text{mnt} + c^{j}_\text{toll} \cdot x^{j}_\text{toll}\right) + {W^{j}_\text{pub} \cdot c_\text{pub}}\\
+        E^{FLT}_{op,sim} = & \sum_{i}{d^{i} \cdot b^{i} \cdot e_\text{fuel}} + \sum_{j}{W^{j}_\text{pub} \cdot e^{GCP}_\text{buy}} \label{eq:opex_flt_ecol}
+    \end{align}
+\end{subequations}
+
+Dabei bezeichnen *$d^{i/j}$ die gefahrene Distanz aller Fahrzeuge der Subflotte $i$ oder $j$, $c^{i/j}_\text{mnt}$ ihre spezifischen Wartungskosten pro Kilometer, $c^{i/j}_\text{toll}$ ihre spezifischen Mautkosten pro Kilometer, *$x^{i/j}_\text{toll}$ ihren Anteil der mautpflichtigen Strecken, *$c_\text{fuel}$ die spezifischen Dieselkosten pro Liter, $b^i$ ihren spezifischen Kraftstoffverbrauch \si{\liter\per\kilo\meter}, $W^{j}_\text{pub}$ die öffentlich geladenene Energie aller Fahrzeuge der Subflotte $j$ und *$c_\text{pub}$ die öffentlichen Ladekosten pro \si{\kilo\watt\hour}.
+Die mit * markierten Werte sind in der \ac{gui} einstellbar.
+Für die spezifischen Emissionen des öffentlichen Ladens wird der Wert des Standortes verwendet.
+
+\subsection{Technische \acp{kpi}}
 \label{subsec:kpi_tech}
 
-Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für Netzanschluss, PV-Anlage und Stationärspeicher sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
+Die technischen Kennzahlen dienen als Anhaltspunkte, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
 
 Die \textbf{Eigenverbrauchsquote} $\gamma_{Eigenverbrauch}$ gibt an, welcher Anteil der potenziell lokal erzeugbaren PV-Energie am Standort selbst verbraucht wurde.
 Dazu zählen der Standortverbrauch und die am Standort in die Fahrzeuge geladene Energie.
@@ -244,123 +298,7 @@ Da meistens die Energiekosten am Depot im Vergleich zum On-Route Laden geringer 
 In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
 
 
-
-\subsubsection{Netzanschluss}
-\label{subsubsec:grid}
-
-\textbf{Betriebskosten und -emissionen}\\
-In Abhängigkeit des Energiedurchsatzes in Bezugs- und Einspeiserichtung sowie der Spitzenlast fallen Betriebskosten für den Netzanschlusspunkt an:
-\begin{equation}
-    \begin{aligned}
-    C^{Netz}_{Betrieb, jrl} = & \, E^{Netz}_{Bezug} \cdot c^{Netz}_{Bezug} \\
-    & + E^{Netz}_{Einspeisung} \cdot c^{Netz}_{Einspeisung} \\
-    & + P^{Netz}_{max} \cdot c^{Netz}_{Spitzenlast}
-    \end{aligned}
-    \label{eq:opex_grid}
-\end{equation}
-Die spezifischen Kosten für den Bezug ($c^{Netz}_{Bezug}$ und die Einspeisung ($c^{Netz}_{Einspeisung}$ sowie die aufgetretene Spitzenlast ($c^{Netz}_{Spitzenlast}$ lassen sich über die \ac{gui} definieren.
-Die spezifischen Emissionen ($co2^{Netz}_{Bezug}$) hingegen sind als Annahme in der \ac{gui} hinterlegt und im Anhang aufgeführt.
-Für verkaufte Energie entstehen weder positive noch negative Emissionen.
-Die Betriebsemissionen berechnen sich analog zu \autoref{eq:opex_grid}:
-\begin{equation}
-    CO2^{Netz}_{Betrieb, jrl} = E^{Netz}_{Bezug} \cdot co2^{Netz}_{Bezug}
-    \label{eq:opem_grid}
-\end{equation}
-
-
-\subsubsection{PV-Anlage}
-\label{subsubsec:pv}
-
-
-\subsubsection{Stationärspeicher}
-\label{subsubsec:ess}
-Der Speicher wird mit einer Leistungslimitation von 0,5 C sowohl in Lade- als auch Entladerichtung betrieben.
-Dieser Wert entspricht gängigen Modellen für Stationärspeicher.
-Bei einem 10 kWh Speicher entspricht das einer maximalen Leistung von 5 kW.
-Die Betriebsstrategie des Speichers sieht eine sogenannte Nulllastregelung am Netzanschlusspunkt vor.
-Dabei versucht der Speicher im lokalen Netz überschüssige Energie, die durch die PV-Anlage erzeugt, aber nicht lokal verbraucht werden kann, einzuspeichern.
-Nur, wenn die maximale Ladeleistung des Speichers überschritten wird oder er aufgrund eines zu hohen Ladezustands keine weitere Energie einspeichern kann, wird die überschüssige Energie über den Netzanschlusspunkt ins öffentliche Stromnetz eingespeist.
-Sollte der Bedarf im lokalen Energiesystems des Depots nicht aus lokalen Quallen gedeckt werden können, wird zuerst der Speicher entladen, bevor zusätzliche Energie aus dem öffentlichen Netz bezogen wird.\\\\
-\textbf{Betriebskosten und -emissionen}\\
-Während des Betriebs entstehen weder Kosten noch Emissionen.
-
-
-\subsubsection{Ladeinfrastruktur}
-\label{subsubsec:ci}
-\ac{lift} unterstützt unterschiedliche Typen von Ladeinfrastruktur.
-Die in der \ac{gui} vordefinierten Ladepunkttypen sind in \autoref{subsubsec:default_ci} aufgeführt.
-Von jedem Ladepunkttyp können mehrere Ladepunkte existieren.
-Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement.
-Dieses kann entweder statisch oder dynamisch ausgelegt sein.
-Das statische Lastmanagement begrenzt in jedem Zeitschritt die für die gesamte Ladeinfrastruktur typübergreifend zur Verfügung stehende Ladeleistung auf einen in der \ac{gui} definierten Wert.
-Dieser wird normalerweise bestimmt, indem die Spitzenlast des Standortverbrauchs von der maximalen Leistung des Netzanschlusspunktes abgezogen wird.
-Für große Simulationszeitschritte ($>\SI{15}{\minute}$) verhält sich das statische Lastmanagement nicht realistisch.
-Grund hierfür ist die starke Glättung des Standortlastgangs, dessen Lastspitzen normalerweise maßgeblich zur Definition der maximalen Leistung des statischen Lastmanagements berücksichtigt werden.
-Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung.
-Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
-Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.\\\\
-
-\textbf{Betriebskosten und -emissionen}\\
-Während des Betriebs entstehen weder Kosten noch Emissionen, da die Energie vom lokalen Energiesystem bereitgestellt wird.
-
-
-\subsubsection{Flotte}
-\label{subsubsec:fleet}
-Eine Flotte besteht aus mehreren Subflotten, die jeweils Fahrzeuge des gleichen Typs beinhalten.
-Die Mobilitätsprofile einer Subflotte beinhalten eine Zeitreihe, in der die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
-Diese Profile werden stochastisch gesamplet.
-Die maximale Ladeleistung eines Fahrzeugs berechnet sich aus dem fahrzeugspezifischen Limit und dem Limit des für das Fahrzeug definierten Ladepunkts.
-Beide Werte lassen sich in der \ac{gui} einstellen.
-Je nach Konfiguration sind sowohl die Anzahl zur Verfügung stehender Ladepunkte als auch die im Zeitschritt zur Verfügung stehende Ladeleistung eine knappe Resource.
-Aus diesem Grund werden die Fahrzeuge priorisiert und erhalten gemäß dieser Priorisierung Zugriff auf Ladeinfrastruktur und Ladeleistung.
-Dazu wird für jedes Fahrzeug zu jedem Zeitpunkt der Simulation eine Flexibilitätszeit errechnet.
-Diese gibt an, in wie vielen Zeitschritten das Fahrzeug spätestmöglich mit dem Laden beginnen muss, um die nächste Fahrt ohne On-Route Laden erfüllen zu können.
-Das Fahrzeug mit der geringsten Flexibilitätszeit erhält die höchste Priorität bei der Vergabe der Ladepunkte und Ladeleistung.
-Jedes Fahrzeug ist nur mit dem in der \ac{gui} definierten Ladepunkt kompatibel.
-Ist kein Ladepunkt dieses Typs mehr vorhanden, kann das Fahrzeug in diesem Zeitschritt nicht laden.
-Aufgrund des Priorisierungsalgorithmus' können Fahrzeuge in jedem Zeitschritt einem anderen Ladepunkt zugeordnet sein, was in der Realität mit einem hohen manuellen Aufwand für das Umstecken und -parken der Fahrzeuge verbunden wäre.
-Fahrzeuge, deren Ladezustand während einer Fahrt auf oder unter \SI{0}{\percent} fällt, werden auf der Fahrt nachgeladen, jedoch nur soweit, dass sie mit einem Ladezustand von exakt \SI{0}{\percent} wieder am Depot ankommen.\\\\
-\textbf{Investitionskosten und -emissionen}\\
-Beim Kauf eines einzelnen Fahrzeugs $n$ in der Subflotte $f$ entstehen die in der \ac{gui} definierten Kosten $C^{\text{Fahrzeug}, f, n}_\text{Invest, einmalig}$.
-Zur Berechnung der Investitionskosten aller Fahrzeuge einer Subflotte $C^{\text{fahrzeug}, f, n}_\text{Invest, einmalig}$ werden die Kosten der einzelnen Fahrzeuge derselben Subflotte aufsummiert.
-Eine Aggregation der verschiedenen Subflotten ergibt aufgrund der Möglichkeit unterschiedlicher Lebensdauern je nach Subflotte keinen Sinn.
-Die bei der Herstellung eines Fahrzeugs entstehenden Emissionen $CO2^{\text{Fahrzeug}, f n}_\text{Invest, einmalig}$ sind im \autoref{subsubsec:default_fleet} aufgeführt.
-Die Berechnung der Emissionen aller Fahrzeuge einer Subflotte erfolgt analog zu den Kosten.\\\\
-\textbf{Betriebskosten und -emissionen}\\
-Bei der Berechnung der Betriebskosten und Emissionen muss nach der Antriebsart des Fahrzeugs unterschieden werden.
-Für konventionell angetriebene Fahrzeuge einer Subflotte $f$ berechnen sich die Kosten zu:
-\begin{equation}
-    C^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{ICEV}} \cdot \left(c^{f, \text{ICEV}}_\text{Wartung} + c^{f, \text{ICEV}}_\text{Maut} \cdot x^{f, \text{ICEV}}_{Maut} + c^{Diesel} \cdot v^{f, \text{icev}} / 100\right)
-    \label{eq:opex_icev}
-\end{equation}
-Dabei bezeichnet $d^{f}_{\text{ICEV}}$ die gefahrene Distanz der Fahrzeuge der Subflotte, $c^{f, \text{ICEV}}_\text{Wartung}$ die spezifischen Wartungskosten pro Kilometer, $c^{f, \text{ICEV}}_\text{Maut}$ die spezifischen Mautkosten pro Kilometer, $x^{f, \text{ICEV}}_{Maut}$ den Anteil der mautpflichtigen Distanz an der Gesamtdistanz, $c^{Diesel}$ die spezifischen Dieselkosten pro Liter und $v^{f, \text{icev}}$ den spezifischen Dieselverbrauch der Fahrzeuge auf \SI{100}{\kilo\meter}.
-Bis auf den Anteil der mautpflichtigen Strecke und den spezifischen Diesel- und Mautkosten, die in der \ac{gui} eingestellt werden können, werden alle Parameter mit vordefinierten Werten parametriert, die in \autoref{subsubsec:default_fleet} aufgeführt sind.
-Die im Betrieb entstehenden Emissionen der Dieselfahrzeuge lassen sich aus dem benötigten Dieselvolumen und den spezifischen Emissionen für Diesel pro Liter $co2^{Diesel}$ (vordefiniert und in \autoref{subsubsec:default_fleet} aufgeführt) berechnen:
-\begin{equation}
-    CO2^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{ICEV}} \cdot v^{f, \text{icev}} / 100 \cdot co2^{Diesel}
-    \label{eq:opem_icev}
-\end{equation}
-Für batterieelektrisch angetriebene Fahrzeuge einer Subflotte $f$ berechnen sich die Kosten zu:
-\begin{equation}
-    C^{\text{Fahrzeuge}, f, \text{ICEV}}_{Betrieb, jrl} = d^{f}_{\text{BEV}} \cdot \left(c^{f, \text{BEV}}_\text{Wartung} + c^{f, \text{BEV}}_\text{Maut} \cdot x^{f, \text{BEV}}_{Maut}\right)
-    \label{eq:opex_bev}
-\end{equation}
-Emissionen treten für batterieelektrische Fahrzeuge nicht auf.
-Die beim On-Route laden entstehenden Kosten und Emissionen werden lediglich auf Flottenebene berechnet.
-\begin{equation}
-    C^{Flotte}_{Betrieb, jrl, On-Route} = E^{Flotte}_{On-Route} \cdot c^{Flotte}_{On-Route}
-    \label{eq:opex_on-route}
-\end{equation}
-Für die Kosten werden die in der \ac{gui} definierten spezifischen On-Route Ladekosten $c^{Flotte}_{On-Route}$ verwendet, während für die Berechnung der beim On-Route Laden verursachten  Emissionen die spezifischen Emissionen des öffentlichen Netzes herangezogen werden.
-\begin{equation}
-    CO2^{Flotte}_{Betrieb, jrl, On-Route} = E^{Flotte}_{On-Route} \cdot co2^{Netz}_{Betrieb}
-    \label{eq:opem_on-route}
-\end{equation}
-
-
-
-
-\subsection{Wirtschaftliche Kennzahlen}
+\subsection{Wirtschaftliche \acp{kpi}}
 \label{subsec:kpi_econ}
 
 Bei der Berechnung der wirtschaftlichen Kennzahlen wird zwischen Investitions- und Betriebskosten unterschieden.
@@ -377,10 +315,10 @@ Der Diskontierungsfaktor $v^j$ für das Jahr $j$ berechnet sich für eine Abzins
     j \in \{1, 2, \dots\}
     \label{eq:discounting}
 \end{equation}
-Die initialen Investitionskosten für eine Komponente entstehen am Anfang des Projektzeitraums, also am Beginn des ersten Jahres.
-Nach Ablauf der Lebensdauer der Komponente wird dann eine entsprechende Ersatzinvestition getätigt.
+Die initialen Investitionskosten für eine Block entstehen am Anfang des Projektzeitraums, also am Beginn des ersten Jahres.
+Nach Ablauf der Lebensdauer der Block wird dann eine entsprechende Ersatzinvestition getätigt.
 Damit ergeben sich die Zeitpunkte der Investitionen zu den Anfängen der Jahre $n \cdot ls_k, \quad n \in \{0, 1, 2, \dots\}$.
-Unter der Annahme, dass sich der Wertverlust einer Komponente über deren Lebensdauer linear verhält, ergibt sich am Ende der Projektlaufzeit der Restwert
+Unter der Annahme, dass sich der Wertverlust einer Block über deren Lebensdauer linear verhält, ergibt sich am Ende der Projektlaufzeit der Restwert
 \begin{equation}
     C^{k}_\text{Restwert} = \begin{cases}
     -C^{k}_\text{Invest, einmalig} \cdot \left( 1 - \frac{(T_{prj} \bmod \text{ls})}{\text{ls}} \right) & \text{if } T_{prj} \bmod \text{ls} \neq 0 \\
@@ -395,7 +333,7 @@ Deshalb gilt:
     C^{k}_{Restwert} \le 0 \quad \forall k
     \label{eq:neg_salvage}
 \end{equation}
-Damit ergeben sich für eine Komponente $k$ die zwei Kostenvektoren $C^k_\text{Invest}$ und $C^k_\text{Betrieb}$:
+Damit ergeben sich für eine Block $k$ die zwei Kostenvektoren $C^k_\text{Invest}$ und $C^k_\text{Betrieb}$:
 \begin{equation}
     C^k_\text{Invest} =
     \begin{pmatrix}
@@ -475,7 +413,7 @@ $T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde\\
 \label{tab:parameters}
 \end{table}
 
-\subsection{Komponenten}
+\subsection{Blöcke}
 \label{subsec:default_components}
 \subsubsection{Netzanschluss}
 \label{subsubsec:default_grid}
