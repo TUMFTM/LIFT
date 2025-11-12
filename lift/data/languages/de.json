@@ -71,7 +71,7 @@
           "help": "Das ist der Hilfe-Text für den Parameter"
         },
         "opexbuy": {
-          "label": "Strombezugskosten",
+          "label": "Arbeitspreis",
           "help": "Das ist der Hilfe-Text für den Parameter"
         },
         "opexfeedin": {
