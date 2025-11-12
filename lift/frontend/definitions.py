@@ -39,7 +39,7 @@ DEF_ECONOMICS = FrontendEconomicsInterface(
     settings_discount_rate=SettingsSlider(max_value=20.0, value=5.0, step=0.1, factor=0.01, format="%0.1f"),
     settings_fix_cost_construction=SettingsSlider(max_value=1e6, value=10000.0, step=1000.0),
     settings_opex_spec_grid_buy=SettingsSlider(max_value=0.5, value=0.23, step=0.01, factor=1e-3, format="%0.2f"),
-    settings_opex_spec_grid_sell=SettingsSlider(max_value=0.5, value=0.06, step=0.01, factor=1e-3, format="%0.2f"),
+    settings_opex_spec_grid_sell=SettingsSlider(max_value=0.5, value=0.06, step=0.01, factor=-1e-3, format="%0.2f"),
     settings_opex_spec_grid_peak=SettingsSlider(max_value=300.0, value=150.0, factor=1e-3, step=1.0),
     settings_opex_spec_route_charging=SettingsSlider(max_value=2.0, value=0.49, step=0.01, factor=1e-3, format="%0.2f"),
     settings_opex_fuel=SettingsSlider(max_value=3.0, value=1.56, step=0.01, format="%0.2f"),

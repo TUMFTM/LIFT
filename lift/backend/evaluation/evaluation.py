@@ -120,7 +120,7 @@ def evaluate(
     cashflow[CONV["grid"]]["capex"] += location.grid.capacity * location.grid.capex_spec * replacements
     cashflow[CONV["grid"]]["opex"][:period_eco] += (
         result_sim.energy_grid_buy_wh * economics.opex_spec_grid_buy
-        - result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell
+        + result_sim.energy_grid_sell_wh * economics.opex_spec_grid_sell
     )
     cashflow[CONV["grid"]]["opex"][:period_eco] += result_sim.pwr_grid_peak_w * economics.opex_spec_grid_peak
 
