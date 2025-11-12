@@ -203,6 +203,14 @@
         "axis": "Anteil am Depot geladener Energie"
       }
     },
+    "time_diagrams": {
+      "costs": {
+        "tab": "Kosten"
+      },
+      "emissions": {
+        "tab": "Emissionen"
+      }
+    },
     "cost_diagram": {
       "title": {
         "label": "Gesamtkosten",

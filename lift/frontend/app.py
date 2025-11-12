@@ -31,6 +31,7 @@ from lift.backend.simulation.interfaces import GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
 from lift.frontend.design import STYLES
+from lift.frontend.interfaces import StreamlitWrapper
 from lift.frontend.sidebar import create_sidebar_and_get_input
 from lift.frontend.results import display_results, display_empty_results
 
@@ -86,15 +87,70 @@ def run_frontend():
     # css styles for sidebar
     st.markdown(STYLES, unsafe_allow_html=True)
 
-    # create sidebar and get input parameters from sidebar
-    settings = create_sidebar_and_get_input()
+    app = StreamlitWrapper()
+    app.sidebar = st.sidebar
 
-    st.title(get_label("main.title"))
+    # Define sidebar structure
+    app.sidebar.general = app.sidebar().container()
+
+    # General inputs
+    app.sidebar.general.title, app.sidebar.language_selection = app.sidebar.general().columns([8, 2])
+    app.sidebar.general.title().subheader(get_label("sidebar.general.title"))
+    app.sidebar.general.position = app.sidebar.general().expander(
+        label=f"**{get_label('sidebar.general.position.title')}**",
+        icon="🗺️",
+    )
+    app.sidebar.general.energy_system = app.sidebar.general().expander(
+        label=f"**{get_label('sidebar.general.energy_system.title')}**",
+        icon="💡",
+    )
+    app.sidebar.general.economics = app.sidebar.general().expander(
+        label=f"**{get_label('sidebar.general.economics.title')}**",
+        icon="💶",
+    )
+
+    # Fleet inputs
+    app.sidebar.fleet = app.sidebar().container()
+    app.sidebar.fleet.title = app.sidebar.fleet().container()
+    app.sidebar.fleet.title().subheader(get_label("sidebar.fleet.title"))
+
+    # Charging Infrastructure inputs
+    app.sidebar.chargers = app.sidebar().container()
+    app.sidebar.chargers.title = app.sidebar.chargers().container()
+    app.sidebar.chargers.title().subheader(get_label("sidebar.chargers.title"))
+
+    # Calculation
+    app.sidebar.calculation = app.sidebar().container()
+
+    # Main area
+    app.main = st.container()
+    app.main().title(get_label("main.title"))
+
+    # Manual box
+    app.main.manual = app.main().container()
+
+    # Subtitle with colors as legend
+    app.main.subtitle = app.main().container()
+
+    # Space for KPI diagrams
+    app.main.kpi_diagrams = app.main().container()
+
+    # Tab structure for cost/emission results
+    app.main.time_diagrams = app.main().container()
+    app.main.time_diagrams.costs, app.main.time_diagrams.emissions = app.main().tabs(
+        [
+            get_label("main.time_diagrams.costs.tab"),
+            get_label("main.time_diagrams.emissions.tab"),
+        ]
+    )
+
+    # create sidebar and get input parameters from sidebar
+    settings = create_sidebar_and_get_input(domain=app.sidebar)
 
     if st.session_state["run_backend"] is True:
         try:
             results = run_comparison(comparison_input=settings)
-            display_results(results)
+            display_results(results, domain=app.main)
 
         except GridPowerExceededError as e:
             st.error(f"{get_label('main.errors.grid')} {e}")
@@ -106,7 +162,7 @@ def run_frontend():
 
         st.session_state["run_backend"] = False
     else:
-        display_empty_results()
+        display_empty_results(domain=app.main.manual)
 
     display_footer()
 

@@ -9,6 +9,28 @@ from .utils import get_label
 from lift.backend.simulation.interfaces import Coordinates
 
 
+class StreamlitWrapper:
+    def __init__(self, element=None):
+        self.element = element
+        self.elements = dict()
+
+    def __getattr__(self, name):
+        if name in self.elements:
+            return self.elements[name]
+        else:
+            raise AttributeError(f"Attribute {name} is not defined in {self}")
+
+    def __setattr__(self, name, value):
+        if name in ("element", "elements"):
+            # Internal attributes. Need to be excluded otherwise initialization fails
+            super().__setattr__(name, value)
+        else:
+            self.elements[name] = StreamlitWrapper(value)
+
+    def __call__(self, *args, **kwargs):
+        return self.element
+
+
 class SettingsInput(ABC):
     @abstractmethod
     def get_streamlit_element(

@@ -35,26 +35,15 @@ def _heading_with_help(
     )
 
 
-def display_results(results):
-    st.markdown(
-        f"### <span style='color:{COLOR_BL}'>{get_label('main.name_baseline')}</span> vs. <span style='color:{COLOR_EX}'>{get_label('main.name_expansion')}</span>",
+def display_results(results, domain):
+    domain.subtitle().markdown(
+        f"""### <span style='color:{COLOR_BL}'>{get_label("main.name_baseline")}</span> vs. <span style='color:{COLOR_EX}'>{get_label("main.name_expansion")}</span>""",
         unsafe_allow_html=True,
     )
 
     phases = (get_label("main.name_baseline"), get_label("main.name_expansion"))
 
-    def _show_kpis(phases: tuple[str, str]):
-        def _centered_heading(title: str, help_msg: str, domain=st) -> None:
-            domain.markdown(
-                f"""
-                <div style="display: flex; justify-content: center; align-items: center;">
-                    <h5 style="margin: 0; margin-left: 23px;">{title}</h5>
-                    <span title="{help_msg}" style="margin-left: 0px; cursor: pointer;">&#x1F6C8;</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
+    def _show_kpis(phases: tuple[str, str], domain):
         def _create_bar_comparison(
             val_baseline: float,
             val_expansion: float,
@@ -200,7 +189,7 @@ def display_results(results):
 
             return (ring_baseline + ring_expansion + center_text).properties(width=200, height=200)
 
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        col1, col2, col3, col4, col5 = domain().columns([1, 1, 1, 1, 1])
 
         _heading_with_help(
             label=get_label("main.kpi_diagrams.costs.title"),
@@ -293,48 +282,49 @@ def display_results(results):
             use_container_width=True,
         )
 
-    _show_kpis(phases=phases)
+    _show_kpis(phases=phases, domain=domain.kpi_diagrams)
 
-    # Show heading
-    _heading_with_help(
-        label=get_label("main.cost_diagram.title.label"),
-        help_msg=get_label("main.cost_diagram.title.help"),
-    )
-
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        plot_flow(
-            baseline_capex=results.baseline.cashflow_dis["capex"].sum(axis=0),
-            baseline_opex=results.baseline.cashflow_dis["opex"].sum(axis=0),
-            expansion_capex=results.expansion.cashflow_dis["capex"].sum(axis=0),
-            expansion_opex=results.expansion.cashflow_dis["opex"].sum(axis=0),
-            x_label=get_label("main.cost_diagram.xaxis"),
-            y_label=f"{get_label('main.cost_diagram.yaxis')} in EUR",
-            phase_labels=phases,
-        )
-    with col2:
+    with domain.time_diagrams.costs():
+        # Show heading
         _heading_with_help(
-            label=get_label("main.cost_diagram.paybackperiod.title"),
-            help_msg=get_label("main.cost_diagram.paybackperiod.help"),
-            adjust="left",
-            size=5,
-        )
-        if results.payback_period_yrs is None:
-            st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
-        else:
-            st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
-
-        _heading_with_help(
-            label=get_label("main.cost_diagram.saving.title"),
-            help_msg=get_label("main.cost_diagram.saving.help"),
-            adjust="left",
-            size=5,
-        )
-        st.markdown(
-            f"{results.npc_delta:,.0f} EUR {get_label('main.cost_diagram.saving.after')} {PERIOD_ECO} {get_label('main.cost_diagram.saving.years')}"
+            label=get_label("main.cost_diagram.title.label"),
+            help_msg=get_label("main.cost_diagram.title.help"),
         )
 
-    with st.expander(f"#### {get_label('main.co2_diagram.expander')}"):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            plot_flow(
+                baseline_capex=results.baseline.cashflow_dis["capex"].sum(axis=0),
+                baseline_opex=results.baseline.cashflow_dis["opex"].sum(axis=0),
+                expansion_capex=results.expansion.cashflow_dis["capex"].sum(axis=0),
+                expansion_opex=results.expansion.cashflow_dis["opex"].sum(axis=0),
+                x_label=get_label("main.cost_diagram.xaxis"),
+                y_label=f"{get_label('main.cost_diagram.yaxis')} in EUR",
+                phase_labels=phases,
+            )
+        with col2:
+            _heading_with_help(
+                label=get_label("main.cost_diagram.paybackperiod.title"),
+                help_msg=get_label("main.cost_diagram.paybackperiod.help"),
+                adjust="left",
+                size=5,
+            )
+            if results.payback_period_yrs is None:
+                st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
+            else:
+                st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
+
+            _heading_with_help(
+                label=get_label("main.cost_diagram.saving.title"),
+                help_msg=get_label("main.cost_diagram.saving.help"),
+                adjust="left",
+                size=5,
+            )
+            st.markdown(
+                f"{results.npc_delta:,.0f} EUR {get_label('main.cost_diagram.saving.after')} {PERIOD_ECO} {get_label('main.cost_diagram.saving.years')}"
+            )
+
+    with domain.time_diagrams.emissions():
         # Show heading
         _heading_with_help(
             label=get_label("main.co2_diagram.title.label"),
@@ -374,8 +364,8 @@ def display_results(results):
             )
 
 
-def display_empty_results():
-    st.warning(
+def display_empty_results(domain):
+    domain().warning(
         f"{get_label('main.empty.manual1')}**🚀 {get_label('sidebar.calculate')}**{get_label('main.empty.manual2')}"
     )
 

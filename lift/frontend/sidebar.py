@@ -45,8 +45,8 @@ SHARE_COLUMN_INPUT = [3, 7]
 
 
 # ToDo: combine location and economic parameters in one function
-def _get_input_location() -> ComparisonInputLocation:
-    with st.sidebar.expander(label=f"**{get_label('sidebar.general.position.title')}**", icon="🗺️"):
+def _get_input_location(domain) -> ComparisonInputLocation:
+    with domain.position():
         if "location" not in st.session_state:
             st.session_state["location"] = FrontendCoordinates(latitude=48.1351, longitude=11.5820)
 
@@ -73,7 +73,7 @@ def _get_input_location() -> ComparisonInputLocation:
         st_folium(m, height=350, width="5%", key="map", on_change=callback)
         st.markdown(f"Position: {st.session_state['location'].as_dms_str}")
 
-    with st.sidebar.expander(label=f"**{get_label('sidebar.general.energy_system.title')}**", icon="💡"):
+    with domain.energy_system():
         st.markdown(f"**{get_label('sidebar.general.energy_system.demand.title')}**")
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         slp = DEF_DEMAND.settings_dem_profile.get_streamlit_element(
@@ -167,8 +167,8 @@ def _get_input_location() -> ComparisonInputLocation:
     )
 
 
-def _get_input_economic() -> ComparisonInputEconomics:
-    with st.sidebar.expander(label=f"**{get_label('sidebar.general.economics.title')}**", icon="💶"):
+def _get_input_economic(domain) -> ComparisonInputEconomics:
+    with domain.economics():
         return ComparisonInputEconomics(
             discount_rate=DEF_ECONOMICS.settings_discount_rate.get_streamlit_element(
                 label=f"{get_label('sidebar.general.economics.discount.label')} (%)",
@@ -221,8 +221,8 @@ def _get_input_economic() -> ComparisonInputEconomics:
         )
 
 
-def _get_params_subfleet(subfleet: FrontendSubFleetInterface) -> ComparisonInputSubfleet:
-    with st.sidebar.expander(
+def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain) -> ComparisonInputSubfleet:
+    with domain().expander(
         label=f"**{subfleet.get_label(st.session_state['language'])}**  \n"
         f"{subfleet.weight_max_t} t {get_label('sidebar.fleet.subfleet.weight_total.label')}",
         icon=subfleet.icon,
@@ -357,8 +357,8 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]) -> float:
         return np.inf
 
 
-def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCharger:
-    with st.sidebar.expander(
+def _get_params_charger(charger: FrontendChargerInterface, domain) -> ComparisonInputCharger:
+    with domain().expander(
         label=f"**{charger.label}{get_label('sidebar.chargers.charger.title_suffix')}**",
         icon=charger.icon,
         expanded=False,
@@ -401,11 +401,11 @@ def _get_params_charger(charger: FrontendChargerInterface) -> ComparisonInputCha
         )
 
 
-def _get_params_charging_infrastructure():
-    with st.sidebar.expander(label=f"**{get_label('sidebar.chargers.load_mngmnt.title')}**", icon="⚖️"):
+def _get_params_charging_infrastructure(domain):
+    with domain().expander(label=f"**{get_label('sidebar.chargers.load_mngmnt.title')}**", icon="⚖️"):
         load_mngmnt_baseline = _get_load_mngmnt(phase="baseline")
         load_mngmnt_expansion = _get_load_mngmnt(phase="expansion")
-    chargers = {chg_name: _get_params_charger(chg_def) for chg_name, chg_def in DEF_CHARGERS.items()}
+    chargers = {chg_name: _get_params_charger(chg_def, domain=domain) for chg_name, chg_def in DEF_CHARGERS.items()}
 
     return ComparisonInputChargingInfrastructure(
         pwr_max_w_baseline=load_mngmnt_baseline,
@@ -414,8 +414,8 @@ def _get_params_charging_infrastructure():
     )
 
 
-def _get_simsettings():
-    col1, col2 = st.sidebar.columns([6, 4])
+def _get_simsettings(domain):
+    col1, col2 = domain().columns([6, 4])
     st.session_state["auto_refresh"] = col1.toggle(
         f"**{get_label('sidebar.autorefresh')}**", value=st.session_state.auto_refresh
     )
@@ -426,10 +426,9 @@ def _get_simsettings():
         st.session_state["run_backend"] = True
 
 
-def create_sidebar_and_get_input() -> ComparisonInput:
+def create_sidebar_and_get_input(domain) -> ComparisonInput:
     # language selector
-    col_subheader, col_language = st.sidebar.columns([8, 2])
-    col_language.selectbox(
+    domain.language_selection().selectbox(
         f"**{get_label('sidebar.language_selection')}**",
         options=list(DEF_LANGUAGE_OPTIONS.keys()),
         index=list(DEF_LANGUAGE_OPTIONS.values()).index(st.session_state.language),
@@ -439,20 +438,19 @@ def create_sidebar_and_get_input() -> ComparisonInput:
     )
 
     # get depot parameters
-    col_subheader.subheader(get_label("sidebar.general.title"))
-    input_location = _get_input_location()
-    input_economic = _get_input_economic()
+    input_location = _get_input_location(domain=domain.general)
+    input_economic = _get_input_economic(domain=domain.general)
 
     # get fleet parameters
-    st.sidebar.subheader(get_label("sidebar.fleet.title"))
-    input_fleet = {sf_name: _get_params_subfleet(sf_def) for sf_name, sf_def in DEF_SUBFLEETS.items()}
+    input_fleet = {
+        sf_name: _get_params_subfleet(sf_def, domain=domain.fleet) for sf_name, sf_def in DEF_SUBFLEETS.items()
+    }
 
     # get charging infrastructure parameters
-    st.sidebar.subheader(get_label("sidebar.chargers.title"))
-    input_charging_infrastructure = _get_params_charging_infrastructure()
+    input_charging_infrastructure = _get_params_charging_infrastructure(domain=domain.chargers)
 
     # get simulation settings
-    _get_simsettings()
+    _get_simsettings(domain=domain.calculation)
 
     return ComparisonInput(
         location=input_location,
