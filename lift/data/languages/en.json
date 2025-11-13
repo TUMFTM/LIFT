@@ -63,7 +63,7 @@
       "economics": {
         "title": "Economic Parameters",
         "discount": {
-          "label": "WACC",
+          "label": "Capital cost rate",
           "help": "Interest rate in percent for discounting future cash flows. Typical values: 3-7%. Higher values reduce the present value of future investments more strongly. Used for calculating Net Present Cost (NPC)."
         },
         "fixcost": {

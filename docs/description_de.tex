@@ -131,7 +131,7 @@ Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfete
 \label{sec:methods}
 
 Dieses Kapitel beschreibt den grundsätzlichen Ablauf einer Berechnung mit LIFT sowie die damit getroffenen qualitativen  bzw. methodischen Annahmen.
-Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind hingegen in \autoref{sec:defaultvalues} definiert.
+Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind hingegen in \autoref{sec:parameters} definiert.
 
 \ac{lift} berechnet für \textit{Baseline}- und \textit{Expansion}-Szenario jeweils Kosten und \ac{co2}-Emissionen.
 Diese lassen sich jeweils nach zwei Quellen unterscheiden: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
@@ -171,7 +171,7 @@ Hierfür werden auszuwählende Standardlastprofile des \acg{bdew} verwendet, die
 Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen und verfälschen die in der Simulation auftretenden Lastspitzen am \ac{gcp} gegenüber der Realität.
 Im Rahmen einer Erstberatung ist diese Vereinfachung zwar nötig und zulässig, um schnell Potentiale abzuschätzen, in weiteren Planungsphasen ist davon jedoch abzuraten.
 
-Die \textbf{\acf{cis}} modelliert mehrere (in der \ac{gui} zwei, siehe \autoref{subsubsec:default}) Klassen von Ladepunkten für Fahrzeuge, von der jeweils mehrere Ladepunkte existieren.
+Die \textbf{\acf{cis}} modelliert mehrere (in der \ac{gui} zwei, siehe \autoref{sec:parameters}) Klassen von Ladepunkten für Fahrzeuge, von der jeweils mehrere Ladepunkte existieren.
 Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement, das statisch oder dynamisch sein kann.
 Das statische Lastmanagement begrenzt in jedem Zeitschritt die für die gesamte \ac{cis} klassenübergreifend zur Verfügung stehende Ladeleistung auf einen in der \ac{gui} konstanten Wert.
 Dieser wird normalerweise bestimmt, indem die Spitzenlast des Standortverbrauchs von der maximalen Leistung des Netzanschlusspunktes abgezogen wird.
@@ -180,10 +180,10 @@ Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flot
 Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
 Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.
 
-Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{subsubsec:default}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
+Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{sec:parameters}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
 Dies können entweder rein verbrennungsmotorisch oder batterieelektrisch angetriebene Fahrzeuge sein, hybride Mischformen sind nicht abgebildet.
 Das Mobilitätsprofil einer Subflotte beinhaltet Zeitreihen, in denen für jedes Fahrzeug die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
-Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:defaultvalues}) vordefiniert und als Datei abgelegt.
+Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:parameters}) vordefiniert und als Datei abgelegt.
 Jedes Fahrzeug ist nur mit der in der Subflotte definierten Ladepunktklasse kompatibel.
 Die tatsächlich maximale Ladeleistung eines Fahrzeugs entspricht dem Minimum aus in der Subflotte definierten Fahrzeugladeleistung und der in der assoziierten Ladepunktklasse definierten Leistung.
 Je nach Flottengröße und \ac{cis}-Konfiguration sind sowohl die Anzahl verfügbarer Ladepunkte als auch die aktuell zur Verfügung stehende Ladeleistung eine knappe Resource.
@@ -259,56 +259,12 @@ Dabei bezeichnen *$d^{i/j}$ die gefahrene Distanz aller Fahrzeuge der Subflotte 
 Die mit * markierten Werte sind in der \ac{gui} einstellbar.
 Für die spezifischen Emissionen des öffentlichen Ladens wird der Wert des Standortes verwendet.
 
-\subsection{Technische \acp{kpi}}
-\label{subsec:kpi_tech}
-
-Die technischen \acp{kpi} werden über den Simulationszeitraum berechnet und dienen als Anhaltspunkt, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
-Dabei wird die lokal genutzte Energie $W^{cons}_\text{sim}$ gemäß \autoref{eq:energy_consumption} als die in \ac{dem} und \ac{flt} abgeflossene Energie definiert.
-Sinngemäß sind alle anderen Energieabflüsse, also das abgeregelte \ac{PV}-Energiepotential $W^{PV}_\text{curt,sim}$ und die am \ac{gcp} eingespeiste Energie $W^{GCP}_\text{sell}$ als extern genutzt zu werten.
-
-\begin{subequations}
-    \label{eq:energy_boundaries}
-    \begin{align}
-        W^{loc}_\text{sim} = & W^{FLT}_\text{dep, sim} + W^{DEM}_\text{sim} \label{eq:cons_loc} \\
-        W^{ext}_\text{sim} = & W^{PV}_\text{curt,sim} + W^{GCP}_\text{sell} \label{eq:cons_ext}
-    \end{align}
-\end{subequations}
-
-\todo[inline]{$W^{FLT}_\text{sim}$ ist nicht gut genug von externem Laden abgegrenzt}
-
-Die \textbf{Eigenverbrauchsquote} $\gamma_{sc}$ gemäß \autoref{eq:selfconsumption} gibt an, welcher Anteil des \ac{pv}-Energiepotentials lokal genutzt wurde.
-Dies kann entweder direkt oder auch indirekt über die extern genutzte Energie berechnet werden
-Sowohl sehr geringe als auch eine sehr hohe Werte von $\gamma_{sc}$  sind nicht vorteilhaft: Erstere deuten auf eine überdimensionierte, letztere auf eine unterdimensionierte \ac{pv}-Anlage hin.
-
-\begin{equation}
-    \gamma_{sc} = \frac{W^{loc}_\text{sim}}{W^{PV}_\text{pot}} = 1 - \frac{W^{ext}_\text{sim}}{W^{PV}_\text{pot}}
-    \label{eq:selfconsumption}
-\end{equation}\\
-
-Der \textbf{Autarkiegrad} $\gamma_{ss}$ gemäß \autoref{eq:selfsufficiency} gibt an, welcher Anteil der lokal genutzten Energie auch lokal bzw. aus \ac{pv} bereitgestellt wurde.
-Ein sehr hoher Autarkiegrad deutet auf eine für den Verbrauch am Standort aus ökonomischer Sicht zu überdimensionierte Kombination aus \ac{pv} und \ac{ess} hin.
-
-\begin{equation}
-    \gamma_{ss} = \frac{W^{PV}_\text{pot, sim} - W^{PV}_\text{curt} - E^{GCP}_\text{sell}}{W^{loc}_\text{sim}}
-    \label{eq:selfsufficiency}
-\end{equation}
-
-Der \textbf{Depotladegrad} $\gamma_{ch}$ gemäß \autoref{eq:homecharging} gibt an, welcher Energieanteil über die gesamte \ac{FLT} am Depot geladen wurde.
-Ein sehr geringer Wert deutet auf Limitationen durch Ladepunkt- oder Ladeleistungsverfügbarkeit.
-Für letztere können die Dimensionierungen von \ac{cis} und\,/\,oder \ac{gcp} ursächlich sein.
-Da die lokalen Energiekosten im Vergleich zum öffentlichen Laden meist geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
-
-\begin{equation}
-    \gamma_{ch} = \frac{W^{FLT}_\text{dep, sim}}{W^{FLT}_\text{dep, sim} + W^{FLT}_\text{pub, sim}}
-    \label{eq:homecharging}
-\end{equation}
-
-Es sei darauf hingewiesen, dass diese \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten hinzukommen.
-
 \subsection{Extrapolation}
 \label{subsec:extrapolation}
 
 Zur Berechnung von \ac{capex} und \ac{opex} über den Projektzeitraum müssen die Ergebnisse des Simulationszeitraums extrapoliert und im Falle von Kosten dabei diskontiert werden.
+Die hier jeweils für den gesamten Projektzeitraum berechneten Summen werden in \ac{lift} tatsächlich vektorisiert durchgeführt, sodass nominelle \ac{capex}, nominelle \ac{opex} und Diskontierungsfaktor für jedes Projektjahr verfügbar sind.
+
 \ac{capex} treten gemäß \autoref{eq:extrapolation_capex} jeweils bei Anfangs- und Ersatzinvestitionen $i$ eines Blocks $b$ entsprechend seiner Lebensdauer $ls^b$ auf, werden in der Diskontierung mit dem Kapitalkostensatz $r$ zu Beginn eines Projektjahres angenommen und werden über alle Blöcke addiert.
 Anfangsinvestitionen bei $t=0$ werden dementsprechend effektiv nicht diskontiert.
 Der Restwert $C^b_{res}$ jedes Blocks zum Ende des Projektzeitraumes wird sinngemäß als negative Kosten verrechnet und verhindert Sprungeffekte in den Ergebnissen bei Variation diskreter Parameter wie Lebensdauern.
@@ -338,16 +294,63 @@ Im Gegensatz dazu werden \ac{opex} des Simulationszeitraumes gemäß \autoref{eq
     \end{align}
 \end{subequations}
 
-\subsection{Ökonomische und ökologische \acp{kpi}}
-\label{subsec:kpi_econ}
+\subsection{\acfp{kpi}}
+\label{subsec:kpis}
 
-Die summarischen Berechnungen in \autoref{subsec:extrapolation} werden in \ac{lift} tatsächlich vektorisiert und somit nach Jahren aufgeschlüsselt durchgeführt.
-So kann die Investition
+In \ac{lift} wird zwischen technischen und ökonomischen\,/\,ökologischen \acp{kpi} unterschieden.
+Erstere werden über den Simulationszeitraum auf Basis von Energieflüssen berechnet und dienen als Anhaltspunkt, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
+Es sei darauf hingewiesen, dass die technischen \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten modelliert werden. \todo{check}
+Dabei wird die lokal genutzte Energie $W^{cons}_\text{sim}$ gemäß \autoref{eq:energy_boundaries} als die in \ac{dem} und \ac{flt} aus dem Depot abgeflossene Energie definiert.
+Sinngemäß sind alle anderen Energieabflüsse, also das abgeregelte \ac{PV}-Energiepotential $W^{PV}_\text{curt,sim}$ und die am \ac{gcp} eingespeiste Energie $W^{GCP}_\text{sell}$ als extern genutzt zu werten.
+
+\begin{subequations}
+    \label{eq:energy_boundaries}
+    \begin{align}
+        W^{loc}_\text{sim} = & W^{FLT}_\text{dep, sim} + W^{DEM}_\text{sim} \label{eq:cons_loc} \\
+        W^{ext}_\text{sim} = & W^{PV}_\text{curt,sim} + W^{GCP}_\text{sell} \label{eq:cons_ext}
+    \end{align}
+\end{subequations}
+
+Die \textbf{Eigenverbrauchsquote} $\gamma_{sc}$ gemäß \autoref{eq:selfconsumption} gibt an, welcher Anteil des \ac{pv}-Energiepotentials lokal genutzt wurde.
+Dies kann entweder direkt oder auch indirekt über die extern genutzte Energie berechnet werden
+Sowohl sehr geringe als auch eine sehr hohe Werte von $\gamma_{sc}$  sind nicht vorteilhaft: Erstere deuten auf eine überdimensionierte, letztere auf eine unterdimensionierte \ac{pv}-Anlage hin.
+
+\begin{equation}
+    \gamma_{sc} = \frac{W^{loc}_\text{sim}}{W^{PV}_\text{pot}} = 1 - \frac{W^{ext}_\text{sim}}{W^{PV}_\text{pot}}
+    \label{eq:selfconsumption}
+\end{equation}\\
+
+Der \textbf{Autarkiegrad} $\gamma_{ss}$ gemäß \autoref{eq:selfsufficiency} gibt an, welcher Anteil der lokal genutzten Energie auch lokal bzw. aus \ac{pv} bereitgestellt wurde.
+Ein sehr hoher Autarkiegrad deutet auf eine für den Verbrauch am Standort aus ökonomischer Sicht zu überdimensionierte Kombination aus \ac{pv} und \ac{ess} hin.
+
+\begin{equation}
+    \gamma_{ss} = \frac{W^{PV}_\text{pot, sim} - W^{PV}_\text{curt} - E^{GCP}_\text{sell}}{W^{loc}_\text{sim}}
+    \label{eq:selfsufficiency}
+\end{equation}
+
+Der \textbf{Depotladegrad} $\gamma_{ch}$ gemäß \autoref{eq:homecharging} gibt an, welcher Energieanteil über die gesamte \ac{FLT} am Depot geladen wurde.
+Ein sehr geringer Wert deutet auf Limitationen durch Ladepunkt- oder Ladeleistungsverfügbarkeit.
+Für letztere können die Dimensionierungen von \ac{cis} und\,/\,oder \ac{gcp} ursächlich sein.
+Da die lokalen Energiekosten im Vergleich zum öffentlichen Laden meist geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
+
+\begin{equation}
+    \gamma_{ch} = \frac{W^{FLT}_\text{dep, sim}}{W^{FLT}_\text{dep, sim} + W^{FLT}_\text{pub, sim}}
+    \label{eq:homecharging}
+\end{equation}
+
+Ökonomische\,/\,ökologische \ac{kpi} werden auf Basis der gemäß \autoref{subsec:extrapolation} vektorisierten (nach Projektjahren aufgelösten) diskontierten Gesamtkosten und -emissionen berechnet, die in der \ac{gui} als Cashflow-Diagramm dargestellt sind.
+
+Die \textbf{Amortisationszeit} $t_\text{pb}$ gibt das Projektjahr an, an dessen Ende dem das Expansion-Szenario geringere diskontierte Gesamtkosten bzw. -emissionen aufweist.
+Aufgrund der diskontinuierlich auftretenden \ac{capex} kann es Parameterkonfigurationen geben, die zu mehrfacher Amortisation führen.
+Dies wird in $t_\text{pb}$ vernachlässigt und es wird nur das erste Amortisationsjahr ausgegeben.
+
 
 % Amortisationszeit
 
 \section{Parameter und Standardwerte}
-\label{sec:defaultvalues}
+\label{sec:parameters}
+
+\autoref{tab:parameters}
 
 \todo[inline]{Standardwerte in gleicher Spalte mit Quellen belegen}
 \todo[inline]{Alle (auch GUI-) Parameter in Tabelle integrieren}

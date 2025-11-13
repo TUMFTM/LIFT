@@ -63,7 +63,7 @@
       "economics": {
         "title": "Wirtschaftliche Parameter",
         "discount": {
-          "label": "Abzinsungsfaktor",
+          "label": "Kapitalkostensatz",
             "help": "Zinssatz in Prozent zur Diskontierung zukünftiger Zahlungsströme. Typische Werte: 3-7%. Höhere Werte reduzieren den Barwert zukünftiger Investitionen stärker. Wird für die Berechnung des Net Present Cost (NPC) verwendet."
         },
         "fixcost": {
