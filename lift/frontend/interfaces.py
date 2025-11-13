@@ -251,10 +251,7 @@ class FrontendEconomicsInterface:
     settings_opex_spec_grid_sell: SettingsSlider
     settings_opex_spec_grid_peak: SettingsSlider
     settings_opex_spec_route_charging: SettingsSlider
-    settings_opex_fuel: SettingsSlider
-    settings_insurance_frac: SettingsSlider
-    settings_salvage_bev_frac: SettingsSlider
-    settings_salvage_icev_frac: SettingsSlider
+    settings_opex_spec_fuel: SettingsSlider
 
 
 @dataclass

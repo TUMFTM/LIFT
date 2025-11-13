@@ -206,10 +206,10 @@ def _get_input_economic(domain) -> ComparisonInputEconomics:
                 key="eco_opex_spec_route_charging",
                 domain=st,
             ),
-            opex_fuel=DEF_ECONOMICS.settings_opex_fuel.get_streamlit_element(
+            opex_fuel=DEF_ECONOMICS.settings_opex_spec_fuel.get_streamlit_element(
                 label=f"{get_label('sidebar.general.economics.opexfuel.label')} (EUR/l)",
                 help_msg=get_label("sidebar.general.economics.opexfuel.help"),
-                key="eco_opex_fuel",
+                key="eco_opex_spec_fuel",
                 domain=st,
             ),
             period_eco=PERIOD_ECO,
