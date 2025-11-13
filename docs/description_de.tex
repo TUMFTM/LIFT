@@ -1,5 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage{acro}
+\usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{authblk}
@@ -193,15 +194,16 @@ Dem Priorisierungsalgorithmus liegt die Annahme zugrunde, dass physische Ladepun
 \subsection{\acs{capex}-Berechnung}
 \label{subsec:capex}
 
-Beim Aufbau jedes Blocks $b$ (mit Ausnahme von \ac{dem}, \ac{cis} und \ac{flt}) entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die jeweils in Abhängigkeit der Dimensionierung des Blocks $S^b$ sowie den spezifischen Werten $c^b_{cap}$ und $e^b_{cap}$ pro Größeneinheit berechnet und über alle Blöcke addiert werden.
-Für Ladeinfrastruktur und Flotte ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen fixe \ac{capex} pro Element $n$ (Fahrzeug oder Ladepunkt) eines Subblocks $m$ (Fahrzeug- oder Ladepunktklasse).
-Spezifische Kosten einer $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
+Beim Aufbau jedes Blocks $b$ mit Ausnahme von \ac{DEM} entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die mit $C^b_{cap}$ und $E^b_{cap}$ bezeichnet werden.
+Für alle kontinuierlich dimensionierbaren Blöcke $b_\text{dim}$ (\ac{GCP}, \ac{PV} und \ac{ess}) werden diese jeweils in Abhängigkeit der gewählten Größe des Blocks $S^b$ sowie den spezifischen Werten pro Größeneinheit $c^b_{cap}$ und $e^b_{cap}$ berechnet.
+Für die in diskrete Subblöcke aufgeteilten Blöcke $b_\text{dis}$ (\ac{cis} und \ac{flt}) ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen diskrete \ac{capex} $c_{cap, m}$ pro Element $n$ (Fahrzeug oder Ladepunkt) eines Subklasse $m$ (Fahrzeug- oder Ladepunktklasse).
+Diskrete Kosten $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
 
 \begin{subequations}
     \label{eq:capex_init}
     \begin{align}
-        C_{cap, init} = & \sum_{k}{S^k \cdot c^k_{cap}} + \sum_{m,n}{c^n_{cap, m}} \label{eq:capex_init_econ}\\
-        E_{cap, init} = & \sum_{k}{S^k \cdot e^k_{cap}} + \sum_{m,n}{e^n_{cap, m}}\label{eq:capex_init_ecol}
+        C_{cap, init} = & \sum_{b}{C^b_{cap}}= \sum_{b_\text{cont}}{S^b \cdot c^b_{cap}} + \sum_{b_\text{dis}}{\sum_{m,n}{c^n_{cap, m}}} \label{eq:capex_init_econ}\\
+        E_{cap, init} = & \sum_{b}{E^b_{cap}} = \sum_{b_\text{cont}}{S^b \cdot e^b_{cap}} + \sum_{b_\text{dis}}{\sum_{m,n}{e^n_{cap, m}}}\label{eq:capex_init_ecol}
     \end{align}
 \end{subequations}
 
@@ -267,7 +269,7 @@ Sinngemäß sind alle anderen Energieabflüsse, also das abgeregelte \ac{PV}-Ene
 \begin{subequations}
     \label{eq:energy_boundaries}
     \begin{align}
-        W^{loc}_\text{sim} = & W^{FLT}_\text{sim} + W^{DEM}_\text{sim} \label{eq:cons_loc} \\
+        W^{loc}_\text{sim} = & W^{FLT}_\text{dep, sim} + W^{DEM}_\text{sim} \label{eq:cons_loc} \\
         W^{ext}_\text{sim} = & W^{PV}_\text{curt,sim} + W^{GCP}_\text{sell} \label{eq:cons_ext}
     \end{align}
 \end{subequations}
@@ -297,91 +299,52 @@ Für letztere können die Dimensionierungen von \ac{cis} und\,/\,oder \ac{gcp} u
 Da die lokalen Energiekosten im Vergleich zum öffentlichen Laden meist geringer ausfallen, ist hier ein möglichst hoher Wert anzustreben.
 
 \begin{equation}
-    \gamma_{ch} = \frac{W^{FLT}_\text{sim}}{W^{FLT}_\text{sim} + W^{FLT}_\text{pub, sim}}
+    \gamma_{ch} = \frac{W^{FLT}_\text{dep, sim}}{W^{FLT}_\text{dep, sim} + W^{FLT}_\text{pub, sim}}
     \label{eq:homecharging}
 \end{equation}
 
-\todo[inline]{Hinweis verpacken: Diese KPIs sind mit Bidi-Fahrzeugen bald hinfällig}
+Es sei darauf hingewiesen, dass diese \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten hinzukommen.
 
 \subsection{Extrapolation}
 \label{subsec:extrapolation}
 
-In einem ersten Schritt werden diese vom Simulationszeitraum linear auf einen Zeitraum von einem Jahr skaliert.
+Zur Berechnung von \ac{capex} und \ac{opex} über den Projektzeitraum müssen die Ergebnisse des Simulationszeitraums extrapoliert und im Falle von Kosten dabei diskontiert werden.
+\ac{capex} treten gemäß \autoref{eq:extrapolation_capex} jeweils bei Anfangs- und Ersatzinvestitionen $i$ eines Blocks $b$ entsprechend seiner Lebensdauer $ls^b$ auf, werden in der Diskontierung mit dem Kapitalkostensatz $r$ zu Beginn eines Projektjahres angenommen und werden über alle Blöcke addiert.
+Anfangsinvestitionen bei $t=0$ werden dementsprechend effektiv nicht diskontiert.
+Der Restwert $C^b_{res}$ jedes Blocks zum Ende des Projektzeitraumes wird sinngemäß als negative Kosten verrechnet und verhindert Sprungeffekte in den Ergebnissen bei Variation diskreter Parameter wie Lebensdauern.
+Der Wertverlust wird als linear über die Lebensdauer angenommen.
 
+\begin{subequations}
+    \label{eq:extrapolation_capex}
+    \begin{align}
+        C_\text{cap, prj} = & \sum_{b}{ \left( \left( \sum_{i}{\frac{C^b_\text{cap}}{\left(1 + r\right)^{t(i)}}} \right) - C^b_{\text{res}}} \right) , \quad t(i) \in n \cdot ls^b, n \in \left\{x \in \mathbb{N}_0 \vert x \leqq \left\lfloor\frac{t_\text{prj}}{ls^b}\right\rfloor\right\}\label{eq:extrapolation_capex_econ}\\
+        C^{b}_\text{res} = & \begin{cases}
+    C^b_\text{cap} \cdot \left( 1 - \frac{(t_\text{prj} \bmod ls^b)}{ls^b} \right) & \text{if } t_{prj} \bmod ls^b \neq 0 \\
+    0 & \text{if } t_{prj} \bmod ls^b = 0
+    \end{cases}
+    \label{eq:extrapolation_capex_residual}\\
+        E_\text{cap, prj} = & \sum_{b}{\sum_{i}{E^b_\text{cap}}} \label{eq:extrapolation_capex_ecol}
+    \end{align}
+\end{subequations}
+
+Im Gegensatz dazu werden \ac{opex} des Simulationszeitraumes gemäß \autoref{eq:extrapolation_opex} zunächst linear auf ein Jahr skaliert und angenommen, dass jedes Jahr $y \in \left\{x \in \mathbb{N}_0 \vert x < t_\text{prj} \right\}$ des Projektzeitraumes diesem skalierten Jahr entspricht und \ac{opex} am Ende dieses Jahres auftreten.
+Ökonomische \ac{opex} werden daher mit dem Exponenten $y+1$ diskontiert.
+
+\begin{subequations}
+    \label{eq:extrapolation_opex}
+    \begin{align}
+        C_\text{op, prj} = & \sum_{b}{\sum_{y}{\frac{C^{GCP}_\text{op, sim} + C^{FLT}_\text{op, sim}}{t_\text{sim, y} \left(1 + r\right)^{y+1}}}} \label{eq:extrapolation_opex_econ}\\
+        E_\text{op, prj} = & \sum_{b}{\sum_{y}{\frac{E^{GCP}_\text{op, sim} + E^{FLT}_\text{op, sim}}{t_\text{sim, y}}}} \label{eq:extrapolation_opex_ecol}
+    \end{align}
+\end{subequations}
 
 \subsection{Ökonomische und ökologische \acp{kpi}}
 \label{subsec:kpi_econ}
 
-Bei der Berechnung der wirtschaftlichen Kennzahlen wird zwischen Investitions- und Betriebskosten unterschieden.
-Während Investitionskosten immer am Anfang eines Jahres auftreten, fallen Betriebskosten erst am Ende des Jahres an.
-Für jedes Jahr im betrachteten Projektzeitraum werden beide Kostenarten getrennt berechnet und anschließend diskontiert.
-Der Diskontierungsfaktor $v^j$ für das Jahr $j$ berechnet sich für eine Abzinsungsrate $r$ zu
-\begin{equation}
-    v^j = \frac{1}{\left(1 + r\right)^{j-z}}, \quad \text{mit } z =
-    \begin{cases}
-        1 & \text{Investitionskosten}\\
-        0 & \text{Betriebskosten}
-    \end{cases}
-    \text{ und }
-    j \in \{1, 2, \dots\}
-    \label{eq:discounting}
-\end{equation}
-Die initialen Investitionskosten für eine Block entstehen am Anfang des Projektzeitraums, also am Beginn des ersten Jahres.
-Nach Ablauf der Lebensdauer der Block wird dann eine entsprechende Ersatzinvestition getätigt.
-Damit ergeben sich die Zeitpunkte der Investitionen zu den Anfängen der Jahre $n \cdot ls_k, \quad n \in \{0, 1, 2, \dots\}$.
-Unter der Annahme, dass sich der Wertverlust einer Block über deren Lebensdauer linear verhält, ergibt sich am Ende der Projektlaufzeit der Restwert
-\begin{equation}
-    C^{k}_\text{Restwert} = \begin{cases}
-    -C^{k}_\text{Invest, einmalig} \cdot \left( 1 - \frac{(T_{prj} \bmod \text{ls})}{\text{ls}} \right) & \text{if } T_{prj} \bmod \text{ls} \neq 0 \\
-    0 & \text{if } T_{prj} \bmod \text{ls} = 0
-    \end{cases}
-    \label{eq:salvage}
-\end{equation}
-Der so berechnete Restwert wird am Beginn des auf den Projektzeitraum folgenden Jahres verbucht.
-Nach der zuvor gegebenen Definition wird der Restwert als negative Kosten dargestellt.
-Deshalb gilt:
-\begin{equation}
-    C^{k}_{Restwert} \le 0 \quad \forall k
-    \label{eq:neg_salvage}
-\end{equation}
-Damit ergeben sich für eine Block $k$ die zwei Kostenvektoren $C^k_\text{Invest}$ und $C^k_\text{Betrieb}$:
-\begin{equation}
-    C^k_\text{Invest} =
-    \begin{pmatrix}
-        C^k_\text{Invest, einmalig}\\0\\\vdots\\C^k_\text{Invest, einmalig}\\0\\\vdots\\C^k_\text{Restwert}
-    \end{pmatrix},
-    \quad
-    C^k_\text{Betrieb} =
-    \begin{pmatrix}
-        C^k_\text{Betrieb, jrl}\\C^k_\text{Betrieb, jrl}\\\vdots\\C^k_\text{Betrieb, jrl}\\0
-    \end{pmatrix}
-    \quad
-    \text{mit }
-    C^k_\text{Invest}, C^k_\text{Betrieb} \in \mathbb{R}^{T_{prj} + 1 \times 1}
-    \label{eq:cost_vectors}
-\end{equation}
-Jährliche Betriebskosten $C^k_\text{Betrieb, jrl}$ treten dabei jedes Jahr unverändert auf.
-Lediglich im letzten Eintrag des Vektors, der das Jahr nach der Projektlaufzeit darstellt, treten keine Kosten mehr auf.
-Dieser Eintrag dient lediglich der Restwertgutschrift.
+Die summarischen Berechnungen in \autoref{subsec:extrapolation} werden in \ac{lift} tatsächlich vektorisiert und somit nach Jahren aufgeschlüsselt durchgeführt.
+So kann die Investition
 
-Die diskontierten Kostenvektoren ergeben sich somit aus \autoref{eq:discounting} und\autoref{eq:cost_vectors} zu
-\begin{equation}
-    C^k_{u\text{, diskontiert}} =
-    C^k_u
-    \circ
-    \begin{pmatrix}
-        v^1_u\\
-        v^2_u\\
-        \vdots\\
-        v^{T_{prj}+1}_u\\
-    \end{pmatrix}
-    \quad
-    \text{mit }
-    u \in \{\text{Invest}, \text{Betrieb}\}
-    \label{eq:cost_vectors_discounted}
-\end{equation}
-Diese beiden Vektoren werden als Grundlage für die Kostendarstellung in den Ergebnissen verwendet.
-Entweder als Zeitreihe, wie im Fall des Gesamtkostendiagramms, in dem die Gesamtkosten über die Projektlaufzeit aufgetragen sind, oder bereits aufsummiert, wie zur Berechnung der Projektgesamtkosten.
+% Amortisationszeit
 
 \section{Parameter und Standardwerte}
 \label{sec:defaultvalues}
@@ -397,8 +360,8 @@ Entweder als Zeitreihe, wie im Fall des Gesamtkostendiagramms, in dem die Gesamt
 \textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert}\\
 \midrule
 \textbf{Simulation}\\
-$T^{sim}_{Start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)}\\
-$T^{sim}_{Dauer}$ & Simulationszeitraum & Tag & 365 Tage\\
+$t_{sim}^{start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)}\\
+\makecell[r]{$t_{sim}$\\$t_{si, y}$} & Simulationszeitraum & \makecell[l]{Tage\\Jahre} & \makecell[l]{365 Tage\\1 Jahr}\\
 $T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde\\
 \midrule
 \textbf{Netzanschluss}\\

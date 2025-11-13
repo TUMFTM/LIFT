@@ -188,9 +188,9 @@
         "axis": "CO₂-Emissionen"
       },
       "self_consumption": {
-        "title": "Eigenverbrauchsquote",
+        "title": "Eigenverbrauchsgrad",
             "help": "Anteil der erzeugten PV-Energie, der direkt am Standort verbraucht wird (nicht ins Netz eingespeist oder abgeregelt). Höhere Werte bedeuten bessere Nutzung der PV-Erzeugung und reduzieren die Abhängigkeit vom Netz. Wird in Prozent angegeben.",
-        "axis": "Eigenverbrauchsquote"
+        "axis": "Eigenverbrauchsgrad"
       },
       "self_sufficiency": {
         "title": "Autarkiegrad",
@@ -198,7 +198,7 @@
         "axis": "Autarkiegrad"
       },
       "home_charging": {
-        "title": "Heim-Laden",
+        "title": "Depotladegrad",
             "help": "Anteil der Flottenenergie, die am Depot geladen wird (vs. unterwegs). Höhere Werte bedeuten weniger Abhängigkeit von öffentlichen Ladestationen und bessere Nutzung der Depot-Infrastruktur. Wird in Prozent angegeben.",
         "axis": "Anteil am Depot geladener Energie"
       }
