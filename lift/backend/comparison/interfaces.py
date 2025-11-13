@@ -90,8 +90,6 @@ class ComparisonInputEconomics:
     opex_spec_grid_peak: float = 150e-3
     opex_spec_route_charging: float = 49e-5
     opex_fuel: float = 1.7
-    mntex_bev_eur_km: float = 0.05
-    mntex_icev_eur_km: float = 0.1
     period_eco: int = 18
     discount_rate: float = 0.05
     co2_per_liter_diesel_kg: float = 3.08

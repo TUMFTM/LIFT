@@ -25,8 +25,6 @@ class PhaseInputEconomics(PhaseInputBase):
     opex_spec_grid_peak: float = 150e-3
     opex_spec_route_charging: float = 49e-5
     opex_fuel: float = 1.7
-    mntex_bev_eur_km: float = 0.05
-    mntex_icev_eur_km: float = 0.1
     period_eco: int = 18
     discount_rate: float = 0.05
     co2_per_liter_diesel_kg: float = 3.08
@@ -46,8 +44,6 @@ class PhaseInputEconomics(PhaseInputBase):
             opex_spec_grid_peak=comparison_input.opex_spec_grid_peak,
             opex_spec_route_charging=comparison_input.opex_spec_route_charging,
             opex_fuel=comparison_input.opex_fuel,
-            mntex_bev_eur_km=comparison_input.mntex_bev_eur_km,
-            mntex_icev_eur_km=comparison_input.mntex_icev_eur_km,
             period_eco=comparison_input.period_eco,
             discount_rate=comparison_input.discount_rate,
             co2_per_liter_diesel_kg=comparison_input.co2_per_liter_diesel_kg,
