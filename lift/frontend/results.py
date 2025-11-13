@@ -337,7 +337,7 @@ def display_results(results):
         if results.payback_period_yrs is None:
             st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
         else:
-            st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
+            st.markdown(f"{results.payback_period_yrs:.0f} {get_label('main.cost_diagram.paybackperiod.years')}")
 
         _heading_with_help(
             label=get_label("main.cost_diagram.saving.title"),

@@ -146,16 +146,14 @@ class ComparisonResult:
 
     @staticmethod
     def get_payback_period_yrs(diff) -> float | None:
+        # np array containing diff indices just before sign change
         idx = np.flatnonzero(np.diff(np.sign(diff)))
 
         if idx.size == 0 or diff[0] > 0:
             return None  # No intersection
-
-        i = idx[0]
-        y0, y1 = diff[i], diff[i + 1]
-
-        # Linear interpolation to find x where y1 == y2
-        return float((i - y0 / (y1 - y0)) + 1)
+        else:
+            # +1 for before switch --> after switch, +1 for index --> year number
+            return idx[0] + 2
 
     @property
     def payback_period_yrs(self) -> float | None:
