@@ -438,7 +438,7 @@ def plot_flow(
     )
 
     layers = [line]
-    # ToDo: For any annotations use additional layers (intersection, delta values, etc.)
+    # Use additional layers for any annotations (intersection, delta values, etc.)
 
     chart = (
         alt.layer(*layers)

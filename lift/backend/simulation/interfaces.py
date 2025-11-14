@@ -74,8 +74,8 @@ class SimInputSettings(BaseInput):
 @dataclass
 class SimInputLocation(BaseInput):
     coordinates: Coordinates = field(default_factory=Coordinates)
-    slp: Literal["H0"] = "h0"  # ToDo: fix this
-    consumption_yrl_wh: float = 3e6  # ToDo: fix this
+    slp: str = "h0"
+    consumption_yrl_wh: float = 3e6
     grid_w: float = 10e3
     pv_wp: float = 10e3
     ess_wh: float = 10e3

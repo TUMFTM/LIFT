@@ -90,7 +90,7 @@ def simulate(
         # - When the infrastructure has a finite cap, we rely on downstream block logic (incl. Grid)
         #   and domain constraints to handle any exceedance, which keeps the fleet logic simpler and
         #   makes violations explicit via domain errors where applicable.
-        # Potential TODO: Consider applying a unified limit for all cases, e.g.:
+        # Potential improvement: Consider applying a unified limit for all cases, e.g.:
         # - Apply a unified limit for all cases, e.g.:
         #     fleet.pwr_lim_w = min(charging_infrastructure.pwr_max_w,
         #                           sum(block.generation_max_w for block in blocks_supply) - pwr_demand_w)

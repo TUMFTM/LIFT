@@ -24,7 +24,6 @@ from .utils import load_language, get_label
 SHARE_COLUMN_INPUT = [3, 7]
 
 
-# ToDo: combine location and economic parameters in one function
 def _get_input_location(domain):
     with domain.position():
         if "location" not in st.session_state:

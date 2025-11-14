@@ -73,8 +73,8 @@ class PhaseInputInvestComponent(PhaseInputBase):
 @dataclass
 class PhaseInputLocation(PhaseInputBase):
     coordinates: sim.Coordinates = field(default_factory=sim.Coordinates)
-    slp: Literal["H0"] = "h0"  # ToDo: fix this
-    consumption_yrl_wh: float = 3e6  # ToDo: fix this
+    slp: str = "h0"
+    consumption_yrl_wh: float = 3e6
     grid: PhaseInputInvestComponent = field(default_factory=lambda: PhaseInputInvestComponent())
     pv: PhaseInputInvestComponent = field(default_factory=lambda: PhaseInputInvestComponent())
     ess: PhaseInputInvestComponent = field(default_factory=lambda: PhaseInputInvestComponent())

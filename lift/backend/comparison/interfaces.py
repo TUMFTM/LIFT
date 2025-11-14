@@ -150,8 +150,3 @@ class ComparisonResult:
             self.expansion.emissions["totex"].sum(axis=0)
         )
         return self.get_payback_period_yrs(diff)
-
-    @property
-    def roi_rel(self) -> float:
-        # ToDo: calculate!
-        return 0.0

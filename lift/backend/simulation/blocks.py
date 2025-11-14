@@ -107,7 +107,6 @@ def _get_log_pv(
     coordinates: Coordinates,
     settings: SimInputSettings,
 ) -> np.typing.NDArray[np.float64]:
-    # ToDo: add default value if internet connection is not available -> debug purposes only
     dti = settings.dti
 
     data, *_ = pvlib.iotools.get_pvgis_hourly(
@@ -388,7 +387,6 @@ class FixedDemand(DemandBlock):
     log: np.typing.NDArray[np.float64]
 
     @classmethod
-    # ToDo: fix Literal
     def from_parameters(cls, settings: SimInputSettings, consumption_yrl_wh: float, slp: str) -> Self:
         log = _get_log_dem(slp=slp, consumption_yrl_wh=consumption_yrl_wh, settings=settings)
         return cls(dti=settings.dti, freq_hours=settings.freq_hours, log=log)

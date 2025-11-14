@@ -102,7 +102,6 @@ def evaluate(
 
         # Replacement years: start + 0, lifespan, 2*lifespan, ...
         replacement_years = np.arange(0, economics.period_eco, ls)
-        # ToDo: exclude first year if required
 
         repl = np.isin(years, replacement_years).astype(float)
 
