@@ -302,8 +302,8 @@ def display_results(results, domain):
     with domain.time_diagrams.costs():
         # Show heading
         _heading_with_help(
-            label=get_label("main.cost_diagram.title.label"),
-            help_msg=get_label("main.cost_diagram.title.help"),
+            label=get_label("main.time_diagrams.costs.title.label"),
+            help_msg=get_label("main.time_diagrams.costs.title.help"),
         )
 
         col1, col2 = st.columns([4, 1])
@@ -313,37 +313,39 @@ def display_results(results, domain):
                 baseline_opex=results.baseline.cashflow_dis["opex"].sum(axis=0),
                 expansion_capex=results.expansion.cashflow_dis["capex"].sum(axis=0),
                 expansion_opex=results.expansion.cashflow_dis["opex"].sum(axis=0),
-                x_label=get_label("main.cost_diagram.xaxis"),
-                y_label=f"{get_label('main.cost_diagram.yaxis')} in EUR",
+                x_label=get_label("main.time_diagrams.costs.xaxis"),
+                y_label=f"{get_label('main.time_diagrams.costs.yaxis')} in EUR",
                 phase_labels=phases,
             )
         with col2:
             _heading_with_help(
-                label=get_label("main.cost_diagram.paybackperiod.title"),
-                help_msg=get_label("main.cost_diagram.paybackperiod.help"),
+                label=get_label("main.time_diagrams.costs.paybackperiod.title"),
+                help_msg=get_label("main.time_diagrams.costs.paybackperiod.help"),
                 adjust="left",
                 size=5,
             )
             if results.payback_period_yrs is None:
-                st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
+                st.markdown(get_label("main.time_diagrams.costs.paybackperiod.negative_result"))
             else:
-                st.markdown(f"{results.payback_period_yrs:.0f} {get_label('main.cost_diagram.paybackperiod.years')}")
+                st.markdown(
+                    f"{results.payback_period_yrs:.0f} {get_label('main.time_diagrams.costs.paybackperiod.years')}"
+                )
 
             _heading_with_help(
-                label=get_label("main.cost_diagram.saving.title"),
-                help_msg=get_label("main.cost_diagram.saving.help"),
+                label=get_label("main.time_diagrams.costs.saving.title"),
+                help_msg=get_label("main.time_diagrams.costs.saving.help"),
                 adjust="left",
                 size=5,
             )
             st.markdown(
-                f"{results.npc_delta:,.0f} EUR {get_label('main.cost_diagram.saving.after')} {PERIOD_ECO} {get_label('main.cost_diagram.saving.years')}"
+                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {PERIOD_ECO} {get_label('main.time_diagrams.costs.saving.years')}"
             )
 
     with domain.time_diagrams.emissions():
         # Show heading
         _heading_with_help(
-            label=get_label("main.co2_diagram.title.label"),
-            help_msg=get_label("main.co2_diagram.title.help"),
+            label=get_label("main.time_diagrams.emissions.title.label"),
+            help_msg=get_label("main.time_diagrams.emissions.title.help"),
         )
         col1, col2 = st.columns([4, 1])
         with col1:
@@ -352,30 +354,32 @@ def display_results(results, domain):
                 baseline_opex=results.baseline.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
                 expansion_capex=results.expansion.emissions["capex"].sum(axis=0) * 1e-3,  # convert from kg to t
                 expansion_opex=results.expansion.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
-                x_label=get_label("main.co2_diagram.xaxis"),
-                y_label=f"{get_label('main.co2_diagram.yaxis')} in t CO₂-eq.",
+                x_label=get_label("main.time_diagrams.emissions.xaxis"),
+                y_label=f"{get_label('main.time_diagrams.emissions.yaxis')} in t CO₂-eq.",
                 phase_labels=phases,
             )
         with col2:
             _heading_with_help(
-                label=get_label("main.co2_diagram.paybackperiod.title"),
-                help_msg=get_label("main.co2_diagram.paybackperiod.help"),
+                label=get_label("main.time_diagrams.emissions.paybackperiod.title"),
+                help_msg=get_label("main.time_diagrams.emissions.paybackperiod.help"),
                 adjust="left",
                 size=5,
             )
             if results.payback_period_co2_yrs is None:
-                st.markdown(get_label("main.co2_diagram.paybackperiod.negative_result"))
+                st.markdown(get_label("main.time_diagrams.emissions.paybackperiod.negative_result"))
             else:
-                st.markdown(f"{results.payback_period_co2_yrs:.2f} {get_label('main.co2_diagram.paybackperiod.years')}")
+                st.markdown(
+                    f"{results.payback_period_co2_yrs:.2f} {get_label('main.time_diagrams.emissions.paybackperiod.years')}"
+                )
 
             _heading_with_help(
-                label=get_label("main.co2_diagram.saving.title"),
-                help_msg=get_label("main.co2_diagram.saving.help"),
+                label=get_label("main.time_diagrams.emissions.saving.title"),
+                help_msg=get_label("main.time_diagrams.emissions.saving.help"),
                 adjust="left",
                 size=5,
             )
             st.markdown(
-                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.co2_diagram.saving.after')} {PERIOD_ECO} {get_label('main.co2_diagram.saving.years')}"
+                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {PERIOD_ECO} {get_label('main.time_diagrams.emissions.saving.years')}"
             )
 
 

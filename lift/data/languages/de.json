@@ -205,51 +205,47 @@
     },
     "time_diagrams": {
       "costs": {
-        "tab": "Kosten"
+        "tab": "Kosten",
+        "title": {
+          "label": "Gesamtkosten",
+          "help": "Zeitlicher Verlauf der kumulierten, diskontierten Gesamtkosten (TOTEX = CAPEX + OPEX) für beide Szenarien über den Betrachtungszeitraum. Die Differenz zwischen den Kurven zeigt die wirtschaftliche Vorteilhaftigkeit der Expansion. Steilere Kurven bedeuten höhere Kosten."
+        },
+        "xaxis": "Jahr",
+        "yaxis": "Kumulierte, diskontierte Kosten",
+        "paybackperiod": {
+          "title": "Amortisationsdauer",
+          "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen Investitionen der Expansion durch Kosteneinsparungen ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Kostenkurven. Kürzere Amortisationsdauer bedeutet schnellere Rendite.",
+          "years": "Jahre",
+          "negative_result": "Investition amortisiert sich nicht."
+        },
+        "saving": {
+          "title": "Kosteneinsparung",
+          "help": "Gesamte Kosteneinsparung (NPC-Differenz) der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum. Positive Werte bedeuten, dass die Expansion wirtschaftlich vorteilhaft ist (niedrigere Gesamtkosten). Negative Werte zeigen höhere Gesamtkosten in der Expansion.",
+          "after": "nach",
+          "years": "Jahren"
+        }
       },
       "emissions": {
-        "tab": "Emissionen"
-      }
-    },
-    "cost_diagram": {
-      "title": {
-        "label": "Gesamtkosten",
-            "help": "Zeitlicher Verlauf der kumulierten, diskontierten Gesamtkosten (TOTEX = CAPEX + OPEX) für beide Szenarien über den Betrachtungszeitraum. Die Differenz zwischen den Kurven zeigt die wirtschaftliche Vorteilhaftigkeit der Expansion. Steilere Kurven bedeuten höhere Kosten."
-      },
-      "xaxis": "Jahr",
-      "yaxis": "Kumulierte, diskontierte Kosten",
-      "paybackperiod": {
-        "title": "Amortisationsdauer",
-            "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen Investitionen der Expansion durch Kosteneinsparungen ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Kostenkurven. Kürzere Amortisationsdauer bedeutet schnellere Rendite.",
-        "years": "Jahre",
-        "negative_result": "Investition amortisiert sich nicht."
-      },
-      "saving": {
-        "title": "Kosteneinsparung",
-            "help": "Gesamte Kosteneinsparung (NPC-Differenz) der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum. Positive Werte bedeuten, dass die Expansion wirtschaftlich vorteilhaft ist (niedrigere Gesamtkosten). Negative Werte zeigen höhere Gesamtkosten in der Expansion.",
-        "after": "nach",
-        "years": "Jahren"
-      }
-    },
-    "co2_diagram": {
-      "title": {
-        "label": "CO₂-Emissionen",
-            "help": "Zeitlicher Verlauf der kumulierten CO₂-Emissionen für beide Szenarien über den Betrachtungszeitraum. Berücksichtigt Emissionen aus Fahrzeugherstellung (graue Energie), Betrieb (Treibstoff/Strom) und Energiebezug. Die Differenz zwischen den Kurven zeigt die CO₂-Einsparung der Expansion."
-      },
-      "expander": "Analyse CO₂-Emissionen",
-      "xaxis": "Jahr",
-      "yaxis": "Kumulierte CO₂-Emissionen",
-      "paybackperiod": {
-        "title": "CO₂-Paritätsdauer",
-            "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen CO₂-Emissionen der Expansion (z.B. durch Fahrzeugherstellung) durch Einsparungen im Betrieb ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Emissionskurven. Kürzere Paritätsdauer bedeutet schnellere CO₂-Neutralität.",
-        "years": "Jahre",
-        "negative_result": "Investition amortisiert sich nicht."
-      },
-      "saving": {
-        "title": "CO₂-Einsparung",
-            "help": "Gesamte CO₂-Einsparung der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum in Tonnen CO₂-Äquivalent. Positive Werte bedeuten eine Reduktion der Emissionen. Negative Werte zeigen höhere Emissionen in der Expansion (z.B. durch zusätzliche Fahrzeugherstellung).",
-        "after": "nach",
-        "years": "Jahren"
+        "tab": "Emissionen",
+        "title": {
+          "label": "CO₂-Emissionen",
+          "help": "Zeitlicher Verlauf der kumulierten CO₂-Emissionen für beide Szenarien über den Betrachtungszeitraum. Berücksichtigt Emissionen aus Fahrzeugherstellung (graue Energie), Betrieb (Treibstoff/Strom) und Energiebezug. Die Differenz zwischen den Kurven zeigt die CO₂-Einsparung der Expansion."
+        },
+        "expander": "Analyse CO₂-Emissionen",
+        "xaxis": "Jahr",
+        "yaxis": "Kumulierte CO₂-Emissionen",
+        "paybackperiod": {
+          "title": "CO₂-Paritätsdauer",
+          "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen CO₂-Emissionen der Expansion (z.B. durch Fahrzeugherstellung) durch Einsparungen im Betrieb ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Emissionskurven. Kürzere Paritätsdauer bedeutet schnellere CO₂-Neutralität.",
+          "years": "Jahre",
+          "negative_result": "Investition amortisiert sich nicht."
+        },
+        "saving": {
+          "title": "CO₂-Einsparung",
+          "help": "Gesamte CO₂-Einsparung der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum in Tonnen CO₂-Äquivalent. Positive Werte bedeuten eine Reduktion der Emissionen. Negative Werte zeigen höhere Emissionen in der Expansion (z.B. durch zusätzliche Fahrzeugherstellung).",
+          "after": "nach",
+          "years": "Jahren"
+        }
       }
     },
     "empty": {

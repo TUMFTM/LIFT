@@ -203,45 +203,49 @@
         "axis": "Share of Energy Charged at the Depot"
       }
     },
-    "cost_diagram": {
-      "title": {
-        "label": "Total costs",
-        "help": "Temporal progression of cumulative, discounted total costs (TOTEX = CAPEX + OPEX) for both scenarios over the analysis period. The difference between the curves shows the economic advantage of the expansion. Steeper curves mean higher costs."
+    "time_diagrams": {
+      "costs": {
+        "tab": "Costs",
+        "title": {
+          "label": "Total costs",
+          "help": "Temporal progression of cumulative, discounted total costs (TOTEX = CAPEX + OPEX) for both scenarios over the analysis period. The difference between the curves shows the economic advantage of the expansion. Steeper curves mean higher costs."
+        },
+        "xaxis": "Year",
+        "yaxis": "Cumulative Discounted Costs",
+        "paybackperiod": {
+          "title": "Payback Period",
+          "help": "Point in time in years when the additional investments of the expansion are balanced by cost savings. Calculated as the intersection of cumulative cost curves. Shorter payback period means faster return on investment.",
+          "years": "years",
+          "negative_result": "Investment does not pay off."
+        },
+        "saving": {
+          "title": "Cost Reduction",
+          "help": "Total cost savings (NPC difference) of the expansion compared to the baseline over the entire analysis period. Positive values mean the expansion is economically advantageous (lower total costs). Negative values indicate higher total costs in the expansion.",
+          "after": "after",
+          "years": "years"
+        }
       },
-      "xaxis": "Year",
-      "yaxis": "Cumulative Discounted Costs",
-      "paybackperiod": {
-        "title": "Payback Period",
-        "help": "Point in time in years when the additional investments of the expansion are balanced by cost savings. Calculated as the intersection of cumulative cost curves. Shorter payback period means faster return on investment.",
-        "years": "years",
-        "negative_result": "Investment does not pay off."
-      },
-      "saving": {
-        "title": "Cost Reduction",
-        "help": "Total cost savings (NPC difference) of the expansion compared to the baseline over the entire analysis period. Positive values mean the expansion is economically advantageous (lower total costs). Negative values indicate higher total costs in the expansion.",
-        "after": "after",
-        "years": "years"
-      }
-    },
-    "co2_diagram": {
-      "title": {
-        "label": "CO₂ Emissions",
-        "help": "Temporal progression of cumulative CO₂ emissions for both scenarios over the analysis period. Accounts for emissions from vehicle manufacturing (embodied energy), operation (fuel/electricity), and energy procurement. The difference between the curves shows the CO₂ savings of the expansion."
-      },
-      "expander": "Analysis CO₂ Emissions",
-      "xaxis": "Year",
-      "yaxis": "Cumulative CO₂ Emissions",
-      "paybackperiod": {
-        "title": "CO₂ Payback Period",
-        "help": "Point in time in years when the additional CO₂ emissions of the expansion (e.g., from vehicle manufacturing) are balanced by operational savings. Calculated as the intersection of cumulative emission curves. Shorter payback period means faster CO₂ neutrality.",
-        "years": "Years",
-        "negative_result": "Investment does not pay off."
-      },
-      "saving": {
-        "title": "CO₂ Reduction",
-        "help": "Total CO₂ savings of the expansion compared to the baseline over the entire analysis period in tons of CO₂ equivalent. Positive values mean a reduction in emissions. Negative values indicate higher emissions in the expansion (e.g., from additional vehicle manufacturing).",
-        "after": "after",
-        "years": "years"
+      "emissions": {
+        "tab": "Emissions",
+        "title": {
+          "label": "CO₂ Emissions",
+          "help": "Temporal progression of cumulative CO₂ emissions for both scenarios over the analysis period. Accounts for emissions from vehicle manufacturing (embodied energy), operation (fuel/electricity), and energy procurement. The difference between the curves shows the CO₂ savings of the expansion."
+        },
+        "expander": "Analysis CO₂ Emissions",
+        "xaxis": "Year",
+        "yaxis": "Cumulative CO₂ Emissions",
+        "paybackperiod": {
+          "title": "CO₂ Payback Period",
+          "help": "Point in time in years when the additional CO₂ emissions of the expansion (e.g., from vehicle manufacturing) are balanced by operational savings. Calculated as the intersection of cumulative emission curves. Shorter payback period means faster CO₂ neutrality.",
+          "years": "Years",
+          "negative_result": "Investment does not pay off."
+        },
+        "saving": {
+          "title": "CO₂ Reduction",
+          "help": "Total CO₂ savings of the expansion compared to the baseline over the entire analysis period in tons of CO₂ equivalent. Positive values mean a reduction in emissions. Negative values indicate higher emissions in the expansion (e.g., from additional vehicle manufacturing).",
+          "after": "after",
+          "years": "years"
+        }
       }
     },
     "empty": {
