@@ -262,7 +262,7 @@ def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain) -> Compari
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
         charger_type = col1.selectbox(
             label=get_label("sidebar.fleet.subfleet.charger.label"),
-            key=f"charger_{subfleet.label}",
+            key=f"charger_{subfleet.name}",
             options=[x.label for x in DEF_CHARGERS.values()],
             help=get_label("sidebar.fleet.subfleet.charger.help"),
         ).lower()

@@ -52,35 +52,29 @@ class SettingsSlider(SettingsNumeric):
     step: float = 1.0
 
     def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st) -> Any:
-        return (
-            domain.slider(
-                label=label,
-                help=help_msg,
-                key=key,
-                min_value=self.min_value,
-                max_value=self.max_value,
-                value=st.session_state.get(key, self.value),
-                format=self.format,
-                step=self.step,
-            )
-            * self.factor
+        domain.slider(
+            label=label,
+            help=help_msg,
+            key=key,
+            min_value=self.min_value,
+            max_value=self.max_value,
+            value=st.session_state.get(key, self.value),
+            format=self.format,
+            step=self.step,
         )
 
 
 @dataclass
 class SettingsNumberInput(SettingsNumeric):
     def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st):
-        return (
-            domain.number_input(
-                label=label,
-                help=help_msg,
-                key=key,
-                min_value=self.min_value,
-                max_value=self.max_value,
-                value=st.session_state.get(key, self.value),
-                format=self.format,
-            )
-            * self.factor
+        domain.number_input(
+            label=label,
+            help=help_msg,
+            key=key,
+            min_value=self.min_value,
+            max_value=self.max_value,
+            value=st.session_state.get(key, self.value),
+            format=self.format,
         )
 
 
@@ -166,6 +160,16 @@ class FrontendChargerInterface(FrontendEnergyBlockInterface):
         }
         return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
 
+    @property
+    def input_dict(self):
+        return {
+            k: getattr(self, k, None)
+            for k in [
+                "ls",
+                "capem",
+            ]
+        }
+
 
 @dataclass
 class FrontendSubFleetInterface(FrontendBlockInterface):
@@ -193,6 +197,23 @@ class FrontendSubFleetInterface(FrontendBlockInterface):
         }
         return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
 
+    @property
+    def input_dict(self):
+        return {
+            k: getattr(self, k, None)
+            for k in [
+                "battery_capacity_wh",
+                "ls",
+                "capem_bev",
+                "capem_icev",
+                "mntex_eur_km_bev",
+                "mntex_eur_km_icev",
+                "consumption_icev",
+                "toll_eur_per_km_bev",
+                "toll_eur_per_km_icev",
+            ]
+        }
+
 
 @dataclass
 class FrontendSizableBlockInterface(FrontendEnergyBlockInterface):
@@ -217,9 +238,11 @@ class FrontendSizableBlockInterface(FrontendEnergyBlockInterface):
     @property
     def input_dict(self) -> dict:
         return {
-            "capex_spec": self.capex_spec,
-            "capem_spec": self.capem_spec,
-            "ls": self.ls,
+            k: getattr(self, k, None)
+            for k in [
+                "capex_spec",
+                "capem_specls",
+            ]
         }
 
 
