@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Literal
 
 import folium
-import numpy as np
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -16,26 +15,7 @@ from .definitions import (
     DEF_ECONOMICS,
     DEF_SUBFLEETS,
     DEF_CHARGERS,
-    PERIOD_ECO,
-    PERIOD_SIM,
-    START_SIM,
-    FREQ_SIM,
-    CO2_PER_LITER_DIESEL_KG,
-    OPEM_SPEC_GRID,
 )
-
-from lift.backend.comparison.interfaces import (
-    ComparisonInputLocation,
-    ComparisonInvestComponent,
-    ComparisonInputEconomics,
-    ComparisonInputSubfleet,
-    ComparisonInputCharger,
-    ComparisonInputChargingInfrastructure,
-    ComparisonInput,
-    ExistExpansionValue,
-)
-
-from lift.backend.simulation.interfaces import Coordinates
 
 from .design import LINE_HORIZONTAL
 from .interfaces import FrontendSubFleetInterface, FrontendChargerInterface, FrontendCoordinates
