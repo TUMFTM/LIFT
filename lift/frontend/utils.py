@@ -109,7 +109,6 @@ def read_json_from_package_data(resource: str, package: str = "lift.data") -> di
         path_resource = resources.files(package) / resource
         with open(path_resource, "rb") as f:
             return json.load(f)
-        return json.loads(resources.read_text(package=package, resource=resource))
     except FileNotFoundError:
         raise FileNotFoundError(f'Specified resource "{resource}" does not exist in package "{package}".')
 
