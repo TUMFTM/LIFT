@@ -170,7 +170,7 @@ class FrontendChargerInterface(FrontendEnergyBlockInterface):
 @dataclass
 class FrontendSubFleetInterface(FrontendBlockInterface):
     weight_max_t: float
-    battery_capactiy_wh: float
+    battery_capacity_wh: float
     capem_bev: float
     capem_icev: float
     weight_empty_bev: float

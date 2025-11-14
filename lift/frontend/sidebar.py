@@ -300,7 +300,7 @@ def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain) -> Compari
         name=subfleet.name,
         num_total=num_total,
         num_bev=ExistExpansionValue(preexisting=preexisting, expansion=expansion),
-        battery_capacity_wh=subfleet.battery_capactiy_wh,
+        battery_capacity_wh=subfleet.battery_capacity_wh,
         capex_bev_eur=capex_bev_eur,
         capex_icev_eur=capex_icev_eur,
         toll_frac=toll_frac,
