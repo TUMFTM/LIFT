@@ -1,3 +1,18 @@
+"""Streamlit results and plots for LIFT comparisons.
+
+Purpose:
+- Render KPIs and time-profiled charts comparing baseline vs. expansion scenarios.
+
+Relationships:
+- Consumes `ComparisonResult` (with `PhaseResult` for baseline/expansion) from the backend.
+- Uses frontend styles and labels for consistent presentation.
+
+Key Logic:
+- KPI tiles: discounted total costs (TOTEX), emissions totals, self-consumption/-sufficiency, site-charging share.
+- Cost and CO₂ time profiles: cumulative lines constructed from periodized CAPEX/OPEX (incl. salvage at end).
+- Plotting via Altair with minimal interactivity for tooltips and consistent color scheme.
+"""
+
 from __future__ import annotations
 import os
 
@@ -312,7 +327,7 @@ def display_results(results, domain):
             if results.payback_period_yrs is None:
                 st.markdown(get_label("main.cost_diagram.paybackperiod.negative_result"))
             else:
-                st.markdown(f"{results.payback_period_yrs:.2f} {get_label('main.cost_diagram.paybackperiod.years')}")
+                st.markdown(f"{results.payback_period_yrs:.0f} {get_label('main.cost_diagram.paybackperiod.years')}")
 
             _heading_with_help(
                 label=get_label("main.cost_diagram.saving.title"),

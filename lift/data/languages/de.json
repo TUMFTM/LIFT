@@ -19,76 +19,76 @@
           "title": "Stromverbrauch Standort",
           "slp": {
             "label": "Lastprofil",
-            "help": "None"
+            "help": "Standardlastprofil (SLP) zur Beschreibung des jährlichen Stromverbrauchsverlaufs am Standort. Unterschiedliche Profile (H0, G0-G7, L0-L2) repräsentieren verschiedene Verbrauchsmuster (Haushalte, Gewerbe, Landwirtschaft). Das Profil bestimmt die zeitliche Verteilung des Verbrauchs über das Jahr."
           },
           "consumption": {
             "label": "Jahresstromverbrauch",
-            "help": "XXX"
+            "help": "Gesamter jährlicher Stromverbrauch des Standorts in MWh. Wird zusammen mit dem Lastprofil verwendet, um den zeitlichen Verlauf des Strombedarfs zu skalieren. Dieser Wert entspricht dem Basisverbrauch ohne Flottenladen."
           }
         },
         "grid": {
           "title": "Netzanschluss",
           "existing": {
             "label": "Vorhanden",
-            "help": "None"
+            "help": "Bereits vorhandene Anschlussleistung des Netzanschlusses in kW. Diese Kapazität steht im Baseline-Szenario zur Verfügung und begrenzt die maximale Leistung, die gleichzeitig aus dem Netz bezogen werden kann."
           },
           "expansion": {
             "label": "Zusätzlich",
-            "help": "XXX"
+            "help": "Zusätzliche Anschlussleistung in kW, die im Expansion-Szenario hinzugefügt wird. Erhöht die maximale Leistung, die aus dem Netz bezogen werden kann. Wird zu den vorhandenen Kapazitäten addiert und ermöglicht höhere Lastspitzen."
           }
         },
         "pv": {
           "title": "PV-Anlage",
           "existing": {
             "label": "Vorhanden",
-            "help": "None"
+            "help": "Bereits vorhandene installierte Leistung der Photovoltaikanlage in kWp. Diese Kapazität steht im Baseline-Szenario zur Verfügung. Die tatsächliche Erzeugung hängt von der Sonneneinstrahlung am Standort ab (basierend auf den Koordinaten)."
           },
           "expansion": {
             "label": "Zusätzlich",
-            "help": "XXX"
+            "help": "Zusätzliche installierte PV-Leistung in kWp, die im Expansion-Szenario hinzugefügt wird. Erhöht die lokale Stromerzeugung und kann den Eigenverbrauch steigern. Überschüssige Energie kann ins Netz eingespeist oder im Speicher gespeichert werden."
           }
         },
         "ess": {
           "title": "Stationärspeicher",
           "existing": {
             "label": "Vorhanden",
-            "help": "None"
+            "help": "Bereits vorhandene Speicherkapazität des stationären Batteriespeichers in kWh. Diese Kapazität steht im Baseline-Szenario zur Verfügung. Der Speicher kann PV-Überschuss zwischenspeichern und bei Bedarf abgeben."
           },
           "expansion": {
             "label": "Zusätzlich",
-            "help": "XXX"
+            "help": "Zusätzliche Speicherkapazität in kWh, die im Expansion-Szenario hinzugefügt wird. Ermöglicht bessere Nutzung der PV-Erzeugung und Lastspitzenkappung. Größere Speicher können mehr Energie zwischenspeichern und die Netzbelastung reduzieren."
           }
         }
       },
       "economics": {
         "title": "Wirtschaftliche Parameter",
         "discount": {
-          "label": "Abzinsungsfaktor",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+          "label": "Kapitalkostensatz",
+            "help": "Zinssatz in Prozent zur Diskontierung zukünftiger Zahlungsströme. Typische Werte: 3-7%. Höhere Werte reduzieren den Barwert zukünftiger Investitionen stärker. Wird für die Berechnung des Net Present Cost (NPC) verwendet."
         },
         "fixcost": {
           "label": "Fixkosten Standortausbau",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+            "help": "Einmalige Fixkosten in EUR für den Standortausbau im Expansion-Szenario (z.B. Planung, Genehmigungen, Infrastrukturvorbereitung, Erdarbeiten). Werden nur im Expansion-Szenario berücksichtigt und als CAPEX im ersten Jahr angesetzt."
         },
         "opexbuy": {
-          "label": "Strombezugskosten",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+          "label": "Arbeitspreis",
+            "help": "Kosten für den Bezug von Strom aus dem Netz in EUR/kWh. Wird mit der bezogenen Energiemenge multipliziert und als Betriebskosten (OPEX) berücksichtigt. Enthält typischerweise Arbeitspreis, Netzentgelte und Steuern."
         },
         "opexfeedin": {
           "label": "Einspeisevergütung",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+            "help": "Vergütung für die Einspeisung von überschüssigem PV-Strom ins Netz in EUR/kWh. Negative Werte bedeuten Kosten (z.B. Netzentgelt bei Einspeisung), positive Werte Einnahmen. Wird mit der eingespeisten Energiemenge multipliziert."
         },
         "opexpeakpower": {
           "label":"Leistungspreis",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+            "help": "Kosten für die maximale bezogene Leistung (Leistungspreis) in EUR/kW. Wird basierend auf der höchsten Lastspitze im Jahr berechnet und als Betriebskosten berücksichtigt. Typischerweise monatlich oder jährlich fällig."
         },
         "opexonroute": {
           "label": "Energiekosten für On-Route Charging",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+            "help": "Kosten für das Laden von Fahrzeugen unterwegs (nicht am Depot) in EUR/kWh. Wird mit der auf der Route geladenen Energiemenge multipliziert. Enthält typischerweise Ladekosten an öffentlichen Ladestationen."
         },
         "opexfuel": {
           "label": "Dieselkosten",
-          "help": "Das ist der Hilfe-Text für den Parameter"
+            "help": "Kosten für Dieselkraftstoff in EUR/Liter. Wird mit dem Verbrauch der ICEV-Fahrzeuge (Internal Combustion Engine Vehicles) multipliziert und als Betriebskosten berücksichtigt. Enthält Kraftstoffpreis und ggf. Steuern."
         }
       }
     },
@@ -97,35 +97,35 @@
       "subfleet": {
         "weight_total": {
           "label": "Zulässiges Gesamtgewicht",
-          "help": "XXX"
+            "help": "Zulässiges Gesamtgewicht der Fahrzeuge in dieser Subflotte in Tonnen. Wird zur Kategorisierung und Auswahl passender Fahrzeugtypen verwendet. Bestimmt die verfügbaren Mobilitätsdaten und Verbrauchswerte."
         },
         "num_total": {
           "label": "Fahrzeuge gesamt",
-          "help": "XXX"
+            "help": "Gesamtanzahl der Fahrzeuge in dieser Subflotte. Die Summe aus vorhandenen und zusätzlichen E-Fahrzeugen plus ICEV-Fahrzeuge. Bestimmt die Gesamtgröße der Flotte und den Energiebedarf."
         },
         "num_bev_existing": {
           "label": "Vorhandene E-Fahrzeuge",
-          "help": "XXX"
+            "help": "Anzahl der bereits vorhandenen batterieelektrischen Fahrzeuge (BEV) im Baseline-Szenario. Diese Fahrzeuge sind bereits im Betrieb und werden in beiden Szenarien berücksichtigt."
         },
         "num_bev_expansion": {
           "label": "Zusätzliche E-Fahrzeuge",
-          "help": "XXX"
+            "help": "Anzahl der zusätzlichen BEV, die im Expansion-Szenario zur Flotte hinzugefügt werden. Die Gesamtzahl BEV im Expansion-Szenario ist: vorhanden + zusätzlich. Diese Fahrzeuge ersetzen typischerweise ICEV-Fahrzeuge."
         },
         "charger": {
           "label": "Ladepunkt",
-          "help": "XXX"
+            "help": "Typ des Ladepunkts, der von den Fahrzeugen dieser Subflotte genutzt wird (z.B. AC, DC). Bestimmt die maximale Ladeleistung und die verfügbaren Ladepunkte. Jeder Fahrzeugtyp kann nur mit kompatiblen Ladepunkten geladen werden."
         },
         "pwr_max": {
           "label": "max. Ladeleistung",
-          "help": "XXX"
+            "help": "Maximale Ladeleistung der Fahrzeuge in dieser Subflotte in kW. Die tatsächliche Ladeleistung ist das Minimum aus Fahrzeug- und Ladepunkt-Leistung. Bestimmt die Ladedauer und den Energiebedarf."
         },
         "capex": {
           "label": "Anschaffungspreis",
-          "help": "XXX"
+            "help": "Anschaffungskosten eines einzelnen Fahrzeugs in EUR. Separate Werte für BEV und ICEV. Werden mit der Anzahl der Fahrzeuge und Ersatzzyklen multipliziert. Ersatzzyklen berücksichtigen die Lebensdauer der Fahrzeuge."
         },
         "share_toll": {
           "label": "Anteil mautpflichtiger Strecken",
-          "help": "XXX"
+            "help": "Anteil der gefahrenen Strecke, die auf mautpflichtigen Straßen zurückgelegt wird (0-100%). Wird mit den Mautkosten pro km multipliziert. Beeinflusst die Betriebskosten der Flotte."
         }
       }
     },
@@ -137,7 +137,7 @@
         "expansion": "Erweitertes Lastmanagement",
         "type": {
           "label": "Typ",
-          "help": "XXX",
+            "help": "Statisch: Feste maximale Leistungsgrenze für das Laden der Flotte (in kW). Dynamisch: Leistung wird automatisch an verfügbare Erzeugung (PV, ESS, Grid) angepasst. Dynamisches Lastmanagement optimiert die Nutzung erneuerbarer Energien.",
           "options": {
             "static": "statisch",
             "dynamic": "dynamisch"
@@ -145,26 +145,26 @@
         },
         "pwr_max": {
           "label": "max. Leistung",
-          "help": "XXX"
+            "help": "Maximale Gesamtleistung für das Laden der Flotte in kW (nur bei statischem Lastmanagement). Begrenzt die gleichzeitige Ladeleistung aller Fahrzeuge am Standort. Verhindert Lastspitzen und kann Netzanschlusskosten reduzieren."
         }
       },
       "charger": {
         "title_suffix": "-Ladepunkte",
         "existing": {
           "label": "Vorhandene",
-          "help": "XXX"
+            "help": "Anzahl der bereits vorhandenen Ladepunkte dieses Typs im Baseline-Szenario. Bestimmt, wie viele Fahrzeuge gleichzeitig laden können. Mehr Ladepunkte ermöglichen paralleles Laden mehrerer Fahrzeuge."
         },
         "expansion": {
           "label": "Zusätzliche",
-          "help": "XXX"
+            "help": "Anzahl der zusätzlichen Ladepunkte dieses Typs, die im Expansion-Szenario hinzugefügt werden. Erhöht die gleichzeitige Ladekapazität am Standort und ermöglicht das Laden größerer Flotten."
         },
         "pwr_max": {
           "label": "max. Ladeleistung",
-          "help": "XXX"
+            "help": "Maximale Ladeleistung eines einzelnen Ladepunkts dieses Typs in kW. Die tatsächliche Ladeleistung ist das Minimum aus Fahrzeug- und Ladepunkt-Leistung. Höhere Leistung ermöglicht kürzere Ladezeiten."
         },
         "capex": {
           "label": "Kosten pro Ladepunkt",
-          "help": "XXX"
+            "help": "Anschaffungskosten für einen einzelnen Ladepunkt dieses Typs in EUR. Wird mit der Anzahl der Ladepunkte und Ersatzzyklen multipliziert. Enthält typischerweise Hardware, Installation und ggf. Netzanschluss."
         }
       }
     },
@@ -179,27 +179,27 @@
     "kpi_diagrams": {
       "costs": {
         "title": "Kosten",
-        "help": "Kosten",
+            "help": "Direkter Vergleich der diskontierten Gesamtkosten (TOTEX = CAPEX + OPEX) beider Szenarien über den gesamten Betrachtungszeitraum. Zeigt die absoluten Kostenwerte für Baseline und Expansion. Niedrigere Werte bedeuten geringere Gesamtkosten.",
         "axis": "Gesamtkosten"
       },
       "emissions": {
         "title": "CO₂-Emissionen",
-        "help": "CO₂-Emissionen",
+            "help": "Direkter Vergleich der kumulierten CO₂-Emissionen beider Szenarien über den gesamten Betrachtungszeitraum. Berücksichtigt Emissionen aus Fahrzeugherstellung (graue Energie), Betrieb (Treibstoff/Strom) und Energiebezug. Niedrigere Werte bedeuten geringere Emissionen.",
         "axis": "CO₂-Emissionen"
       },
       "self_consumption": {
-        "title": "Eigenverbrauchsquote",
-        "help": "Eigenverbrauchsquote",
-        "axis": "Eigenverbrauchsquote"
+        "title": "Eigenverbrauchsgrad",
+            "help": "Anteil der erzeugten PV-Energie, der direkt am Standort verbraucht wird (nicht ins Netz eingespeist oder abgeregelt). Höhere Werte bedeuten bessere Nutzung der PV-Erzeugung und reduzieren die Abhängigkeit vom Netz. Wird in Prozent angegeben.",
+        "axis": "Eigenverbrauchsgrad"
       },
       "self_sufficiency": {
         "title": "Autarkiegrad",
-        "help": "Autarkiegrad",
+            "help": "Anteil des Energiebedarfs (Standort + Flotte), der durch die eigene PV-Erzeugung gedeckt wird. Zeigt die Unabhängigkeit vom Stromnetz. 100% bedeutet vollständige Autarkie. Wird in Prozent angegeben und berücksichtigt auch Speichernutzung.",
         "axis": "Autarkiegrad"
       },
       "home_charging": {
-        "title": "Heim-Laden",
-        "help": "Heim-Laden",
+        "title": "Depotladegrad",
+            "help": "Anteil der Flottenenergie, die am Depot geladen wird (vs. unterwegs). Höhere Werte bedeuten weniger Abhängigkeit von öffentlichen Ladestationen und bessere Nutzung der Depot-Infrastruktur. Wird in Prozent angegeben.",
         "axis": "Anteil am Depot geladener Energie"
       }
     },
@@ -214,19 +214,19 @@
     "cost_diagram": {
       "title": {
         "label": "Gesamtkosten",
-        "help": "XXX"
+            "help": "Zeitlicher Verlauf der kumulierten, diskontierten Gesamtkosten (TOTEX = CAPEX + OPEX) für beide Szenarien über den Betrachtungszeitraum. Die Differenz zwischen den Kurven zeigt die wirtschaftliche Vorteilhaftigkeit der Expansion. Steilere Kurven bedeuten höhere Kosten."
       },
       "xaxis": "Jahr",
       "yaxis": "Kumulierte, diskontierte Kosten",
       "paybackperiod": {
         "title": "Amortisationsdauer",
-        "help": "Amortisationsdauer",
+            "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen Investitionen der Expansion durch Kosteneinsparungen ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Kostenkurven. Kürzere Amortisationsdauer bedeutet schnellere Rendite.",
         "years": "Jahre",
         "negative_result": "Investition amortisiert sich nicht."
       },
       "saving": {
         "title": "Kosteneinsparung",
-        "help": "Kosteneinsparung",
+            "help": "Gesamte Kosteneinsparung (NPC-Differenz) der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum. Positive Werte bedeuten, dass die Expansion wirtschaftlich vorteilhaft ist (niedrigere Gesamtkosten). Negative Werte zeigen höhere Gesamtkosten in der Expansion.",
         "after": "nach",
         "years": "Jahren"
       }
@@ -234,20 +234,20 @@
     "co2_diagram": {
       "title": {
         "label": "CO₂-Emissionen",
-        "help": "XXX"
+            "help": "Zeitlicher Verlauf der kumulierten CO₂-Emissionen für beide Szenarien über den Betrachtungszeitraum. Berücksichtigt Emissionen aus Fahrzeugherstellung (graue Energie), Betrieb (Treibstoff/Strom) und Energiebezug. Die Differenz zwischen den Kurven zeigt die CO₂-Einsparung der Expansion."
       },
       "expander": "Analyse CO₂-Emissionen",
       "xaxis": "Jahr",
       "yaxis": "Kumulierte CO₂-Emissionen",
       "paybackperiod": {
         "title": "CO₂-Paritätsdauer",
-        "help": "CO₂-Paritätsdauer",
+            "help": "Zeitpunkt in Jahren, zu dem die zusätzlichen CO₂-Emissionen der Expansion (z.B. durch Fahrzeugherstellung) durch Einsparungen im Betrieb ausgeglichen sind. Berechnet als Schnittpunkt der kumulierten Emissionskurven. Kürzere Paritätsdauer bedeutet schnellere CO₂-Neutralität.",
         "years": "Jahre",
         "negative_result": "Investition amortisiert sich nicht."
       },
       "saving": {
         "title": "CO₂-Einsparung",
-        "help": "CO₂-Einsparung",
+            "help": "Gesamte CO₂-Einsparung der Expansion gegenüber der Baseline über den gesamten Betrachtungszeitraum in Tonnen CO₂-Äquivalent. Positive Werte bedeuten eine Reduktion der Emissionen. Negative Werte zeigen höhere Emissionen in der Expansion (z.B. durch zusätzliche Fahrzeugherstellung).",
         "after": "nach",
         "years": "Jahren"
       }

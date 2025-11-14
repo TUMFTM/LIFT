@@ -1,3 +1,21 @@
+"""Phase-level interfaces for techno-economic evaluation.
+
+Purpose:
+- Represent scenario inputs (location, economics, subfleets, chargers) after applying
+  baseline/expansion selection, and hold evaluation results (`PhaseResult`).
+
+Relationships:
+- Factories adapt comparison-layer inputs into phase-specific structures consumed by
+  `lift.backend.evaluation.evaluate` and converted further to simulation inputs.
+- Relies on `lift.backend.simulation` types (`SimResults`, `Coordinates`) for interoperability.
+
+Key Logic:
+- `PhaseInputEconomics.from_comparison_input` toggles fixed construction cost only for expansion.
+- `PhaseInputInvestComponent` encapsulates shared attributes (capacity, CAPEX/CAPEM, lifespan).
+- Location/Subfleet/Charger/Infrastructure classes expose `from_comparison_input` to select per-phase values.
+- `PhaseResult` aggregates simulation outputs, KPIs, and arrays for cashflow, discounted cashflow, and emissions.
+"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal, Self

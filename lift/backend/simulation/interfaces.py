@@ -1,3 +1,22 @@
+"""Typed interfaces and results for the simulation layer.
+
+Purpose:
+- Define strongly typed input structures for settings, location, subfleets, chargers, and charging
+  infrastructure, plus a structured result type and domain-specific errors.
+
+Relationships:
+- Factories convert phase-level inputs (`evaluation.interfaces`) into simulation inputs.
+- Used by `lift.backend.simulation.simulation.simulate` and `simulation.blocks` to ensure consistency.
+
+Key Logic:
+- `SimInputSettings` materializes the time index (`dti`) in `__post_init__` to make class object hashable for streamlit caching.
+  with Streamlit caching.
+- `SimInputLocation/Subfleet/Charger/ChargingInfrastructure` provide `from_phase_input` constructors
+  to adapt comparison/evaluation structures to concrete simulation parameters.
+- `SimResults` standardizes simulation outputs for downstream economics and frontend visualization.
+- `GridPowerExceededError` and `SOCError` signal domain violations (grid limit, infeasible SOC).
+"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal, Self, TYPE_CHECKING

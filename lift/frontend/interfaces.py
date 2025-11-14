@@ -1,3 +1,20 @@
+"""Frontend interface definitions for Streamlit inputs.
+
+Purpose:
+- Provide reusable abstractions (slider/number/select) with Streamlit bindings and
+  domain-specific frontend interfaces for demand, energy blocks, chargers, and subfleets.
+
+Relationships:
+- Backed by `frontend/definitions.py`, which instantiates these interfaces from JSON defaults.
+- Bridges user selections to backend comparison inputs via `frontend/sidebar.py`.
+- Extends backend coordinates to include localized formatting.
+
+Key Logic:
+- `Settings*` classes encapsulate Streamlit widgets and apply scaling factors (e.g., kW→W).
+- `Frontend*Interface` classes parse JSON definitions (`from_dict`) into rich objects with icons, labels, and widget configs.
+- `FrontendCoordinates` inherits simulation coordinates and adds DMS string formatting with localized labels.
+"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Literal, Self
