@@ -241,7 +241,8 @@ class FrontendSizableBlockInterface(FrontendEnergyBlockInterface):
             k: getattr(self, k, None)
             for k in [
                 "capex_spec",
-                "capem_specls",
+                "capem_spec",
+                "ls",
             ]
         }
 
