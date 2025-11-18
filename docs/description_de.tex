@@ -8,12 +8,13 @@
 \usepackage{booktabs}
 \usepackage{cite}
 \usepackage{graphicx}
-\usepackage{hyperref}
+\usepackage[colorlinks=true, linkcolor={51,92,122}]{hyperref}
 \usepackage{geometry}
 \usepackage{makecell}
 \usepackage{todonotes}
 \usepackage{siunitx}
 \usepackage{eurosym}
+\usepackage{xcolor}
 
 %acro
 \acsetup{make-links = true,}
@@ -27,6 +28,35 @@
     \def\sectionautorefname{Abschnitt}
     \def\subsectionautorefname{Abschnitt}
     \def\subsubsectionautorefname{Abschnitt}
+}
+
+%xcolor
+\definecolor{tum_p300}			{cmyk}	{1,0.43,0,0}%primary blue
+\definecolor{tum_p301_100}		{cmyk}	{1,0.54,0.04,0.19}%secondary blue
+\definecolor{tum_p301_80}		{cmyk}	{0.8,0.432,0.032,0.152}%
+\definecolor{tum_p301_50}		{cmyk}	{0.5,0.27,0.02,0.095}%
+\definecolor{tum_p301_20}		{cmyk}	{0.2,0.108,0.008,0.038}%
+\definecolor{tum_p540_100}		{cmyk}	{1,0.57,0.12,0.70}%tertiary blue
+\definecolor{tum_p540_80}		{cmyk}	{0.8,0.456,0.096,0.56}%
+\definecolor{tum_p540_50}		{cmyk}	{0.5,0.285,0.06,0.35}%
+\definecolor{tum_p540_20}		{cmyk}	{0.2,0.114,0.024,0.14}%
+\definecolor{tum_black}			{cmyk}	{0,0,0,1}%black/white
+\definecolor{tum_grey_80}		{cmyk}	{0,0,0,0.8}%
+\definecolor{tum_grey_50}		{cmyk}	{0,0,0,0.5}%
+\definecolor{tum_grey_20}		{cmyk}	{0,0,0,0.2}%
+\definecolor{tum_white}			{cmyk}	{0,0,0,0}%
+\definecolor{tum_p542}			{cmyk}	{0.65,0.19,0.01,0.04}%tertiary colors
+\definecolor{tum_p283}			{cmyk}	{0.42,0.09,0,0}%
+\definecolor{tum_ivory}			{cmyk}	{0.03,0.04,0.14,0.08}%
+\definecolor{tum_orange}		{cmyk}	{0,0.65,0.95,0}%
+\definecolor{tum_green}			{cmyk}	{0.35,0,1,0.2}%
+
+%hyperref
+\hypersetup{
+    colorlinks = true,
+    linkcolor = tum_p540_80,
+    urlcolor = tum_p300,
+    citecolor = tum_p540_80,
 }
 
 % siunitx
@@ -139,8 +169,8 @@ Die ursprünglich ökonomischen Begriffe \ac{capex} und \ac{opex} sind im Kontex
 
 Die Szenarien modellieren jeweils ein Energiesystem, das aus mehreren Blöcken besteht, die reale Systeme abbilden (\autoref{subsec:system}).
 \ac{capex} dieser Blöcke hängen unmittelbar von den Eingangsparametern ab und können daher direkt (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
-In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse heuristisch (regelbasiert) bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) und technischen \acp{kpi} (\autoref{subsec:kpi_tech}) sind.
-Gesamtkosten und -emissionen werden unter Annahme von Blocklebensdauern und entsprechenden Ersatzinvestitionen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpi_econ}).
+In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse heuristisch (regelbasiert) bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) sind.
+Gesamtkosten und -emissionen werden unter Annahme von Blocklebensdauern und entsprechenden Ersatzinvestitionen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpis}).
 
 Dabei wird inhärent die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika, z.\,B. Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie, abgebildet werden.
 Saisonale Schwankungen sind mit einer Simulationsdauer von einem Jahr, wie sie in der \ac{gui} verwendet wird, ausreichend abgebildet.
@@ -195,7 +225,7 @@ Dem Priorisierungsalgorithmus liegt die Annahme zugrunde, dass physische Ladepun
 \label{subsec:capex}
 
 Beim Aufbau jedes Blocks $b$ mit Ausnahme von \ac{DEM} entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die mit $C^b_{cap}$ und $E^b_{cap}$ bezeichnet werden.
-Für alle kontinuierlich dimensionierbaren Blöcke $b_\text{dim}$ (\ac{GCP}, \ac{PV} und \ac{ess}) werden diese jeweils in Abhängigkeit der gewählten Größe des Blocks $S^b$ sowie den spezifischen Werten pro Größeneinheit $c^b_{cap}$ und $e^b_{cap}$ berechnet.
+Für alle kontinuierlich dimensionierbaren Blöcke $b_\text{cont}$ (\ac{GCP}, \ac{PV} und \ac{ess}) werden diese jeweils in Abhängigkeit der gewählten Größe des Blocks $S^b$ sowie den spezifischen Werten pro Größeneinheit $c^b_{cap}$ und $e^b_{cap}$ berechnet.
 Für die in diskrete Subblöcke aufgeteilten Blöcke $b_\text{dis}$ (\ac{cis} und \ac{flt}) ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen diskrete \ac{capex} $c_{cap, m}$ pro Element $n$ (Fahrzeug oder Ladepunkt) eines Subklasse $m$ (Fahrzeug- oder Ladepunktklasse).
 Diskrete Kosten $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
 
