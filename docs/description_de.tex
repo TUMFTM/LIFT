@@ -15,6 +15,7 @@
 \usepackage{siunitx}
 \usepackage{eurosym}
 \usepackage{xcolor}
+\usepackage{longtable}
 
 %acro
 \acsetup{make-links = true,}
@@ -106,8 +107,8 @@
 Das Softwaretool \acs*{lift} dient zur Unterstützung des Planungsprozesses der Elektrifizierung von Nutzfahrzeugflotten sowie des begleitenden Ausbaus des Energiesystems am dazugehörigen Depot.
 Über eine grafische, webbasierte Benutzeroberfläche lassen sich der Ist-Zustand von Flotte und Depot sowie ein mögliches Elektrifizierungs- und Ausbauszenario definieren.
 Basierend auf einer Energiesystem-Zeitschrittsimulation berechnet \acs*{lift} techno-ökonomische Kennzahlen für beide Szenarien und vergleicht diese.
-Somit lassen sich erste Erkenntnisse über den Effekt der beabsichtigten Maßnahmen treffen und bereits eine erste Planung der Depot-Erweiterung ableiten.
-Die mit \acs*{lift} erarbeitete Ersteinschätzung ist die Basis für weitere Schritte in der Detailauslegung und Realisierung eines entsprechenden Projektes.
+Dadurch lassen sich erste Erkenntnisse über die Wirkung der geplanten Maßnahmen gewinnen und eine vorläufige Planung der Depoterweiterung ableiten.
+Die mit \acs*{lift} erarbeitete Ersteinschätzung bildet die Grundlage für weitere Schritte in der Detailplanung und Realisierung eines entsprechenden Projekts.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -117,24 +118,24 @@ Die mit \acs*{lift} erarbeitete Ersteinschätzung ist die Basis für weitere Sch
 
 \section{Ausgangslage und Zielsetzung}
 \label{sec:target}
-Das Softwaretool \ac{lift} wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München in Zusammenarbeit mit der Rödl GmbH entwickelt.
+Das Softwaretool \ac{lift} wurde am Lehrstuhl für Fahrzeugtechnik der Technischen Universität München in Kooperation mit der Rödl GmbH entwickelt.
 Es unterstützt die Elektrifizierung von Flotten und den begleitenden Ausbau des Depot-Energiesystems (inkl.~Ladeinfrastruktur) bereits in der frühen Phase mit techno-ökonomischen Potentialabschätzungen und schafft so eine Entscheidungsgrundlage für die Fortsetzung des Planungsprozesses.
-Sein Zielanwendungsgebiet ist das initiale Auslegungsgespräch zwischen Kundenberater und Flottenbetreiber.
-Dafür muss \ac{lift} mit wenigen, schnell abzuschätzenden oder bekannten Eingangsparametern arbeiten und die berechneten Ergebnisse schnell und intuitiv darstellen.
+Sein primäres Einsatzgebiet ist das initiale Beratungsgespräch zwischen Kundenberater und Flottenbetreiber.
+Dafür muss \ac{lift} mit wenigen, schnell abschätzbaren oder bereits bekannten Eingangsparametern auskommen und die Ergebnisse rasch sowie intuitiv verständlich darstellen.
 
-\ac{lift} schafft dies, indem es die Ist-Situation (\textit{Baseline}-Szenario) von Depot und Flotte mit einem möglichen Elektrifizierungs- und Ausbauplan (\textit{Expansion} Szenario) vergleichend darstellt.
-Für beide wird mit den definierten Parametern jeweils eine Zeitschrittsimulation der Energieflüsse in Depot und Flotte über ein Jahr ausgeführt, auf deren Grundlage alle weiteren techno-ökonomischen Kennzahlen und der Vergleich der beiden Szenarien erstellt wird.
-Um die beschriebenen Anforderungen zu erfüllen, arbeitet \ac{lift} mit Vereinfachungen und Annahmen, die in einer frühen Planungsphase der Elektrifizierung noch vertretbar sind.
+Dies erreicht \ac{lift}, indem es die Ist-Situation (\textit{Baseline}-Szenario) von Depot und Flotte einem möglichen Elektrifizierungs- und Ausbauszenario (\textit{Expansion}-Szenario) gegenüberstellt.
+Für beide Szenarien wird anhand der definierten Parameter eine einjährige Zeitschrittsimulation der Energieflüsse im Depot und in der Flotte durchgeführt; auf dieser Basis werden sämtliche techno-ökonomischen Kennzahlen sowie der Vergleich der Szenarien erstellt.
+Um die genannten Anforderungen zu erfüllen, arbeitet \ac{lift} mit zulässigen Vereinfachungen und Annahmen, die in einer frühen Planungsphase noch vertretbar sind.
 
 Komplexere Szenarien wie aktive Flexibilitätssteuerung durch prädiktives Energiemanagement oder individuelle Mobilitätsprofile und/oder automatisierte Komponentendimensionierung erfordern dann einerseits detailliertere Daten als auch komplexere Modellierung mit mathematischer Optimierung zur Auflösung der getroffenen Vereinfachungen.
 Diese Schritte sind mit anderen Werkzeugen als \ac{lift} im Nachgang des Beratungsgespräches durchzuführen.
-Die Anwendung solcher Tools, die oft nicht über eine grafische Benutzeroberfläche verfügen und ggf.\,an die jeweilige Anwendung angepasst werden müssen, und vor allem die Interpretation ihrer Ergebnisse erfordert Expertenwissen und Rechenzeit.
+Solche Tools verfügen häufig über keine grafische Benutzeroberfläche, müssen gegebenenfalls an den konkreten Anwendungsfall angepasst werden und erfordern insbesondere für die Interpretation der Ergebnisse fachliches Expertenwissen sowie erhebliche Rechenzeit.
 
 \section{Verwendung und \acl*{gui}}
 \label{sec:gui}
 \ac{lift} ist in Python programmiert und verfügt über eine browserbasierte \ac{gui}, die auf der \textit{streamlit}-Bibliothek basiert.
 Die Installation von \ac{lift}, entweder auf einem lokalen Rechner oder auf einem Server ist im \textit{readme} des dazugehörigen \textit{git repository} beschrieben.
-Es zeigt zusätzlich, wie der Berechnungsalgorithmus von \ac{lift} losgelöst von der \ac{gui} für eine skalierbare Bewertung vieler Szenarien eingesetzt werden kann.
+Dort wird ebenfalls erläutert, wie der eigentliche Berechnungsalgorithmus von \ac{lift} unabhängig von der \ac{gui} genutzt werden kann, um eine skalierbare Bewertung einer großen Anzahl von Szenarien zu ermöglichen.
 Dieses Dokument beschränkt sich auf die Verwendung von \ac{lift} zur Simulation einzelner Szenarien über die integrierte und in \autoref{fig:gui} dargestellte \ac{gui}.
 
 \begin{figure}[h!]
@@ -144,32 +145,34 @@ Dieses Dokument beschränkt sich auf die Verwendung von \ac{lift} zur Simulation
     \label{fig:gui}
 \end{figure}
 
-Diese ist in zwei Bereiche aufgeteilt.
-Die linke Seitenleiste dient zur Definition der Eingabeparameter für die anschließenden Berechnungen, sowie der Einstellung der anzuzeigenden Sprache (aktuell sind Deutsch und Englisch verfügbar).
-Hierbei wird nach allgemeinen Parametern (Standort, Energiesystem und wirtschaftliche Kenngrößen), denen der Flotte (in vier Subklassen von Nutzfahrzeugen) und denen der Ladeinfrastruktur unterschieden.
-Für jeden Eingabeparameter stehen in der \ac{gui} Hilfetexte zur genaueren Erklärung zur Verfügung, die bei Positionierung des Mauszeigers über dem jeweiligen Fragezeichensymbol erscheinen.
-Die Simulation und Berechnung der Ergebnisse (siehe \autoref{sec:methods}) wird am unteren Ende der Seitenleiste ausgelöst.
-Der rechte Hauptbereich der \ac{gui} visualisiert daraufhin die Ergebnisse.
-Berechnete Kennwerte werden jeweils vergleichend für Baseline- und Expansions-Szenario dargestellt, um Effekte der getroffenen Maßnahmen intuitiv beurteilen zu können
-Für die angezeigten Ergebnisse und Grafiken sind ebenfalls erläuternde Hilfetexte durch Bewegung des Mauszeigers über das Fragezeichensymbol verfügbar.
+Die Oberfläche ist in zwei Bereiche unterteilt.
+Die linke Seitenleiste dient der Eingabe aller Parameter für die nachfolgende Berechnung sowie der Auswahl der Anzeigesprache (derzeit Deutsch und Englisch).
+Dabei wird zwischen allgemeinen Parametern (Standort, Energiesystem und wirtschaftliche Kennzahlen), Flottenparametern (unterteilt in vier Nutzfahrzeugklassen) und Parametern der Ladeinfrastruktur unterschieden.
+Zu jedem Eingabefeld stehen in der \ac{gui} Hilfetexte bereit, die beim Überfahren des jeweiligen Fragezeichensymbols mit der Maus eingeblendet werden.
+
+Die Simulation und Ergebnisberechnung (siehe \autoref{sec:methods}) wird am unteren Ende der Seitenleiste gestartet.
+Der rechte Hauptbereich der \ac{gui} visualisiert anschließend die Ergebnisse.
+Die berechneten Kennzahlen werden jeweils vergleichend für das \textit{Baseline}- und das \textit{Expansion}-Szenario dargestellt, um die Wirkung der geplanten Maßnahmen unmittelbar erkennbar zu machen.
+Auch für die angezeigten Ergebnisse und Grafiken sind erläuternde Hilfetexte verfügbar, die beim Überfahren des entsprechenden Fragezeichensymbols mit der Maus erscheinen.
 
 \section{Methodik}
 \label{sec:methods}
 
-Dieses Kapitel beschreibt den grundsätzlichen Ablauf einer Berechnung mit LIFT sowie die damit getroffenen qualitativen  bzw. methodischen Annahmen.
+Dieses Kapitel beschreibt den grundsätzlichen Ablauf einer Berechnung mit \ac{lift} sowie die dabei getroffenen qualitativen und methodischen Annahmen.
 Quantitative Annahmen (Parameterwerte für die Einzelnutzung in der \ac{gui}) sind hingegen in \autoref{sec:parameters} definiert.
 
-\ac{lift} berechnet für \textit{Baseline}- und \textit{Expansion}-Szenario jeweils Kosten und \ac{co2}-Emissionen.
-Diese lassen sich jeweils nach zwei Quellen unterscheiden: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
-Die ursprünglich ökonomischen Begriffe \ac{capex} und \ac{opex} sind im Kontext von \ac{lift} aufgrund dieser Parallelität stets gleichermaßen für Emissionen zu verstehen.
+\ac{lift} ermittelt für das \textit{Baseline}- und das \textit{Expansion}-Szenario jeweils die entstehenden Kosten sowie die \ac{co2}-Emissionen.
+Beide Größen lassen sich nach ihrer Herkunft in zwei Kategorien unterteilen: Investitionen bzw. Aufbau (\acs{capex}) und Betrieb (\acs{opex}).
+Die ursprünglich rein ökonomischen Begriffe \ac{capex} und \ac{opex} werden im Kontext von \ac{lift} aufgrund dieser Parallelität analog auch für die Emissionen verwendet.
 
-Die Szenarien modellieren jeweils ein Energiesystem, das aus mehreren Blöcken besteht, die reale Systeme abbilden (\autoref{subsec:system}).
-\ac{capex} dieser Blöcke hängen unmittelbar von den Eingangsparametern ab und können daher direkt (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
-In diesem Energiesystemmodell werden zu jedem simulierten Zeitschritt Leistungsflüsse heuristisch (regelbasiert) bestimmt (\autoref{subsec:sim}), deren integrierte Energieflüsse die Basis für die Berechnung von \ac{opex} im Simulationszeitraum (\autoref{subsec:opex}) sind.
+Die Szenarien modellieren jeweils ein Energiesystem, das aus mehreren Blöcken besteht, welche reale Systeme abbilden (\autoref{subsec:system}).
+Die \ac{capex} dieser Blöcke hängen unmittelbar von den Eingangsparametern ab und können daher direkt (\textit{a priori}) berechnet werden (\autoref{subsec:capex}).
+Im Rahmen des Energiesystemmodells werden in jedem simulierten Zeitschritt die Leistungsflüsse heuristisch (regelbasiert) bestimmt (siehe \autoref{subsec:sim}).
+Die daraus integrierten Energieflüsse bilden die Grundlage für die Berechnung der \ac{opex} über den Simulationszeitraum (siehe \autoref{subsec:opex}).
 Gesamtkosten und -emissionen werden unter Annahme von Blocklebensdauern und entsprechenden Ersatzinvestitionen sowie Kapitalkosten auf einen Projektzeitraum, der typischerweise deutlich länger als der Simulationszeitraum ist, extrapoliert (\autoref{subsec:extrapolation}) und zu ökonomischen bzw. ökologischen \acp{kpi} aggregiert (\autoref{subsec:kpis}).
 
 Dabei wird inhärent die Annahme getroffen, dass im Simulationszeitraum alle relevanten Charakteristika, z.\,B. Schwankungen in der Auslastung der Fahrzeugflotte oder bei der verfügbaren PV-Energie, abgebildet werden.
-Saisonale Schwankungen sind mit einer Simulationsdauer von einem Jahr, wie sie in der \ac{gui} verwendet wird, ausreichend abgebildet.
+Saisonale Effekte sind bei einer Simulationsdauer von einem Jahr, wie sie in der \ac{gui} standardmäßig verwendet wird, ausreichend berücksichtigt.
 
 \subsection{Energiesystemblöcke}
 \label{subsec:system}
@@ -179,31 +182,31 @@ Sollte die Berücksichtigung eines Blocks bzw. Systems nicht gewünscht sein, da
 
 Der \textbf{\acf{gcp}} modelliert die leistungsbeschränkte Schnittstelle zum elektrischen Netz unabhängig von dessen Spannungsebene, also die örtliche Messstelle, an der Leistungspreis und Arbeitspreis anfallen.
 Der Leistungspreis wird grundsätzlich auf Jahresbasis berücksichtigt.
-Bei Zeitschritten über \SI{15}{\minute} (dem realen Bemessungszeitraum des Leistungspreises) ist zu berücksichtigen, dass reale Lastspitzen über den Zeitschritt gemittelt und damit gedämpft werden.
+Bei Zeitschritten größer als \SI{15}{\minute} (dem realen Abrechnungsintervall des Leistungspreises) werden Lastspitzen jedoch gemittelt und damit gedämpft.
 Blindleistung im Wechselstromnetz wird nicht berücksichtigt.
 
 Die \textbf{\ac{pv}-Anlage} modelliert ein homogen und unbeweglich für maximales Energiepotential ausgerichtetes und aufgeständertes Array von polykristallinen \ac{pv}-Modulen inklusive ihres Wechselrichters.
 Das entsprechende zeitvariable Leistungspotential wird für den gewählten Standort in stündlicher Auflösung vom \ac{pvgis} der Europäischen Union für das Bezugsjahr 2023 abgerufen.
 Neuere oder zeitlich feiner aufgelöste Daten sind bei diesem Anbieter nicht verfügbar.
-Temperatureffekte sowie Verschattungen durch Wolken (im Bezugsjahr) oder Gelände sind berücksichtigt, Verschattungen durch Bäume und Gebäude jedoch nicht.
+Temperatureffekte sowie Verschattung durch Wolken (im Referenzjahr) und Gelände sind enthalten, Verschattungen durch Gebäude oder Vegetation jedoch nicht.
 Die heruntergeladenen Daten für einen Standort werden zwischengespeichert und in derselben Session nicht nochmals angefordert, was die Netzwerkanforderungen bei lokaler Ausführung reduziert.
 
 Der \textbf{\acf{ess}} modelliert einen stationären und verlustfreien Batteriespeicher mit einer maximalen Lade- und Entladeleistung (``C-Rate'') von \SI{0.5}{\per\hour} bzw. \si{C}.
-Er kann also schnellstens innerhalb von \SI{2}{\hour} vollständig ge- oder entladen werden, was der Leistungsgrenze gängiger Modelle entspricht.
-Alterung und limitierte nutzbare Ladezustände sind nicht berücksichtigt.
+Eine vollständige Be- oder Entladung ist somit frühestens nach \SI{2}{\hour} möglich, was der Leistungsgrenze gängiger stationärer Speichersysteme entspricht.
+Alterungseffekte und Einschränkungen des nutzbaren Ladezustandsbereichs werden nicht berücksichtigt.
 
 Der \textbf{\acf{dem}} modelliert den Energieumsatz der Gebäude und sonstiger Infrastruktur am Standort exklusive der vorhandenen oder aufzubauenden \acl{cis}.
-Hierfür werden auszuwählende Standardlastprofile des \acg{bdew} verwendet, die auf den angegebenen jährlichen Energieverbrauch des Standorts skaliert werden.
+Dafür werden auswählbare \ac{bdew}-Standardlastprofile verwendet, die auf den angegebenen Jahresverbrauch skaliert werden.
 Aufgrund ihrer stündlichen Auflösung und der ihnen zugrunde liegenden Methodik sind sie jedoch nur bedingt geeignet, einen realen Lastgang nachzubilden, da sie eine stark geglättete Charakteristik aufweisen und verfälschen die in der Simulation auftretenden Lastspitzen am \ac{gcp} gegenüber der Realität.
 Im Rahmen einer Erstberatung ist diese Vereinfachung zwar nötig und zulässig, um schnell Potentiale abzuschätzen, in weiteren Planungsphasen ist davon jedoch abzuraten.
 
 Die \textbf{\acf{cis}} modelliert mehrere (in der \ac{gui} zwei, siehe \autoref{sec:parameters}) Klassen von Ladepunkten für Fahrzeuge, von der jeweils mehrere Ladepunkte existieren.
-Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement, das statisch oder dynamisch sein kann.
+Die gesamte Ladeinfrastruktur unterliegt einem Lastmanagement, das entweder statisch oder dynamisch ausgelegt sein kann.
 Das statische Lastmanagement begrenzt in jedem Zeitschritt die für die gesamte \ac{cis} klassenübergreifend zur Verfügung stehende Ladeleistung auf einen in der \ac{gui} konstanten Wert.
 Dieser wird normalerweise bestimmt, indem die Spitzenlast des Standortverbrauchs von der maximalen Leistung des Netzanschlusspunktes abgezogen wird.
 Für große Simulationszeitschritte ($>\SI{15}{\minute}$) verhält sich das statische Lastmanagement nicht realistisch, da \ac{dem}-Lastspitzen, die die maximale Ladeleistung maßgeblich bestimmen, zu stark geglättet werden.
 Das dynamische Lastmanagement berechnet für jeden Zeitschritt die für die Flotte zur Verfügung stehende Leistung.
-Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende PV-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
+Dazu wird die maximale Leistung des Netzanschlusses, die aktuell zur Verfügung stehende \ac{pv}-Leistung und die maximale Leistung des Stationärspeichers unter Berücksichtigung des Ladezustands addiert und von diesem Wert der Standortverbrauch subtrahiert.
 Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.
 
 Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{sec:parameters}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
@@ -215,15 +218,16 @@ Die tatsächlich maximale Ladeleistung eines Fahrzeugs entspricht dem Minimum au
 Je nach Flottengröße und \ac{cis}-Konfiguration sind sowohl die Anzahl verfügbarer Ladepunkte als auch die aktuell zur Verfügung stehende Ladeleistung eine knappe Resource.
 Eine Priorisierung nach kleinster ``Flexibilitätszeit'' (Restzeit bis zum spätestmöglichen Ladebeginn, um die kommende Fahrt ohne öffentliches Laden zu erfüllen) verteilt beide Ressourcen in jedem Zeitschritt unter allen Fahrzeugen der Flotte.
 Öffentliches (On-Route-) Laden wird daher nur bei unbedingter Notwendigkeit und auch in geringstmöglichem Umfang genutzt, sodass solche Fahrten mit einem Ladezustand von \SI{0}{\percent} wieder am Depot enden.
-Dem Priorisierungsalgorithmus liegt die Annahme zugrunde, dass physische Ladepunkte und damit Parkplätze in jedem Zeitschritt neu verteilt werden können, was in der Realität bei kleinen Zeitschritten nicht möglich ist.
+Dem Priorisierungsalgorithmus liegt die Annahme zugrunde, dass physische Ladepunkte und damit Parkplätze in jedem Zeitschritt neu verteilt werden können.
+Eine Vereinfachung, die bei sehr kleinen Zeitschritten in der Realität nicht haltbar wäre.
 
 \subsection{\acs{capex}-Berechnung}
 \label{subsec:capex}
 
 Beim Aufbau jedes Blocks $b$ mit Ausnahme von \ac{DEM} entstehen ökonomische (\autoref{eq:capex_init_econ}) und ökologische (\autoref{eq:capex_init_ecol}) \ac{capex}, die mit $C^b_{cap}$ und $E^b_{cap}$ bezeichnet werden.
-Für alle kontinuierlich dimensionierbaren Blöcke $b_\text{cont}$ (\ac{GCP}, \ac{PV} und \ac{ess}) werden diese jeweils in Abhängigkeit der gewählten Größe des Blocks $S^b$ sowie den spezifischen Werten pro Größeneinheit $c^b_{cap}$ und $e^b_{cap}$ berechnet.
-Für die in diskrete Subblöcke aufgeteilten Blöcke $b_\text{dis}$ (\ac{cis} und \ac{flt}) ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen diskrete \ac{capex} $c_{cap, m}$ pro Element $n$ (Fahrzeug oder Ladepunkt) eines Subklasse $m$ (Fahrzeug- oder Ladepunktklasse).
-Diskrete Kosten $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spezifische Emissionen ist dies nicht vorgesehen.
+Für die kontinuierlich dimensionierbaren Blöcke $b_\text{cont}$ (\ac{gcp}, \ac{pv} und \ac{ess}) werden diese jeweils linear in Abhängigkeit von der gewählten Blockgröße $S^b$ sowie den spezifischen Werten pro Größeneinheit $c^b_{\mathrm{cap}}$ und $e^b_{\mathrm{cap}}$ berechnet.
+Bei den in diskrete Elemente unterteilten Blöcke $b_\text{dis}$ (\ac{cis} und \ac{flt}) ist hingegen keine Dimensionierungsabhängigkeit vorgesehen, sondern es entstehen feste \ac{capex} $c_{ \mathrm{cap}, m}$ pro Element $n$ (Fahrzeug oder Ladepunkt) einer Subklasse $m$ (Fahrzeug- bzw. Ladepunktklasse).
+Die diskreten Kosten $c_{\mathrm{cap}, m}$ sind in der \ac{gui} frei einstellbar, für spezifische Emissionen pro Element ist dies nicht vorgesehen.
 
 \begin{subequations}
     \label{eq:capex_init}
@@ -233,7 +237,7 @@ Diskrete Kosten $c_{cap, m}$ sind hierbei in der \ac{gui} definierbar, für spez
     \end{align}
 \end{subequations}
 
-Ersatzinvestitionen nach den parametrierten Lebensdauern werden je Block mit konstanten Nominal-\ac{capex} berücksichtigt.
+Ersatzinvestitionen werden je Block nach Ablauf der parametrierten Lebensdauer mit konstanten Nominal-\ac{capex} berücksichtigt.
 Die ökonomischen \ac{capex} werden gemäß \autoref{subsec:extrapolation} diskontiert.
 Mögliche Unterschiede in Lebensdauern verhindern eine sinnvolle Aggregation von \ac{capex} über Subblöcke.
 
@@ -244,11 +248,11 @@ Die in \ac{lift} verwendete Zeitschrittsimulation simuliert die Energieflüsse i
 In jedem Zeitschritt wird der addierte Leistungsbedarf von Standortverbrauches und Flotte, der mithilfe des  \ac{cis}-Lastmanagements ermittelt wird (\autoref{subsec:system}), in absteigender Priorität aus \ac{pv} (soweit zum jeweiligen Zeitpunkt verfügbar), Stationärspeicher (soweit zum jeweiligen Zeitpunkt geladen) und Netzanschluss gedeckt.
 Im Fall, dass die \ac{pv} den Leistungsbedarf alleine erfüllen kann, wird der Stationärspeicher mit der durch Leistungsbeschränkung oder Ladezustand limitierten maximalen Leistung geladen.
 Weitere überschüssige Leistung wird bis zur Leistungsgrenze des Netzanschlusses ins Netz eingespeist, bevor \ac{pv}-Potential abgeregelt wird.
-Diese Energiemanagementstrategie wird typischerweise ``Nulllastregelung'' genannt.
+Diese regelbasierte Energiemanagementstrategie wird üblicherweise als „Nulllastregelung“ bezeichnet.
 
-Trotz des szenarioadpativen Vorgehens kann zu kleine Dimensionierung der drei Quellenblöcke in unerfüllbaren Anforderungen resultieren und eine entsprechende Fehlermeldung (``Netzanschlussfehler'') hervorrufen.
-Wirkungsgrade, dynamische Strompreise und Flexibilitäten werden nicht berücksichtigt.
-Die beiden letzteren Dynamiken sind mit regelbasierten Strategien nicht sinnvoll ausschöpfbar und erfordern intelligentere und situationsadaptivere Strategien wie Optimierung und/oder Machine Learning zur Steuerung.
+Eine zu knappe Dimensionierung der Quellenblöcke kann trotz szenariobasierter Anpassung zu nicht erfüllbaren Leistungsanforderungen führen und löst eine entsprechende Fehlermeldung („Netzanschlussfehler“) aus.
+Wirkungsgrade, dynamische Stromtarife sowie Flexibilitätsoptionen werden nicht berücksichtigt.
+Die beiden letztgenannten Aspekte lassen sich mit rein regelbasierten Strategien nicht sinnvoll ausschöpfen und erfordern anspruchsvollere, situationsadaptive Ansätze wie mathematische Optimierung und/oder Methoden des Machine Learning.
 
 \subsection{\acs{opex}-Berechnung}
 \label{subsec:opex}
@@ -258,8 +262,8 @@ Die beiden letzteren Dynamiken sind mit regelbasierten Strategien nicht sinnvoll
 Am \textbf{\ac{gcp}} fallen sowohl in Abhängigkeit des Energiedurchsatzes in Bezugs- ($W^{GCP}_\text{buy}$) und Einspeiserichtung ($W^{GCP}_\text{sell}$) als auch der Spitzenlast im Simulationszeitraum ($P^{GCP}_\text{peak}$) ökonomische \ac{opex} gemäß \autoref{eq:opex_gcp} an.
 Die spezifischen Kostenwerte $c^{GCP}_\text{buy}$ und $c^{GCP}_\text{sell}$ werden dabei sinngemäß positiv bzw. negativ verrechnet, obwohl letzterer in der \ac{gui} positiv definiert ist.
 Alle spezifischen Kostenwerte $c^{GCP}$ sind in der \ac{gui} anpassbar.
-Die ökologischen \ac{opex} bemessen sich hingegen ausschließlich nach dem Energiedurchsatz in Bezugsrichtung, da eingespeiste Energie nicht nicht mit Emissionen assoziiert wird.
-Der entsprechende spezifische Emissionswert $e^{GCP}_\text{buy}$ ist nicht in der \ac{gui} anpassbar.
+Die ökologischen \ac{opex} beruhen hingegen ausschließlich auf dem Bezugsenergiedurchsatz, da eingespeiste Energie emissionsfrei verrechnet wird.
+Der zugehörige spezifische Emissionsfaktor $e^{GCP}_\text{buy}$ entspricht dem aktuellen Strommix und ist in der \ac{gui} nicht anpassbar.
 \todo[inline]{spezifischen Emissionswert in GUI auf Strommix anpassen und Quelle referenziern}
 
 \begin{subequations}
@@ -283,16 +287,17 @@ Die Kosten und Emissionen der am Depot geladenen Energie für letztere sind bere
 
 Dabei bezeichnen *$d^{i/j}$ die gefahrene Distanz aller Fahrzeuge der Subflotte $i$ oder $j$, $c^{i/j}_\text{mnt}$ ihre spezifischen Wartungskosten pro Kilometer, $c^{i/j}_\text{toll}$ ihre spezifischen Mautkosten pro Kilometer, *$x^{i/j}_\text{toll}$ ihren Anteil der mautpflichtigen Strecken, *$c_\text{fuel}$ die spezifischen Dieselkosten pro Liter, $b^i$ ihren spezifischen Kraftstoffverbrauch \si{\liter\per\kilo\meter}, $W^{j}_\text{pub}$ die öffentlich geladenene Energie aller Fahrzeuge der Subflotte $j$ und *$c_\text{pub}$ die öffentlichen Ladekosten pro \si{\kilo\watt\hour}.
 Die mit * markierten Werte sind in der \ac{gui} einstellbar.
-Für die spezifischen Emissionen des öffentlichen Ladens wird der Wert des Standortes verwendet.
+Für die Emissionen öffentlichen Ladens wird der Emissionsfaktor des Standort-Strommixes verwendet.
 
 \subsection{Extrapolation}
 \label{subsec:extrapolation}
 
-Zur Berechnung von \ac{capex} und \ac{opex} über den Projektzeitraum müssen die Ergebnisse des Simulationszeitraums extrapoliert und im Falle von Kosten dabei diskontiert werden.
-Die hier jeweils für den gesamten Projektzeitraum berechneten Summen werden in \ac{lift} tatsächlich vektorisiert durchgeführt, sodass nominelle \ac{capex}, nominelle \ac{opex} und Diskontierungsfaktor für jedes Projektjahr verfügbar sind.
+Zur Ermittlung der \ac{capex} und \ac{opex} über den gesamten Projektzeitraum werden die Simulationsergebnisse extrapoliert und im Falle der Kosten diskontiert.
+In \ac{lift} erfolgt dies intern vektorisiert, sodass nominale \ac{capex}, nominale \ac{opex} und Diskontierungsfaktor für jedes Projektjahr einzeln vorliegen.
 
-\ac{capex} treten gemäß \autoref{eq:extrapolation_capex} jeweils bei Anfangs- und Ersatzinvestitionen $i$ eines Blocks $b$ entsprechend seiner Lebensdauer $ls^b$ auf, werden in der Diskontierung mit dem Kapitalkostensatz $r$ zu Beginn eines Projektjahres angenommen und werden über alle Blöcke addiert.
-Anfangsinvestitionen bei $t=0$ werden dementsprechend effektiv nicht diskontiert.
+\ac{capex} treten gemäß \autoref{eq:extrapolation_capex} bei der Anfangsinvestition sowie bei jeder Ersatzinvestition $i$ eines Blocks $b$ entsprechend dessen Lebensdauer $ls^b$ auf.
+Sie werden mit dem Kapitalkostensatz $r$ zu Beginn des jeweiligen Projektjahres diskontiert und über alle Blöcke summiert.
+Anfangsinvestitionen bei $t=0$ bleiben daher effektiv undiskontiert.
 Der Restwert $C^b_{res}$ jedes Blocks zum Ende des Projektzeitraumes wird sinngemäß als negative Kosten verrechnet und verhindert Sprungeffekte in den Ergebnissen bei Variation diskreter Parameter wie Lebensdauern.
 Der Wertverlust wird als linear über die Lebensdauer angenommen.
 
@@ -309,7 +314,8 @@ Der Wertverlust wird als linear über die Lebensdauer angenommen.
     \end{align}
 \end{subequations}
 
-Im Gegensatz dazu werden \ac{opex} des Simulationszeitraumes gemäß \autoref{eq:extrapolation_opex} zunächst linear auf ein Jahr skaliert und angenommen, dass jedes Jahr $y \in \left\{x \in \mathbb{N}_0 \vert x < t_\text{prj} \right\}$ des Projektzeitraumes diesem skalierten Jahr entspricht und \ac{opex} am Ende dieses Jahres auftreten.
+Im Gegensatz dazu werden \ac{opex} des Simulationszeitraums gemäß \autoref{eq:extrapolation_opex} zunächst linear auf ein volles Jahr hochskaliert.
+Es wird angenommen, dass jedes Projektjahr $y \in \{x \in \mathbb{N}_0 \mid x < t_\text{prj}\}$ diesem skalierten Jahr entspricht und die \ac{opex} jeweils am Jahresende anfallen.
 Ökonomische \ac{opex} werden daher mit dem Exponenten $y+1$ diskontiert.
 
 \begin{subequations}
@@ -323,7 +329,7 @@ Im Gegensatz dazu werden \ac{opex} des Simulationszeitraumes gemäß \autoref{eq
 \subsection{\acfp{kpi}}
 \label{subsec:kpis}
 
-In \ac{lift} wird zwischen technischen und ökonomischen\,/\,ökologischen \acp{kpi} unterschieden.
+In \ac{lift} werden technische sowie ökonomische und ökologische \acp{kpi} unterschieden.
 Erstere werden über den Simulationszeitraum auf Basis von Energieflüssen berechnet und dienen als Anhaltspunkt, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
 Es sei darauf hingewiesen, dass die technischen \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten modelliert werden. \todo{check}
 Dabei wird die lokal genutzte Energie $W^{cons}_\text{sim}$ gemäß \autoref{eq:energy_boundaries} als die in \ac{dem} und \ac{flt} aus dem Depot abgeflossene Energie definiert.
@@ -364,131 +370,242 @@ Da die lokalen Energiekosten im Vergleich zum öffentlichen Laden meist geringer
     \label{eq:homecharging}
 \end{equation}
 
-Ökonomische\,/\,ökologische \ac{kpi} werden auf Basis der gemäß \autoref{subsec:extrapolation} vektorisierten (nach Projektjahren aufgelösten) diskontierten Gesamtkosten und -emissionen berechnet, die in der \ac{gui} als Cashflow-Diagramm dargestellt sind.
+Die ökonomischen und ökologischen \acp{kpi} basieren auf den gemäß \autoref{subsec:extrapolation} nach Projektjahren aufgelösten, diskontierten Gesamtkosten bzw. -emissionen, die in der \ac{gui} als Cashflow-Diagramm visualisiert werden.
 
-Die \textbf{Amortisationszeit} $t_\text{pb}$ gibt das Projektjahr an, an dessen Ende dem das Expansion-Szenario geringere diskontierte Gesamtkosten bzw. -emissionen aufweist.
-Aufgrund der diskontinuierlich auftretenden \ac{capex} kann es Parameterkonfigurationen geben, die zu mehrfacher Amortisation führen.
-Dies wird in $t_\text{pb}$ vernachlässigt und es wird nur das erste Amortisationsjahr ausgegeben.
+Die \textbf{Amortisationszeit} $t_\text{pb}$ gibt das erste Projektjahr an, in dem das \textit{Expansion}-Szenario geringere kumulierte Gesamtkosten bzw. -emissionen als das \textit{Baseline}-Szenario aufweist.
+Aufgrund diskontinuierlicher \ac{capex} können bei manchen Parameterkonstellationen mehrere Amortisationspunkte auftreten, hierbei wird jedoch lediglich das erste ausgegeben.
 
-
-% Amortisationszeit
+\newpage
 
 \section{Parameter und Standardwerte}
 \label{sec:parameters}
+%%\autoref{tab:parameters}
 
-\autoref{tab:parameters}
-
-\todo[inline]{Standardwerte in Tabelle mit sinnvoller Formatierung überführen}
 \todo[inline]{Standardwerte in gleicher Spalte mit Quellen belegen}
 \todo[inline]{Alle (auch GUI-) Parameter in Tabelle integrieren}
 
-\begin{table}[!hbt]
+Alle in \ac{lift} verwendeten Parameter sowie deren Standardwerte und Quellen sind in den Tabellen~\ref{tab:parameters1} und \ref{tab:parameters2} zusammengefasst.
+Parameter ohne angegebenen GUI-Standardwert können in der Benutzeroberfläche frei gewählt werden.
+
+\begin{table}[!htbp]
 \centering
-\makebox[\linewidth]{
-\begin{tabular}{rlll}
+\caption{Parameter von \ac{lift} – Teil 1: Simulation bis Stationärspeicher}
+\label{tab:parameters1}
+\scriptsize
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.9cm}>{\centering\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{5.8cm}l@{}}
 \toprule
-\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert}\\
+\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{GUI-Standardwert} & \textbf{Beschreibung} & \textbf{Quelle} \\
 \midrule
-\textbf{Simulation}\\
-$t_{sim}^{start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)}\\
-\makecell[r]{$t_{sim}$\\$t_{si, y}$} & Simulationszeitraum & \makecell[l]{Tage\\Jahre} & \makecell[l]{365 Tage\\1 Jahr}\\
-$T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde\\
+\multicolumn{6}{c}{\textbf{Simulation und allgemeine Einstellungen}} \\
 \midrule
-\textbf{Netzanschluss}\\
+$t_{\text{sim}}^{\text{start}}$ & Simulationsstart & — & 01.01.2023 00:00 (UTC+1) & Startzeitpunkt der einjährigen Simulation & — \\
+$t_{\text{sim}}$ / $t_{\text{si,y}}$ & Simulationsdauer & Tage / Jahre & 365 / 1 & Länge des simulierten Zeitraums & — \\
+$\Delta t$ & Zeitschrittaufteilung & h & 1 & Zeitschrittweite der Simulation & — \\
 \midrule
-\textbf{\ac{pv}-Anlage}\\
+\multicolumn{6}{c}{\textbf{Wirtschaftlichkeit und Rahmenbedingungen}} \\
 \midrule
-\textbf{Stationärspeicher}\\
+$r$ & Kapitalkostensatz & \% p.\,a. & 4 & Diskontierungszins & — \\
+$t_{\text{prj}}$ & Projektlaufzeit & Jahre & 18 & Betrachtungszeitraum Amortisation & — \\
+$c_{\text{Diesel}}$ & Dieselpreis & €/l & 1,60 & Kraftstoffkosten Verbrenner & — \\
+$c_{\text{pub}}$ & Öffentliche Ladekosten & €/kWh & 0,55 & Kosten außerhalb Depot & — \\
+$c^{\text{GCP}}_{\text{peak}}$ & Leistungspreis & €/(kW·a) & 120 & Jährlicher Leistungspreis & — \\
+$c^{\text{GCP}}_{\text{buy}}$ & Strombezugspreis & €/kWh & 0,28 & Arbeitspreis Bezug & — \\
+$c^{\text{GCP}}_{\text{sell}}$ & Einspeisevergütung & €/kWh & 0,08 & Vergütung eingespeiste PV-Energie & — \\
+$e^{\text{GCP}}_{\text{buy}}$ & CO$_2$-Faktor Strommix & kg/kWh & 0,400 & Deutscher Strommix 2023 & UBA 2024 \\
+$e_{\text{Diesel}}$ & CO$_2$-Faktor Diesel & kg/l & 3,08 & Tank-to-Wheel inkl. Vorkette & UBA 2024 \\
 \midrule
-\textbf{Ladeinfrastruktur}\\
+\multicolumn{6}{c}{\textbf{Netzanschluss (\ac{gcp})}} \\
 \midrule
-\textbf{Flotte}\\
+$c^{\text{GCP}}_{\text{Invest}}$ & Investitionskosten & €/kW & 200 & Netzanschlussverstärkung & eigene Annahme \\
+$e^{\text{GCP}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kW & 0,0 & Vernachlässissgt & — \\
+$ls^{\text{GCP}}$ & Lebensdauer & Jahre & 18 & Technische Nutzungsdauer & — \\
 \midrule
+\multicolumn{6}{c}{\textbf{PV-Anlage}} \\
+\midrule
+$c^{\text{PV}}_{\text{Invest}}$ & Investitionskosten & €/kWp & 900 & Komplettanlage inkl. WR (2024) & Fraunhofer ISE 2024 \\
+$e^{\text{PV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kWp & 798 & Polykristallin, europ. Produktion & IEA-PVPS 2023 \\
+$ls^{\text{PV}}$ & Lebensdauer & Jahre & 30 & Typische Garantiezeit & — \\
+\midrule
+\multicolumn{6}{c}{\textbf{Stationärspeicher (\ac{ess})}} \\
+\midrule
+$c^{\text{ESS}}_{\text{Invest}}$ & Investitionskosten & €/kWh & 450 & Li-Ionen-Systempreis 2024 & BloombergNEF 2024 \\
+$e^{\text{ESS}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kWh & 69 & Aktueller Durchschnitt & Emilienko et al. 2023 \\
+$ls^{\text{ESS}}$ & Lebensdauer & Jahre & 12 & Kalender- und Zyklenalterung & — \\
 \bottomrule
 \end{tabular}
-}
-\caption{Parameterdefinition, Formelzeichen und Standardwerte mit Quellenangabe in \ac{lift}. Wenn kein \ac{gui}-Wert angegeben ist, dann ist dieser Parameter in der GUI anpassbar.}
-\label{tab:parameters}
 \end{table}
 
-\subsection{Blöcke}
-\label{subsec:default_components}
-\subsubsection{Netzanschluss}
-\label{subsubsec:default_grid}
-$c^{Netz}_{Invest}$: 200 €/kW\\
-$co2^{Netz}_{Invest}$: 0,0 kg/kW\\
-$co2^{Netz}_{Betrieb}$: 0.400 kg/kWh\\
-$ls^{Netz}$: 18 Jahre\\
+\newpage
 
-\subsubsection{PV-Anlage}
-\label{subsubsec:default_pv}
-$c^{PV}_{Invest}$: 900 €/kWp\\
-$co2^{PV}_{Invest}$: 798,0 kg/kWp\\
-$ls^{PV}$: 18 Jahre\\
+\begin{table}[!htbp]
+\centering
+\caption{Parameter von \ac{lift} – Teil 2: Ladeinfrastruktur und Flotte}
+\label{tab:parameters2}
+\scriptsize
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.9cm}>{\centering\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{5.8cm}l@{}}
+\toprule
+\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{GUI-Standardwert} & \textbf{Beschreibung} & \textbf{Quelle} \\
+\midrule
+\multicolumn{6}{c}{\textbf{Ladeinfrastruktur (\ac{cis})}} \\
+\midrule
+$c^{\text{AC}}_{\text{Invest}}$ & AC-Ladepunkt (22 kW) & €/Stück & 2\,500 & Wallbox inkl. Installation & eigene Marktanalyse \\
+$e^{\text{AC}}_{\text{Invest}}$ & CO$_2$-Fußabdruck AC & kg/Stück & 65,4 & & Helms 2023 \\
+$c^{\text{DC}}_{\text{Invest}}$ & DC-Ladepunkt (150 kW) & €/Stück & 45\,000 & Schnelllader inkl. Installation & eigene Marktanalyse \\
+$e^{\text{DC}}_{\text{Invest}}$ & CO$_2$-Fußabdruck DC & kg/Stück & 6\,520 & & Helms 2023 \\
+$ls^{\text{AC/DC}}$ & Lebensdauer Ladepunkte & Jahre & 8 & & — \\
+\midrule
+\multicolumn{6}{c}{\textbf{Flotte – Schwere Lkw (> 18 t)}} \\
+\midrule
+$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 480 & Typische Kapazität & — \\
+$e^{\text{BEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck BEV & kg/Fzg. & 84\,600 & & Helms 2023 \\
+$e^{\text{ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck ICEV & kg/Fzg. & 54\,000 & & Helms 2023 \\
+$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,269 & BEV mautbefreit bis 2030 & BMVI \\
+$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,132 / 0,185 & & VDA 2023 \\
+$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 27 & & — \\
+$ls$ & Fahrzeuglebensdauer & Jahre & 6 & & — \\
+\midrule
+\multicolumn{6}{c}{\textbf{Flotte – Schwerer Verteilverkehr (12–18 t)}} \\
+\midrule
+$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 400 & & — \\
+$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 59\,000 / 31\,200 & & Helms 2023 \\
+$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,242 & & BMVI \\
+$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,132 / 0,185 & & VDA 2023 \\
+$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 23 & & — \\
+$ls$}$ & Lebensdauer & Jahre & 6 & & — \\
+\midrule
+\multicolumn{6}{c}{\textbf{Flotte – Urbaner Verteilverkehr (7,5–12 t)}} \\
+\midrule
+$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 160 & & — \\
+$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 26\,700 / 16\,200 & & Helms 2023 \\
+$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,137 & & BMVI \\
+$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,105 / 0,158 & & VDA 2023 \\
+$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 19 & & — \\
+$ls$ & Lebensdauer & Jahre & 6 & & — \\
+\midrule
+\multicolumn{6}{c}{\textbf{Flotte – Lieferwagen (< 3,5 t)}} \\
+\midrule
+$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 81 & & — \\
+$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 13\,870 / 8\,622 & & Helms 2023 \\
+$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,000 & Mautbefreit & BMVI \\
+$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,028 / 0,034 & & VDA 2023 \\
+$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 15 & & — \\
+$ls$ & Fahrzeuglebensdauer & Jahre & 6 & & — \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsubsection{Stationärspeicher}
-\label{subsubsec:default_ess}
-$c^{Speicher}_{Invest}$: 450 €/kWh\\
-$co2^{Speicher}_{Invest}$: 69,0 kg/kWh\\
-$ls^{Speicher}$: 9 Jahre\\
 
-\subsubsection{Ladeinfrastruktur}
-\label{subsubsec:default_ci}
-\textbf{AC-Ladepunkte}\\
-$CO2^{Ladepunkt, AC}_{Invest}$: 65,4 kg\\
-$ls^{SLadepunkt, AC}$: 6 Jahre\\
+% \begin{table}[!hbt]
+% \centering
+% \makebox[\linewidth]{
+% \begin{tabular}{rlll}
+% \toprule
+% \textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{\ac{gui}-Wert}\\
+% \midrule
+% \textbf{Simulation}\\
+% $t_{sim}^{start}$ & Startzeit der Simulation & keine & \makecell[l]{01.01.2023 00:00\\(\acs{utc}+01:00)}\\
+% \makecell[r]{$t_{sim}$\\$t_{si, y}$} & Simulationszeitraum & \makecell[l]{Tage\\Jahre} & \makecell[l]{365 Tage\\1 Jahr}\\
+% $T^{sim}_{Zeitschritt}$ & Simulationszeitschritt & Stunde & 1 Stunde\\
+% \midrule
+% \textbf{Netzanschluss}\\
+% \midrule
+% \textbf{\ac{pv}-Anlage}\\
+% \midrule
+% \textbf{Stationärspeicher}\\
+% \midrule
+% \textbf{Ladeinfrastruktur}\\
+% \midrule
+% \textbf{Flotte}\\
+% \midrule
+% \bottomrule
+% \end{tabular}
+% }
+% \caption{Parameterdefinition, Formelzeichen und Standardwerte mit Quellenangabe in \ac{lift}. Wenn kein \ac{gui}-Wert angegeben ist, dann ist dieser Parameter in der GUI anpassbar.}
+% \label{tab:parameters}
+% \end{table}
 
-\textbf{DC-Ladepunkte}\\
-$CO2^{Ladepunkt, DC}_{Invest}$: 6520 kg\\
-$ls^{SLadepunkt, DC}$: 6 Jahre\\
+% \subsection{Blöcke}
+% \label{subsec:default_components}
+% \subsubsection{Netzanschluss}
+% \label{subsubsec:default_grid}
+% $c^{Netz}_{Invest}$: 200 €/kW\\
+% $co2^{Netz}_{Invest}$: 0,0 kg/kW\\
+% $co2^{Netz}_{Betrieb}$: 0.400 kg/kWh\\
+% $ls^{Netz}$: 18 Jahre\\
 
-\subsubsection{Flotte}
-$co2^{Diesel}$: 3,08 kg CO2-eq./l\\
+% \subsubsection{PV-Anlage}
+% \label{subsubsec:default_pv}
+% $c^{PV}_{Invest}$: 900 €/kWp\\
+% $co2^{PV}_{Invest}$: 798,0 kg/kWp\\
+% $ls^{PV}$: 18 Jahre\\
 
-\label{subsubsec:default_fleet}
-\textbf{Schwere Lkw}\\
-$S_{Batterie}$: 480 kWh\\
-$CO2^{Fahrzeug, BEV}_{Invest}$: 84600 kg\\
-$CO2^{Fahrzeug, ICEV}_{Invest}$: 54000 kg\\
-$c^{BEV}_{Maut}$: 0,0 €/km\\
-$c^{ICEV}_{Maut}$: 0,269 €/km\\
-$c^{BEV}_{Wartung}$: 0,1324 €/km\\
-$c^{ICEV}_{Wartung}$: 0,185 €/km\\
-$v^{ICEV}$: 27 l/100km\\
-$ls$: 6 Jahre\\
+% \subsubsection{Stationärspeicher}
+% \label{subsubsec:default_ess}
+% $c^{Speicher}_{Invest}$: 450 €/kWh\\
+% $co2^{Speicher}_{Invest}$: 69,0 kg/kWh\\
+% $ls^{Speicher}$: 9 Jahre\\
 
-\textbf{Schwerer Verteilverkehr}\\
-$S_{Batterie}$: 400 kWh\\
-$CO2^{Fahrzeug, BEV}_{Invest}$: 59000 kg\\
-$CO2^{Fahrzeug, ICEV}_{Invest}$: 31200 kg\\
-$c^{BEV}_{Maut}$: 0,0 €/km\\
-$c^{ICEV}_{Maut}$: 0,242 €/km\\
-$c^{BEV}_{Wartung}$: 0,1324 €/km\\
-$c^{ICEV}_{Wartung}$: 0,185 €/km\\
-$v^{ICEV}$: 23 l/100km\\
-$ls$: 6 Jahre\\
+% \subsubsection{Ladeinfrastruktur}
+% \label{subsubsec:default_ci}
+% \textbf{AC-Ladepunkte}\\
+% $CO2^{Ladepunkt, AC}_{Invest}$: 65,4 kg\\
+% $ls^{SLadepunkt, AC}$: 6 Jahre\\
 
-\textbf{Urbaner Verteilverkehr}\\
-$S_{Batterie}$: 160 kWh\\
-$CO2^{Fahrzeug, BEV}_{Invest}$: 26700 kg\\
-$CO2^{Fahrzeug, ICEV}_{Invest}$: 16200 kg\\
-$c^{BEV}_{Maut}$: 0,0 €/km\\
-$c^{ICEV}_{Maut}$: 0,137 €/km\\
-$c^{BEV}_{Wartung}$: 0,1051 €/km\\
-$c^{ICEV}_{Wartung}$: 0,1577 €/km\\
-$v^{ICEV}$: 19 l/100km\\
-$ls$: 6 Jahre\\
+% \textbf{DC-Ladepunkte}\\
+% $CO2^{Ladepunkt, DC}_{Invest}$: 6520 kg\\
+% $ls^{SLadepunkt, DC}$: 6 Jahre\\
 
-\textbf{Lieferwagen}\\
-$S_{Batterie}$: 81 kWh\\
-$CO2^{Fahrzeug, BEV}_{Invest}$: 13870 kg\\
-$CO2^{Fahrzeug, ICEV}_{Invest}$: 8622 kg\\
-$c^{BEV}_{Maut}$: 0,0 €/km\\
-$c^{ICEV}_{Maut}$: 0,0 €/km\\
-$c^{BEV}_{Wartung}$: 0,0275 €/km\\
-$c^{ICEV}_{Wartung}$: 0,0339 €/km\\
-$v^{ICEV}$: 15 l/100km\\
-$ls$: 6 Jahre\\
+% \subsubsection{Flotte}
+% $co2^{Diesel}$: 3,08 kg CO2-eq./l\\
+
+% \label{subsubsec:default_fleet}
+% \textbf{Schwere Lkw}\\
+% $S_{Batterie}$: 480 kWh\\
+% $CO2^{Fahrzeug, BEV}_{Invest}$: 84600 kg\\
+% $CO2^{Fahrzeug, ICEV}_{Invest}$: 54000 kg\\
+% $c^{BEV}_{Maut}$: 0,0 €/km\\
+% $c^{ICEV}_{Maut}$: 0,269 €/km\\
+% $c^{BEV}_{Wartung}$: 0,1324 €/km\\
+% $c^{ICEV}_{Wartung}$: 0,185 €/km\\
+% $v^{ICEV}$: 27 l/100km\\
+% $ls$: 6 Jahre\\
+
+% \textbf{Schwerer Verteilverkehr}\\
+% $S_{Batterie}$: 400 kWh\\
+% $CO2^{Fahrzeug, BEV}_{Invest}$: 59000 kg\\
+% $CO2^{Fahrzeug, ICEV}_{Invest}$: 31200 kg\\
+% $c^{BEV}_{Maut}$: 0,0 €/km\\
+% $c^{ICEV}_{Maut}$: 0,242 €/km\\
+% $c^{BEV}_{Wartung}$: 0,1324 €/km\\
+% $c^{ICEV}_{Wartung}$: 0,185 €/km\\
+% $v^{ICEV}$: 23 l/100km\\
+% $ls$: 6 Jahre\\
+
+% \textbf{Urbaner Verteilverkehr}\\
+% $S_{Batterie}$: 160 kWh\\
+% $CO2^{Fahrzeug, BEV}_{Invest}$: 26700 kg\\
+% $CO2^{Fahrzeug, ICEV}_{Invest}$: 16200 kg\\
+% $c^{BEV}_{Maut}$: 0,0 €/km\\
+% $c^{ICEV}_{Maut}$: 0,137 €/km\\
+% $c^{BEV}_{Wartung}$: 0,1051 €/km\\
+% $c^{ICEV}_{Wartung}$: 0,1577 €/km\\
+% $v^{ICEV}$: 19 l/100km\\
+% $ls$: 6 Jahre\\
+
+% \textbf{Lieferwagen}\\
+% $S_{Batterie}$: 81 kWh\\
+% $CO2^{Fahrzeug, BEV}_{Invest}$: 13870 kg\\
+% $CO2^{Fahrzeug, ICEV}_{Invest}$: 8622 kg\\
+% $c^{BEV}_{Maut}$: 0,0 €/km\\
+% $c^{ICEV}_{Maut}$: 0,0 €/km\\
+% $c^{BEV}_{Wartung}$: 0,0275 €/km\\
+% $c^{ICEV}_{Wartung}$: 0,0339 €/km\\
+% $v^{ICEV}$: 15 l/100km\\
+% $ls$: 6 Jahre\\
 
 \section{Quellen}
 \bibliographystyle{plain}
