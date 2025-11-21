@@ -1,0 +1,380 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usepackage{pgfplots}
+\usepackage{pgfmath}
+\usetikzlibrary{patterns}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{calc}
+\usepackage{contour}
+\contourlength{0.6pt} % thickness of the outline
+\usepackage{siunitx}
+
+
+
+% Define plotting parameters
+% Figure
+\newcommand{\figheight}{23cm}
+\newcommand{\figwidth}{15cm}
+\newcommand{\figfracleft}{0.6}
+\pgfmathsetmacro{\figfracright}{1 - \figfracleft}
+
+% Grid Plots
+\newcommand{\gridplotsize}{2.2}
+\newcommand{\gridoffsety}{1.4}
+\newcommand{\gridedgelinewidth}{0.5pt}
+
+% Wedges
+\pgfmathsetmacro{\wedgearcrouter}{\gridplotsize / 2}
+\newcommand{\wedgearcwidth}{0.2}
+\newcommand{\wedgearcspace}{0.05}
+
+% Emission bars
+\newcommand{\emissionbarwidth}{0.5}
+\newcommand{\emissionbarspace}{0.2}
+\newcommand{\emissionbarlabelspace}{0.25}
+
+% Cost plot
+\newcommand{\costmarkersize}{0.75pt}
+\newcommand{\costlinewidth}{1.0pt}
+\newcommand{\costbarwidth}{10}
+\newcommand{\costbarxaxisoffset}{2}
+
+% Colors
+\newcommand{\convertRGB}[4]{
+  \pgfmathsetmacro{\r}{#1/255}      % Red
+  \pgfmathsetmacro{\g}{#2/255}      % Green
+  \pgfmathsetmacro{\b}{#3/255}      % Blue
+  \definecolor{#4}{rgb}{\r,\g,\b}   % Define the color
+}
+
+\convertRGB{0}{101}{189}{tumblue}
+\convertRGB{227}{114}{34}{tumorange}
+\convertRGB{162}{173}{0}{tumgreen}
+\convertRGB{51}{51}{51}{tumgrey80}
+
+
+% Commands
+\newcommand{\drawwedge}[5]{
+    % Parameters:
+    % #1 = center node
+    % #2 = inner radius (Rinner),
+    % #3 = outer radius (Router)
+    % #4 = fraction
+    % #5 = color
+
+    \pgfmathsetmacro{\angle}{#4*360}  % calculate angle based on given fraction
+    \fill[
+        color=#5,
+        draw=tumgrey80,
+        line width=\gridedgelinewidth
+    ] ($(#1) + (0, #3)$) % Start of outer arc
+    arc[start angle=90, end angle=90 - \angle, radius=#3] % Outer arc
+    -- ++({\wedgearcwidth * -1 * cos(90 - \angle)}, {\wedgearcwidth * -1 * sin(90 - \angle)}) % Connection to inner arc
+    arc[start angle=90 - \angle, end angle=90, radius=#2] % Inner arc
+    -- cycle; % Close the path
+}
+
+
+\newcommand{\gridsubplotindex}[2]{
+    % Parameters:
+    % #1 = center node of subplot
+    % #2 = subplot index
+
+    \node[
+        font=\scriptsize,
+        anchor=east
+    ] at ($(#1) + (-\gridplotsize/2 + 0.1, \gridplotsize/2)$) {#2};
+}
+
+
+\newcommand{\leftplotindex}[3]{
+    % Parameters:
+    % #1 = east node of group plot element
+    % #2 = plot group index
+    % #3 = subplot index
+    \node[anchor=east, font=\large] at ($(#1) + (-8.3, \gridplotsize / 2 + \gridoffsety + 0.3)$) {\textbf{#2}};
+    \node[anchor=east, font=\scriptsize] at ($(#1) + (-8.0, \gridplotsize / 2 + \gridoffsety)$) {#3};
+}
+
+
+\newcommand{\circleprogress}[6]{
+    % Parameters:
+    % #1 = center node
+    % #2 = subplot index
+    % #3 = caption
+    % #4 = value phase 0
+    % #5 = value phase 1
+    % #6 = value phase 2
+
+    % Draw wedges
+    \foreach \idx/\colorname/\value in {2/tumblue/#4, 1/tumorange/#5, 0/tumgreen/#6} {
+        \pgfmathsetmacro{\outerR}{\wedgearcrouter - \idx * (\wedgearcwidth + \wedgearcspace)}
+        \pgfmathsetmacro{\innerR}{\outerR - \wedgearcwidth}
+        \drawwedge{#1}{\innerR}{\outerR}{\value}{\colorname}
+    }
+
+    % Add values
+    \foreach \idx/\colorname/\value in {2/tumblue/#4, 1/tumorange/#5, 0/tumgreen/#6}{
+        \pgfmathsetmacro{\share}{round(\value * 100)}
+        \pgfmathsetmacro{\labelheight}{\wedgearcrouter - \idx * (\wedgearcwidth + \wedgearcspace) - \wedgearcwidth/2}
+        \node[
+            font=\scriptsize,
+            text=\colorname, % or do text=black and reduce contour line width to 0.25
+            anchor=east,
+            inner sep=0pt
+        ] at ($(#1) + (-0.01, \labelheight)$) {\contour{white}{\pgfmathprintnumber[precision=0]{\share}\%}};
+    }
+
+    % Add caption in center
+    \node[font=\scriptsize, anchor=center] at (#1) {#3};  % add label to center
+
+    \gridsubplotindex{#1}{#2}
+}
+
+
+\newcommand{\emissionbar}[6]{
+    % Parameters:
+    % #1 = center node
+    % #2 = subplot index
+    % #3 = caption
+    % #4 = value phase 0
+    % #5 = value phase 1
+    % #6 = value phase 2
+
+    % get maximum value to normalize bars
+    \pgfmathparse{max(#4,#5,#6)} \pgfmathresult
+    \pgfmathsetmacro{\maxvalue}{\pgfmathresult}
+
+    \pgfmathparse{\gridplotsize - 2 * \emissionbarlabelspace} \pgfmathresult
+    \pgfmathsetmacro{\maxheight}{\pgfmathresult}
+
+    \pgfmathparse{-0.5 * \maxheight} \pgfmathresult
+    \pgfmathsetmacro{\baryoffset}{\pgfmathresult}
+
+    \foreach \idx/\colorname/\value in {0/tumblue/#4, 1/tumorange/#5, 2/tumgreen/#6} {
+        \pgfmathsetmacro{\barx}{(\idx - 1) * (\emissionbarwidth + \emissionbarspace)}
+        \pgfmathsetmacro{\bary}{\maxheight * \value / \maxvalue}
+
+        \fill[
+            color=\colorname,
+            draw=tumgrey80,
+            line width=\gridedgelinewidth
+        ] ($(#1) + (\barx - \emissionbarwidth/2, \baryoffset)$) % Bottom left
+        rectangle
+        ($(#1) + (\barx + \emissionbarwidth/2, \bary + \baryoffset)$); % Top right
+
+        % Add value label above bar
+        \node[
+            font=\scriptsize,
+            text=black,
+            anchor=north,
+            inner sep=0pt
+        ] at ($(#1) + (\barx, \bary + \baryoffset + \emissionbarlabelspace)$) {\contour{white}{\pgfmathprintnumber[precision=0]{\value}\,t}};
+    }
+
+    % Add caption below bars
+    \node[
+        font=\scriptsize,
+        anchor=base  % get base of text
+    ] at ($(#1) + (0, \baryoffset - \emissionbarlabelspace)$) {#3};
+
+    % add subfigure label top left
+    \gridsubplotindex{#1}{#2}
+}
+
+
+\newcommand{\gridplots}[3]{
+    % Parameters
+    % #1 = East node of linebarplot
+    % #2 = Label
+    % #3 = table with data
+    \pgfplotstableread[col sep=comma]{#3}\tabletotal
+    \pgfplotstablegetelem{0}{gamma_sc}\of\tabletotal
+    \edef\valsca{\pgfplotsretval}
+    \pgfplotstablegetelem{1}{gamma_sc}\of\tabletotal
+    \edef\valscb{\pgfplotsretval}
+    \pgfplotstablegetelem{2}{gamma_sc}\of\tabletotal
+    \edef\valscc{\pgfplotsretval}
+
+    \pgfplotstablegetelem{0}{gamma_ss}\of\tabletotal
+    \edef\valssa{\pgfplotsretval}
+    \pgfplotstablegetelem{1}{gamma_ss}\of\tabletotal
+    \edef\valssb{\pgfplotsretval}
+    \pgfplotstablegetelem{2}{gamma_ss}\of\tabletotal
+    \edef\valssc{\pgfplotsretval}
+
+    \pgfplotstablegetelem{0}{gamma_ch}\of\tabletotal
+    \edef\valcha{\pgfplotsretval}
+    \pgfplotstablegetelem{1}{gamma_ch}\of\tabletotal
+    \edef\valchb{\pgfplotsretval}
+    \pgfplotstablegetelem{2}{gamma_ch}\of\tabletotal
+    \edef\valchc{\pgfplotsretval}
+
+    \pgfplotstablegetelem{0}{co2}\of\tabletotal
+    \edef\valcoa{\pgfplotsretval}
+    \pgfplotstablegetelem{1}{co2}\of\tabletotal
+    \edef\valcob{\pgfplotsretval}
+    \pgfplotstablegetelem{2}{co2}\of\tabletotal
+    \edef\valcoc{\pgfplotsretval}
+
+    \leftplotindex{#1}{#2}{i)};
+    \circleprogress{$(#1-|\figwidth * \figfracright * 0.25,0)+(0, \figwidth * \figfracright * 0.25)$}{ii)}{$\gamma_{sc}$}{\valsca}{\valscb}{\valscc}
+    \circleprogress{$(#1-|\figwidth * \figfracright * 0.75,0) + (0,\figwidth * \figfracright * 0.25)$}{iii)}{$\gamma_{ss}$}{\valssa}{\valssb}{\valssc}
+    \circleprogress{$(#1-|\figwidth * \figfracright * 0.25,0) + (0,-\figwidth * \figfracright * 0.25)$}{iv)}{$\gamma_{ch}$}{\valcha}{\valchb}{\valchc}
+    \emissionbar{$(#1-|\figwidth * \figfracright * 0.75,0) + (0,-\figwidth * \figfracright * 0.25)$}{v)}{CO$_2$ Emissions}{\valcoa}{\valcob}{\valcoc}
+}
+
+
+\newcommand{\plotbar}[3]{
+    % Parameters:
+    % #1 = i
+    % #2 = color
+    % #3 = table with data
+
+    \pgfplotstablegetelem{#1}{capex}\of#3
+    \edef\capexvalue{\pgfplotsretval}
+
+    \pgfplotstablegetelem{#1}{opex}\of#3
+    \edef\opexvalue{\pgfplotsretval}
+
+    \addplot [
+        ybar,
+        fill=#2,
+        draw=tumgrey80,
+        bar width=\costbarwidth,
+        postaction={
+            pattern color=tumgrey80,
+            pattern=north east lines
+        }
+    ] coordinates {(22 + #1 * \costbarxaxisoffset, \capexvalue + \opexvalue)};
+
+    \addplot [
+        ybar,
+        fill=#2,
+        bar width=\costbarwidth,
+        draw=tumgrey80,
+        postaction={
+            pattern color=tumgrey80,
+            pattern=north west lines
+        }
+    ] coordinates {(22 + #1 * \costbarxaxisoffset, \opexvalue)};
+
+    \addplot [
+        color=#2,
+        dashed,
+        line width=\costlinewidth / 2
+    ] coordinates{(20, \capexvalue + \opexvalue)
+                  (22 + #1 * 2 - 0.8, \capexvalue + \opexvalue)};
+}
+
+
+\newcommand{\createlinebarplot}[2]{
+    % Parameters:
+    % #1 = data file for line plot
+    % #2 = data file for bar plot
+
+    \pgfplotstableread[col sep=comma]{#1}\tablecumulative
+    \pgfplotstableread[col sep=comma]{#2}\tabletotal
+
+    \addplot[color=tumblue, mark=*, mark size=\costmarkersize, line width=\costlinewidth] table [x=year,y=cost1] from \tablecumulative;
+    \addplot[color=tumorange, mark=*, mark size=\costmarkersize, line width=\costlinewidth] table [x=year,y=cost2] from \tablecumulative;
+    \addplot[color=tumgreen, mark=*, mark size=\costmarkersize, line width=\costlinewidth] table [x=year,y=cost3] from \tablecumulative;
+
+    \plotbar{0}{tumblue}{\tabletotal}
+    \plotbar{1}{tumorange}{\tabletotal}
+    \plotbar{2}{tumgreen}{\tabletotal}
+}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+%    \draw[color=red] ($(\figwidth*\figfracright-0.5*\figwidth, 0.5) - (5.5,0)$) rectangle ++(11, 0.6);
+%    \draw[color=red] (0, 1.2) rectangle ++(\figwidth*\figfracright, -\figheight);
+%    \draw[color=red] (0, 1.2) rectangle ++(-\figwidth*\figfracleft, -\figheight);
+
+    \node (legendcenter) at ($(\figwidth*\figfracright-0.5*\figwidth, 0.8) + (1.11,0)$) {};
+    \newcommand{\legendvspace}{0.5}
+    \newcommand{\legendblockheight}{0.3}
+    \newcommand{\legendblockwidth}{0.75}
+    \newcommand{\legendlabelwidth}{3.65}
+    \pgfmathsetmacro{\legendelementwidth}{\legendblockwidth + \legendlabelwidth}
+
+    \node (legendcolumnleft) at ($(legendcenter) + (-1.5 * \legendelementwidth, 0)$) {};
+    \node (legendcolumncenter) at ($(legendcenter) + (-0.5 * \legendelementwidth, 0)$) {};
+    \node (legendcolumnright) at ($(legendcenter) + (0.5*\legendelementwidth, 0)$) {};
+
+    \newcommand{\legendlabel}[2]{
+        % Parameters:
+        % #1 = start node (west of element's block)
+        % #2 = label text
+        \node[
+            anchor=west
+        ] at ($(#1) + (\legendblockwidth, 0)$) {#2};
+    }
+
+    \fill[color=tumblue] ($(legendcolumnleft)+(0, \legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
+    \legendlabel{$(legendcolumnleft)+(0, \legendvspace/2)$}{Baseline}
+
+    \fill[color=tumgreen] ($(legendcolumnleft)+(0, -\legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
+    \legendlabel{$(legendcolumnleft)+(0, -\legendvspace/2)$}{Fleet Electrification \& Energy system expansion}
+
+    \fill[color=tumorange] ($(legendcolumncenter)+(0, \legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
+    \legendlabel{$(legendcolumncenter)+(0, \legendvspace/2)$}{Fleet Electrification}
+
+    \fill[
+        draw=tumgrey80,
+        pattern color=tumgrey80,
+        pattern=north east lines
+    ] ($(legendcolumnright)+(0, \legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
+    \legendlabel{$(legendcolumnright)+(0, \legendvspace/2)$}{OPEX}
+
+    \fill[
+        draw=tumgrey80,
+        pattern color=tumgrey80,
+        pattern=north west lines
+    ] ($(legendcolumnright)+(0, -\legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
+    \legendlabel{$(legendcolumnright)+(0, -\legendvspace/2)$}{CAPEX}
+
+
+    \begin{groupplot} [
+        group style={
+            group size=1 by 3,
+            horizontal sep=2cm,
+            vertical sep=0.2cm,
+            x descriptions at=edge bottom,
+        },
+        anchor=north east,
+        width=\figwidth * \figfracleft,
+        height=\figheight * 1/3,
+        x label style={at={(axis description cs:0.38,0)},anchor=north},
+        y label style={at={(axis description cs:0.075,.5)},anchor=south},
+        xlabel={Time in years},
+        ylabel={Cost in thousand €},
+        grid=major,
+        minor x tick num = 4,
+        xtick={0,5,10,15,20},
+        xticklabel style={rotate=0},
+        ymin=0, ymax=70,
+        xmin=-0.5, xmax=27.5,
+    ] at (\figwidth/2, 0)
+
+    \nextgroupplot
+    \createlinebarplot{A_data_time.csv}{A_data_total.csv}
+    \node at (current axis.east) (node1) {};
+    \nextgroupplot
+    \createlinebarplot{B_data_time.csv}{B_data_total.csv}
+    \node at (current axis.east) (node2) {};
+    \nextgroupplot
+    \createlinebarplot{C_data_time.csv}{C_data_total.csv}
+    \node at (current axis.east) (node3) {};
+
+    \end{groupplot}
+
+    \gridplots{node1}{A}{A_data_total.csv}
+    \gridplots{node2}{B}{B_data_total.csv}
+    \gridplots{node3}{C}{C_data_total.csv}
+
+
+\end{tikzpicture}
+
+\end{document}
