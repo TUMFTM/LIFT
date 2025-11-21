@@ -1,0 +1,138 @@
+\begin{longtable}{
+    @{}
+    >{\raggedright\arraybackslash}p{0.7cm}
+    >{\raggedright\arraybackslash}p{6cm}
+    >{\raggedleft\arraybackslash}p{1.6cm}
+    >{\raggedright\arraybackslash}p{1.6cm}
+    >{\raggedright\arraybackslash}p{1.4cm}
+    @{}
+}
+
+\caption{Nicht in der \ac{gui} anpassbare Parameter in \ac{lift}}\label{tab:parameters}\\
+
+\toprule
+\textbf{Symb.} & \textbf{Parameter} & \textbf{Wert} & \textbf{Einheit} & \textbf{Quelle} \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Symb.} & \textbf{Parameter} & \textbf{Wert} & \textbf{Einheit} & \textbf{Quelle} \\
+\midrule
+\endhead
+
+\multicolumn{5}{c}{\textbf{Simulation}} \\
+\midrule
+
+$t_0$ & Simulationsstartzeit (UTC+1) & 01.01.2023 00:00 & — & — \\
+$t_{\text{sim}}$ & Simulationszeitraum &  $365$ & \si{\day} & — \\
+$t_{\text{prj}}$ & Projektlaufzeit & $18$ & \si{\year} & Annahme\\
+$\Delta t$ & Zeitschrittlänge & $1$ & \si{\hour} &  — \\
+— & Geographische Breite Depot & $48.135$ & \si{\degree}N & — \\
+— & Geographische Länge Depot & $11.582$ & \si{\degree}E  & — \\
+$r$ & gemittelter Kapitalkostensatz & $4$ & \si{\percent\per\year} & \cite{FraunhoferISE_2024} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Netzanschluss (\ac{gcp})}} \\
+\midrule
+
+$c_{\text{cap}}$ & Investitionskosten & $200$ & \si{\euro\per\kilo\watt} & \cite{nelder_reducing_2019, li_centralized_2023,  wang_infrastructure_2023, bakker_strategic_2025} \\
+$e_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung & $0$ & \si{\kilogram\per\kilo\watt}  & Vernachl.\\
+$e_{\text{buy}}$ & \ac{co2}-Emissionen Strommix 2023 & $0.386$ & \si{\kilogram\per\kwh} & \cite{UBA_2025} \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & 30 & \si{\year} & Annahme \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{\ac{pv}-Anlage}} \\
+\midrule
+
+$c_{\text{cap}}$ & Investitionskosten inkl. Wechselrichter (2024) & $900$ & \si{\euro\per\kwp} & \cite{kost_levelized_2025} \\
+$e_{\text{cap}}$ & \ac{co2}-Emissionen (polykristallin, EU-Prod.) & $798$ & \si{\kilogram\per\kwp} & \textcolor{orange}{QE} \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $30$ & \si{\year} & Annahme \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Stationärspeicher (\ac{ess})}} \\
+\midrule
+
+$c_{\text{cap}}$ & Investitionskosten (Li-Ionen-System, 2024) & $450$ & \si{\euro\per\kwh} & \textcolor{orange}{QE} \\
+$e_{\text{cap}}$ & \ac{co2}-Emissionen Herstellung & $69$ & \si{\kilogram\per\kwh} & \textcolor{orange}{QE} \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $12$ & \si{\year} & Annahme \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{\acf{cis}}} \\
+\midrule
+
+$c_{\text{fix}}$ & Fixkosten Bau (Expansion Szenario) & $10000$ & \si{\euro} & \textcolor{orange}{true?} \\
+$e^{\text{AC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{ac} & $65.4$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{DC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{dc} & $6520$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $8$ & \si{\year} & Annahme \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Flotte – Alle Subflotten}} \\
+\midrule
+
+$e_{\text{fuel}}$ & CO$_2$-Emissionen Diesel inkl. Vorkette & $3.08$ & \si{\kilogram\per\liter} & \cite{Wietschel_2019} \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $6$ & \si{\year} & Annahme \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Flotte – Subflotte Schwere Lkw} ($\geq\SI{18}{\ton}$)} \\
+\midrule
+
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.132$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.185$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.269$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $80$ & \si{\percent} & — \\
+$b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
+$b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.27$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $84600$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $54000$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $480$ & \si{\kwh} & \textcolor{orange}{QE} \\
+\midrule
+
+\pagebreak
+
+\multicolumn{5}{c}{\textbf{Flotte – Subflotte Schwerer Verteilverkehr} (\SIrange{12}{18}{\ton})} \\
+\midrule
+
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.132$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev}& $0.185$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $70$ & \si{\percent} & — \\
+$b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
+$b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.23$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $59000$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $31200$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $400$ & \si{\kwh} & \textcolor{orange}{QE} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Flotte – Subflotte Urbaner Verteilverkehr} (\SIrange{7.5}{12}{\ton})} \\
+\midrule
+
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.105$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.158$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $40$ & \si{\percent} & — \\
+$b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
+$b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.19$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $26700$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $16200$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $160$ & \si{\kwh} & \textcolor{orange}{QE} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Flotte – Subflotte Lieferwagen} ($\leq \SI{3.5}{\ton}$)} \\
+\midrule
+
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.028$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.034$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$x_{\text{toll}}$ &  Anteil mautpflichtiger Strecken & $0$ & \si{\percent} & — \\
+$b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
+$b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.15$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $13870$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $8622$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $81$ & \si{\kwh} & \textcolor{orange}{QE} \\
+\midrule
+
+\end{longtable}

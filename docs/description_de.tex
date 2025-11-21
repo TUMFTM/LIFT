@@ -62,7 +62,11 @@
 }
 
 % siunitx
-\DeclareSIUnit{\peak}{\textsubscript{p}}
+\DeclareSIUnit{\kwp}{kW\textsubscript{p}}
+\DeclareSIUnit{\euro}{\text{\euro}}
+\DeclareSIUnit{\kwh}{kW\,h}
+\DeclareSIUnit{\year}{a}
+\DeclareSIUnit{\ton}{t}
 \sisetup{locale = DE}
 
 % acro
@@ -70,14 +74,19 @@
 \NewAcroCommand\acg{m}{\acropossessive\UseAcroTemplate{first}{#1}}
 \NewAcroCommand\acsg{m}{\acropossessive\UseAcroTemplate{short}{#1}}
 \NewAcroCommand\aclg{m}{\acropossessive\UseAcroTemplate{long}{#1}}
+\DeclareAcronym{ac}{short=AC, long=Wechselstrom,}
 \DeclareAcronym{bdew}{short=BDEW, long=Bundesverband der Energie- und Wasserwirtschaft, possessive-form=Bundesverbandes der Energie- und Wasserwirtschaft}
+\DeclareAcronym{bev}{short=BEV, long=batterieelektrisches Fahrzeug,}
 \DeclareAcronym{capex}{short=CAPEX, long=investitionsbedingte Kosten\,/\,Emissionen,}
 \DeclareAcronym{co2}{short=CO\textsubscript{2}, long=Kohlenstoffdioxid,}
+\DeclareAcronym{dc}{short=DC, long=Gleichstrom,}
 \DeclareAcronym{dem}{short=DEM, long=Standortverbrauch,}
+\DeclareAcronym{ema}{short=EMA, long=eigene Marktanalyse,}
 \DeclareAcronym{ess}{short=ESS, long=Stationärspeicher,}
 \DeclareAcronym{flt}{short=FLT, long=Flotte,}
 \DeclareAcronym{gcp}{short=GCP, long=Netzanschlusspunkt,}
 \DeclareAcronym{gui}{short=GUI, long=grafische Benutzeroberfläche,}
+\DeclareAcronym{icev}{short=ICEV, long=verbrennungsmotorisches Fahrzeug,}
 \DeclareAcronym{kpi}{short=KPI, long=Leistungskennzahl, plural-form=Leistungskennzahlen}
 \DeclareAcronym{lift}{short=LIFT, long=Logistics Infrastructure and Fleet Transformation,}
 \DeclareAcronym{cis}{short=CIS, long=Ladeinfrastruktur,}
@@ -381,203 +390,15 @@ Aufgrund diskontinuierlicher \ac{capex} können bei manchen Parameterkonstellati
 \section{Parameter und Standardwerte}
 \label{sec:parameters}
 
-Alle in \ac{lift} verwendeten Parameter sowie deren Standardwerte und Quellen sind in der folgenden \autoref{tab:parameters} zusammengefasst.
-Parameter ohne angegebenen GUI-Standardwert können in der Benutzeroberfläche gewählt werden.
+Alle in \ac{lift} verwendeten und nicht in der \ac{gui} verwendeten Parameter bzw. quantitativen Annahmen sowie deren Werte und Quellen sind in \autoref{tab:parameters} zusammengefasst.
 
 \begin{scriptsize}
-
-\begin{longtable}{
-    @{}l
-    >{\raggedright\arraybackslash}p{2.6cm}
-    >{\raggedright\arraybackslash}p{1.9cm}
-    >{\raggedright\arraybackslash}p{2.1cm}
-    >{\raggedright\arraybackslash}p{5cm}
-    >{\raggedright\arraybackslash}p{2.5cm}
-    @{}
-}
-
-\caption{Parameter von \ac{lift} – Teil 1: Simulation bis Stationärspeicher}\label{tab:parameters1}\\
-
-\toprule
-\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{GUI-Standardwert} & \textbf{Beschreibung} & \textbf{Quelle} \\
-\midrule
-\endfirsthead
-
-\toprule
-\textbf{Formelz.} & \textbf{Parameter} & \textbf{Einheit} & \textbf{GUI-Standardwert} & \textbf{Beschreibung} & \textbf{Quelle} \\
-\midrule
-\endhead
-
-\multicolumn{6}{c}{\textbf{Simulation und allgemeine Einstellungen}} \\
-\midrule
-
-$t_{\text{sim}}^{\text{start}}$ & Simulationsstart & — & 01.01.2023 00:00 (UTC+1) & Startzeitpunkt der Simulation & — \\
-$t_{\text{sim}}$ / $t_{\text{sim,y}}$ & Simulationsdauer & Tage / Jahre & 365 / 1 & Länge des simulierten Zeitraums & — \\
-$\Delta t$ & Zeitschrittaufteilung & h & 1 & Zeitschrittweite der Simulation & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Wirtschaftlichkeit und Rahmenbedingungen}} \\
-\midrule
-
-$r$ & Kapitalkostensatz & \% p.\,a. & 4 & Diskontierungszins & \cite{FraunhoferISE_2024} \\
-$t_{\text{prj}}$ & Projektlaufzeit & Jahre & 18 & Betrachtungszeitraum Amortisation & Annahme\\
-$c_{\text{Diesel}}$ & Dieselpreis & €/l & 1,56 & Kraftstoffkosten Verbrenner & \cite{P3_Group_2025} \\
-$c_{\text{pub}}$ & Öffentliche Ladekosten & €/kWh & 0,55 & Kosten außerhalb Depot & \cite{E.ON_2025} \\
-$c^{\text{GCP}}_{\text{peak}}$ & Leistungspreis & €/(kW·a) & 150 & Jährlicher Leistungspreis & \cite{Industriestrom_2025} \\
-$c^{\text{GCP}}_{\text{buy}}$ & Strombezugspreis & €/kWh & 0,20 & Arbeitspreis Bezug & \cite{P3_Group_2025} \\
-$c^{\text{GCP}}_{\text{sell}}$ & Einspeisevergütung & €/kWh & 0,06 & Vergütung eingespeiste PV-Energie & \cite{Bundesnetzagentur_2025} \\
-$e^{\text{GCP}}_{\text{buy}}$ & CO$_2$-Faktor Strommix & kg/kWh & 0,400 & Deutscher Strommix 2023 & UBA 2024 \\
-$e_{\text{Diesel}}$ & CO$_2$-Faktor Diesel & kg/l & 3,08 & Tank-to-Wheel inkl. Vorkette & \cite{Wietschel_2019} \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Netzanschluss (\ac{gcp})}} \\
-\midrule
-
-$c^{\text{GCP}}_{\text{Invest}}$ & Investitionskosten & €/kW & 200 & Netzanschlussverstärkung & Annahme \\
-$e^{\text{GCP}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kW & 0,0 & Vernachlässigt & — \\
-$ls^{\text{GCP}}$ & Lebensdauer & Jahre & 18 & Technische Nutzungsdauer & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{PV-Anlage}} \\
-\midrule
-
-$c^{\text{PV}}_{\text{Invest}}$ & Investitionskosten & €/kWp & 900 & Komplettanlage inkl. WR (2024) & Quelle einfügen \\
-$e^{\text{PV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kWp & 798 & Polykristallin, europ. Produktion & Quelle einfügen \\
-$ls^{\text{PV}}$ & Lebensdauer & Jahre & 30 & Typische Garantiezeit & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Stationärspeicher (\ac{ess})}} \\
-\midrule
-
-$c^{\text{ESS}}_{\text{Invest}}$ & Investitionskosten & €/kWh & 450 & Li-Ionen-Systempreis 2024 & Quelle einfügen \\
-$e^{\text{ESS}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/kWh & 69 & Aktueller Durchschnitt & Quelle einfügen \\
-$ls^{\text{ESS}}$ & Lebensdauer & Jahre & 12 & Kalender- und Zyklenalterung & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Ladeinfrastruktur (\ac{cis})}} \\
-\midrule
-
-$c^{\text{AC}}_{\text{Invest}}$ & AC-Ladepunkt (22 kW) & €/Stück & 2\,500 & Wallbox inkl. Installation & eigene Marktanalyse \\
-$e^{\text{AC}}_{\text{Invest}}$ & CO$_2$-Fußabdruck AC & kg/Stück & 65,4 & & Quelle einfügen \\
-$c^{\text{DC}}_{\text{Invest}}$ & DC-Ladepunkt (150 kW) & €/Stück & 45\,000 & Schnelllader inkl. Installation & eigene Marktanalyse \\
-$e^{\text{DC}}_{\text{Invest}}$ & CO$_2$-Fußabdruck DC & kg/Stück & 6\,520 & & Quelle einfügen \\
-$ls^{\text{AC/DC}}$ & Lebensdauer Ladepunkte & Jahre & 8 & & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Flotte – Schwere Lkw (> 18 t)}} \\
-\midrule
-
-$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 480 & Typische Kapazität & Quelle einfügen \\
-$e^{\text{BEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck BEV & kg/Fzg. & 84\,600 & & Quelle einfügen \\
-$e^{\text{ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck ICEV & kg/Fzg. & 54\,000 & & Quelle einfügen \\
-$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,269 & BEV mautbefreit bis 2030 & Quelle einfügen \\
-$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,132 / 0,185 & & Quelle einfügen \\
-$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 27 & & Quelle einfügen \\
-$ls$ & Fahrzeuglebensdauer & Jahre & 6 & & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Flotte – Schwerer Verteilverkehr (12–18 t)}} \\
-\midrule
-
-$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 400 & & Quelle einfügen \\
-$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 59\,000 / 31\,200 & & Quelle einfügen \\
-$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,242 & & Quelle einfügen \\
-$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,132 / 0,185 & & Quelle einfügen \\
-$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 23 & & Quelle einfügen \\
-$ls$ & Lebensdauer & Jahre & 6 & & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Flotte – Urbaner Verteilverkehr (7,5–12 t)}} \\
-\midrule
-
-$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 160 & & Quelle einfügen \\
-$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 26\,700 / 16\,200 & & Quelle einfügen \\
-$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,137 & & Quelle einfügen \\
-$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,105 / 0,158 & & Quelle einfügen \\
-$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 19 & & Quelle einfügen \\
-$ls$ & Lebensdauer & Jahre & 6 & & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Flotte – Lieferwagen (< 3,5 t)}} \\
-\midrule
-
-$S_{\text{Batt}}$ & Batteriekapazität BEV & kWh & 81 & & Quelle einfügen \\
-$e^{\text{BEV/ICEV}}_{\text{Invest}}$ & CO$_2$-Fußabdruck & kg/Fzg. & 13\,870 / 8\,622 & & Quelle einfügen \\
-$c_{\text{Maut}}^{\text{BEV/ICEV}}$ & Mautkosten & €/km & 0,000 / 0,000 & Mautbefreit & Quelle einfügen \\
-$c_{\text{Wartung}}^{\text{BEV/ICEV}}$ & Wartungskosten & €/km & 0,028 / 0,034 & & Quelle einfügen \\
-$v^{\text{ICEV}}$ & Dieselverbrauch & l/100 km & 15 & & Quelle einfügen \\
-$ls$ & Fahrzeuglebensdauer & Jahre & 6 & & Quelle einfügen \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Standort}} \\
-\midrule
-
-— & Koordinaten (Breite) & ° & 48,1351 & Geografische Breite des Depots & — \\
-— & Koordinaten (Länge) & ° & 11,5820 & Geografische Länge des Depots & — \\
-— & Standardlastprofil & — & G0 & \ac{bdew}-Lastprofil für Standortverbrauch & — \\
-$W^{\text{DEM}}_{\text{yrl}}$ & Jahresverbrauch Standort & MWh/a & 50 & Energieverbrauch Gebäude/Infrastruktur & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Energiesystem – Bestand/Erweiterung}} \\
-\midrule
-
-$S^{\text{GCP}}_{\text{pre}}$ & Netzanschluss Bestand & kW & 200 & Vorhandene Netzanschlusskapazität & — \\
-$S^{\text{GCP}}_{\text{exp}}$ & Netzanschluss Erweiterung & kW & 0 & Zusätzliche Netzanschlusskapazität & — \\
-$S^{\text{PV}}_{\text{pre}}$ & PV Bestand & kWp & 10 & Vorhandene \ac{pv}-Leistung & — \\
-$S^{\text{PV}}_{\text{exp}}$ & PV Erweiterung & kWp & 40 & Zusätzliche \ac{pv}-Leistung & — \\
-$S^{\text{ESS}}_{\text{pre}}$ & ESS Bestand & kWh & 5 & Vorhandene Speicherkapazität & — \\
-$S^{\text{ESS}}_{\text{exp}}$ & ESS Erweiterung & kWh & 15 & Zusätzliche Speicherkapazität & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Wirtschaftlichkeit – GUI-Einstellungen}} \\
-\midrule
-
-$c_{\text{fix}}$ & Fixkosten Bau & € & 10\,000 & Einmalige Baukosten (nur Expansion) & — \\
-$r$ & Kapitalkostensatz & \% p.\,a. & 5,0 & Diskontierungszins (GUI-Standard) & — \\
-$c^{\text{GCP}}_{\text{buy}}$ & Strombezugspreis & €/kWh & 0,23 & Arbeitspreis Bezug (GUI-Standard) & — \\
-$c^{\text{GCP}}_{\text{sell}}$ & Einspeisevergütung & €/kWh & 0,06 & Vergütung eingespeiste PV-Energie (GUI-Standard) & — \\
-$c^{\text{GCP}}_{\text{peak}}$ & Leistungspreis & €/(kW·a) & 150 & Jährlicher Leistungspreis (GUI-Standard) & — \\
-$c_{\text{pub}}$ & Öffentliche Ladekosten & €/kWh & 0,49 & Kosten außerhalb Depot (GUI-Standard) & — \\
-$c_{\text{Diesel}}$ & Dieselpreis & €/l & 1,56 & Kraftstoffkosten Verbrenner (GUI-Standard) & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Flotte – GUI-Einstellungen (pro Subflotte)}} \\
-\midrule
-
-$n_{\text{total}}$ & Gesamtanzahl Fahrzeuge & — & 0 & Anzahl Fahrzeuge pro Subflotte & — \\
-$n^{\text{BEV}}_{\text{pre}}$ & Anzahl BEV Bestand & — & 0 & Vorhandene batterieelektrische Fahrzeuge & — \\
-$n^{\text{BEV}}_{\text{exp}}$ & Anzahl BEV Erweiterung & — & 0 & Zusätzliche BEV im Expansion-Szenario & — \\
-— & Ladegerättyp & — & AC/DC & Zuordnung zu AC- oder DC-Ladepunkt & — \\
-$P^{\text{max}}_{\text{chg}}$ & Maximale Ladeleistung Fahrzeug & kW & max. & Maximale Ladeleistung je Fahrzeug & — \\
-$c^{\text{BEV}}_{\text{Invest}}$ & Investitionskosten BEV & €/Fzg. & siehe Tab.~\ref{tab:parameters2} & Fahrzeugkosten BEV (je Subflotte) & — \\
-$c^{\text{ICEV}}_{\text{Invest}}$ & Investitionskosten ICEV & €/Fzg. & siehe Tab.~\ref{tab:parameters2} & Fahrzeugkosten ICEV (je Subflotte) & — \\
-$x_{\text{toll}}$ & Mautanteil & \% & hlt: 80; hst: 70; ust: 40; usv: 0 & Anteil mautpflichtiger Strecken (je Subflotte) & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Ladeinfrastruktur – GUI-Einstellungen}} \\
-\midrule
-
-$n^{\text{AC}}_{\text{pre}}$ & Anzahl AC-Ladepunkte Bestand & — & 0 & Vorhandene AC-Ladepunkte & — \\
-$n^{\text{AC}}_{\text{exp}}$ & Anzahl AC-Ladepunkte Erweiterung & — & 0 & Zusätzliche AC-Ladepunkte & — \\
-$n^{\text{DC}}_{\text{pre}}$ & Anzahl DC-Ladepunkte Bestand & — & 0 & Vorhandene DC-Ladepunkte & — \\
-$n^{\text{DC}}_{\text{exp}}$ & Anzahl DC-Ladepunkte Erweiterung & — & 0 & Zusätzliche DC-Ladepunkte & — \\
-$P^{\text{max}}_{\text{AC}}$ & Maximale Leistung AC-Ladepunkt & kW & 11 & Standardleistung AC-Ladepunkt & — \\
-$P^{\text{max}}_{\text{DC}}$ & Maximale Leistung DC-Ladepunkt & kW & 150 & Standardleistung DC-Ladepunkt & — \\
-$c^{\text{AC}}_{\text{Invest}}$ & Investitionskosten AC-Ladepunkt & €/Stück & 800 & Kosten je AC-Ladepunkt (GUI-Standard) & — \\
-$c^{\text{DC}}_{\text{Invest}}$ & Investitionskosten DC-Ladepunkt & €/Stück & 80\,000 & Kosten je DC-Ladepunkt (GUI-Standard) & — \\
-\midrule
-
-\multicolumn{6}{c}{\textbf{Lastmanagement}} \\
-\midrule
-
-— & Lastmanagement-Typ Baseline & — & dynamisch & Statisch oder dynamisch & — \\
-— & Lastmanagement-Typ Expansion & — & dynamisch & Statisch oder dynamisch & — \\
-$P^{\text{max}}_{\text{LM,BL}}$ & Maximale Ladeleistung Baseline & kW & — & Bei statischem Lastmanagement & — \\
-$P^{\text{max}}_{\text{LM,EXP}}$ & Maximale Ladeleistung Expansion & kW & — & Bei statischem Lastmanagement & — \\
-\bottomrule
-
-\end{longtable}
+\begin{center}
+\input{tab_params.tex}
+\end{center}
 \end{scriptsize}
+
+\todo[inline]{Tabelle hatte 2 unterschiedliche Preissätze (GCP, c_pub etc.) und 12 Jahre Batt-ls - prüfen!}
 
 \section{Quellen}
 \bibliographystyle{unsrtnat}
