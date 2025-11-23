@@ -222,7 +222,7 @@ Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.
 Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{sec:parameters}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
 Dies können entweder rein verbrennungsmotorisch oder batterieelektrisch angetriebene Fahrzeuge sein, hybride Mischformen sind nicht abgebildet.
 Das Mobilitätsprofil einer Subflotte beinhaltet Zeitreihen, in denen für jedes Fahrzeug die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
-Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:parameters}) vordefiniert und als Datei abgelegt.
+Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:parameters}) vordefiniert und als Datei abgelegt. \todo{taucht noch nicht in Quantitativen Annahmen auf}
 Jedes Fahrzeug ist nur mit der in der Subflotte definierten Ladepunktklasse kompatibel.
 Die tatsächlich maximale Ladeleistung eines Fahrzeugs entspricht dem Minimum aus in der Subflotte definierten Fahrzeugladeleistung und der in der assoziierten Ladepunktklasse definierten Leistung.
 Je nach Flottengröße und \ac{cis}-Konfiguration sind sowohl die Anzahl verfügbarer Ladepunkte als auch die aktuell zur Verfügung stehende Ladeleistung eine knappe Resource.
@@ -274,7 +274,6 @@ Die spezifischen Kostenwerte $c^{GCP}_\text{buy}$ und $c^{GCP}_\text{sell}$ werd
 Alle spezifischen Kostenwerte $c^{GCP}$ sind in der \ac{gui} anpassbar.
 Die ökologischen \ac{opex} beruhen hingegen ausschließlich auf dem Bezugsenergiedurchsatz, da eingespeiste Energie emissionsfrei verrechnet wird.
 Der zugehörige spezifische Emissionsfaktor $e^{GCP}_\text{buy}$ entspricht dem aktuellen Strommix und ist in der \ac{gui} nicht anpassbar.
-\todo[inline]{spezifischen Emissionswert in GUI auf Strommix anpassen und Quelle referenziern}
 
 \begin{subequations}
     \label{eq:opex_gcp}
@@ -341,7 +340,7 @@ Es wird angenommen, dass jedes Projektjahr $y \in \{x \in \mathbb{N}_0 \mid x < 
 
 In \ac{lift} werden technische sowie ökonomische und ökologische \acp{kpi} unterschieden.
 Erstere werden über den Simulationszeitraum auf Basis von Energieflüssen berechnet und dienen als Anhaltspunkt, ob sich die definierten Größen für \ac{gcp}, \ac{pv} und \ac{ess} sowie die gewählte Ladeinfrastruktur in einem für das System vorteilhaften Rahmen bewegen.
-Es sei darauf hingewiesen, dass die technischen \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten modelliert werden. \todo{check}
+Es sei darauf hingewiesen, dass die technischen \acp{kpi} stark an Aussagekraft einbüßen, sobald Wirkungsgrade und größere Dynamiken wie bidirektionales Laden und dynamische Netzbezugskosten modelliert werden.
 Dabei wird die lokal genutzte Energie $W^{cons}_\text{sim}$ gemäß \autoref{eq:energy_boundaries} als die in \ac{dem} und \ac{flt} aus dem Depot abgeflossene Energie definiert.
 Sinngemäß sind alle anderen Energieabflüsse, also das abgeregelte \ac{pv}-Energiepotential $W^{PV}_\text{curt,sim}$ und die am \ac{gcp} eingespeiste Energie $W^{GCP}_\text{sell}$ als extern genutzt zu werten.
 
@@ -387,7 +386,7 @@ Aufgrund diskontinuierlicher \ac{capex} können bei manchen Parameterkonstellati
 
 \newpage
 
-\section{Parameter und Standardwerte}
+\section{Quantitative Annahmen}
 \label{sec:parameters}
 
 Alle in \ac{lift} verwendeten und nicht in der \ac{gui} verwendeten Parameter bzw. quantitativen Annahmen sowie deren Werte und Quellen sind in \autoref{tab:parameters} zusammengefasst.
