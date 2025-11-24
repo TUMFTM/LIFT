@@ -60,7 +60,7 @@ $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $12$ & \si{\year} & Annahme \\
 \multicolumn{5}{c}{\textbf{\acf{cis}}} \\
 \midrule
 
-$c_{\text{fix}}$ & Fixkosten Bau (Expansion Szenario) & $10000$ & \si{\euro} & \textcolor{orange}{true?} \\
+$c_{\text{fix}}$ & Fixkosten Bau (Expansion Szenario) & $10000$ & \si{\euro} & Annahme \\
 $e^{\text{AC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{ac}-Ladepunkt & $65.4$ & \si{\kilogram} & \cite{wallbox_life_2021} \\
 $e^{\text{DC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{dc}-Ladepunkt & $6520$ & \si{\kilogram} & \cite{wallbox_life_2021} \\
 $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $8$ & \si{\year} & \cite{haller_total_2024} \\
@@ -77,7 +77,7 @@ $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $6$ & \si{\year} & \cite{haller_total_
 \midrule
 
 $c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.132$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
-$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.185$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.185$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.269$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $80$ & \si{\percent} & Annahme \\
@@ -93,45 +93,45 @@ $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $480$ & \si{\kwh} & \cite{MAN_
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte Schwerer Verteilverkehr} (\SIrange{12}{18}{\ton})} \\
 \midrule
 
-$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.132$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
-$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev}& $0.185$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.132$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev}& $0.185$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $70$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.23$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
-$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $59000$ & \si{\kilogram} & \textcolor{orange}{QE} \\
-$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $31200$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $59000$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $31200$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $414$ & \si{\kwh} & \cite{Mercedes_eactros_2025} \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte Urbaner Verteilverkehr} (\SIrange{7.5}{12}{\ton})} \\
 \midrule
 
-$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.105$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
-$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.158$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.105$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.158$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $40$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.19$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
-$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $26700$ & \si{\kilogram} & \textcolor{orange}{QE} \\
-$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $16200$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $26700$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $16200$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $160$ & \si{\kwh} & \cite{MAN_etgl_2025} \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte Lieferwagen} ($\leq \SI{3.5}{\ton}$)} \\
 \midrule
 
-$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.028$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
-$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.034$ & \si{\euro\per\kilo\meter} & \textcolor{orange}{QE} \\
+$c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.028$ & \si{\euro\per\kilo\meter} & \cite{molliere_evans_2022} \\
+$c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.034$ & \si{\euro\per\kilo\meter} & \cite{molliere_evans_2022} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $x_{\text{toll}}$ &  Anteil mautpflichtiger Strecken & $0$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & \textcolor{orange}{Wert?} & \si{\kwh\per\kilo\meter} & \textcolor{orange}{QE} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.15$ & \si{\liter\per\kilo\meter} & \textcolor{orange}{QE} \\
-$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $13870$ & \si{\kilogram} & \textcolor{orange}{QE} \\
-$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $8622$ & \si{\kilogram} & \textcolor{orange}{QE} \\
+$e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $13870$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
+$e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $8622$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $81$ & \si{\kwh} & \cite{Mercedes_eSprinter_2025} \\
 \midrule
 
