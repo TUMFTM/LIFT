@@ -33,8 +33,8 @@ import lift.backend.simulation as sim
 
 @dataclass
 class ExistExpansionValue:
-    preexisting: float
-    expansion: float
+    preexisting: float | int
+    expansion: float | int
 
     @property
     def total(self) -> float:
@@ -49,7 +49,29 @@ class ComparisonInvestComponent:
     capacity: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10e3, expansion=50e3))
     capex_spec: float = 1.0
     capem_spec: float = 1.0
+    opex_spec: float = 1.0
+    opem_spec: float = 1.0
     ls: int = 18
+    period_eco: int = 18
+
+
+@dataclass
+class ComparisonGrid(ComparisonInvestComponent):
+    opex_spec_buy: float = 1.0
+    opex_spec_sell: float = 1.0
+    opex_spec_peak: float = 1.0
+    opem_spec: float = 1.0
+    ls: int = 18
+
+
+@dataclass
+class ComparisonPV(ComparisonInvestComponent):
+    pass
+
+
+@dataclass
+class ComparisonESS(ComparisonInvestComponent):
+    pass
 
 
 @dataclass
@@ -57,10 +79,6 @@ class ComparisonInputLocation:
     coordinates: sim.Coordinates = field(default_factory=sim.Coordinates)
     slp: str = "h0"
     consumption_yrl_wh: float = 10000000.0
-
-    grid: ComparisonInvestComponent = field(default_factory=lambda: ComparisonInvestComponent())
-    pv: ComparisonInvestComponent = field(default_factory=lambda: ComparisonInvestComponent())
-    ess: ComparisonInvestComponent = field(default_factory=lambda: ComparisonInvestComponent())
 
 
 @dataclass
@@ -86,12 +104,13 @@ class ComparisonInputSubfleet:
 
 @dataclass
 class ComparisonInputCharger:
+    period_eco: int = 18
+    ls: int = 18
     name: str = "ac"
     num: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0, expansion=4))
     pwr_max_w: float = 11e3
-    cost_per_charger_eur: float = 3000.0
-    capem: float = 1.0
-    ls: float = 18.0
+    capex_per_unit: float = 3000.0
+    capem_per_unit: float = 1.0
 
 
 @dataclass
@@ -121,13 +140,20 @@ class ComparisonInputEconomics:
 @dataclass
 class ComparisonInput:
     location: ComparisonInputLocation = field(default_factory=ComparisonInputLocation)
+
+    grid: ComparisonGrid = field(default_factory=lambda: ComparisonGrid())
+    pv: ComparisonPV = field(default_factory=lambda: ComparisonPV())
+    ess: ComparisonESS = field(default_factory=lambda: ComparisonESS())
+
     economics: ComparisonInputEconomics = field(default_factory=ComparisonInputEconomics)
+
     subfleets: dict[str, ComparisonInputSubfleet] = field(
         default_factory=lambda: {
             "hlt": ComparisonInputSubfleet(name="hlt"),
             "hst": ComparisonInputSubfleet(name="hst"),
         }
     )
+
     charging_infrastructure: ComparisonInputChargingInfrastructure = field(
         default_factory=lambda: ComparisonInputChargingInfrastructure()
     )

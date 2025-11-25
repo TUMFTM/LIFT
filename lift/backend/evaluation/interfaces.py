@@ -74,6 +74,8 @@ class PhaseInputInvestComponent(PhaseInputBase):
     capacity: float = 10e3
     capex_spec: float = 1.0
     capem_spec: float = 1.0
+    opex_spec: float = 1.0
+    opem_spec: float = 1.0
     ls: int = 18
 
     @classmethod
@@ -84,6 +86,8 @@ class PhaseInputInvestComponent(PhaseInputBase):
             capacity=comparison_input.capacity.get_value(phase),  # select phase
             capex_spec=comparison_input.capex_spec,
             capem_spec=comparison_input.capem_spec,
+            opex_spec=comparison_input.opex_spec,
+            opem_spec=comparison_input.opem_spec,
             ls=comparison_input.ls,
         )
 
@@ -146,13 +150,13 @@ class PhaseInputSubfleet(PhaseInputBase):
             capex_icev_eur=comparison_input.capex_icev_eur,
             toll_frac=comparison_input.toll_frac,
             ls=comparison_input.ls,
-            capem_bev=comparison_input.capem_bev,
-            capem_icev=comparison_input.capem_icev,
-            mntex_eur_km_bev=comparison_input.mntex_eur_km_bev,
-            mntex_eur_km_icev=comparison_input.mntex_eur_km_icev,
-            consumption_icev=comparison_input.consumption_icev,
-            toll_eur_per_km_bev=comparison_input.toll_eur_per_km_bev,
-            toll_eur_per_km_icev=comparison_input.toll_eur_per_km_icev,
+            capem_bev=comparison_input.capem_per_unit_bev,
+            capem_icev=comparison_input.capem_per_unit_icev,
+            mntex_eur_km_bev=comparison_input.mntex_spec_bev,
+            mntex_eur_km_icev=comparison_input.mntex_spec_icev,
+            consumption_icev=comparison_input.consumption_spec_icev,
+            toll_eur_per_km_bev=comparison_input.toll_spec_bev,
+            toll_eur_per_km_icev=comparison_input.toll_spec_icev,
         )
 
 
@@ -173,8 +177,8 @@ class PhaseInputCharger(PhaseInputBase):
             name=comparison_input.name,
             num=comparison_input.num.get_value(phase),
             pwr_max_w=comparison_input.pwr_max_w,
-            cost_per_charger_eur=comparison_input.cost_per_charger_eur,
-            capem=comparison_input.capem,
+            cost_per_charger_eur=comparison_input.capex_per_unit,
+            capem=comparison_input.capem_per_unit,
             ls=comparison_input.ls,
         )
 

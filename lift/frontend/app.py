@@ -30,6 +30,9 @@ from lift.backend.comparison.comparison import run_comparison
 
 from lift.backend.comparison.interfaces import (
     ComparisonInputLocation,
+    ComparisonGrid,
+    ComparisonPV,
+    ComparisonESS,
     ComparisonInvestComponent,
     ComparisonInputEconomics,
     ComparisonInputSubfleet,
@@ -177,27 +180,35 @@ def run_frontend():
                 coordinates=st.session_state.location,
                 slp=st.session_state.slp.lower(),
                 consumption_yrl_wh=st.session_state.consumption_yrl_wh * 1e6,
-                grid=ComparisonInvestComponent(
-                    capacity=ExistExpansionValue(
-                        preexisting=st.session_state.grid_preexisting * DEF_GRID.settings_preexisting.factor,
-                        expansion=st.session_state.grid_expansion * DEF_GRID.settings_expansion.factor,
-                    ),
-                    **DEF_GRID.input_dict,
+            ),
+            grid=ComparisonGrid(
+                capacity=ExistExpansionValue(
+                    preexisting=st.session_state.grid_preexisting * DEF_GRID.settings_preexisting.factor,
+                    expansion=st.session_state.grid_expansion * DEF_GRID.settings_expansion.factor,
                 ),
-                pv=ComparisonInvestComponent(
-                    capacity=ExistExpansionValue(
-                        preexisting=st.session_state.pv_preexisting * DEF_PV.settings_preexisting.factor,
-                        expansion=st.session_state.pv_expansion * DEF_PV.settings_expansion.factor,
-                    ),
-                    **DEF_PV.input_dict,
+                opex_spec_buy=st.session_state.eco_opex_spec_grid_buy
+                * DEF_ECONOMICS.settings_opex_spec_grid_buy.factor,
+                opex_spec_sell=st.session_state.eco_opex_spec_grid_sell
+                * DEF_ECONOMICS.settings_opex_spec_grid_sell.factor,
+                opex_spec_peak=st.session_state.eco_opex_spec_grid_peak
+                * DEF_ECONOMICS.settings_opex_spec_grid_peak.factor,
+                **DEF_GRID.input_dict,
+                period_eco=PERIOD_ECO,
+            ),
+            pv=ComparisonPV(
+                capacity=ExistExpansionValue(
+                    preexisting=st.session_state.pv_preexisting * DEF_PV.settings_preexisting.factor,
+                    expansion=st.session_state.pv_expansion * DEF_PV.settings_expansion.factor,
                 ),
-                ess=ComparisonInvestComponent(
-                    capacity=ExistExpansionValue(
-                        preexisting=st.session_state.ess_preexisting * DEF_ESS.settings_preexisting.factor,
-                        expansion=st.session_state.ess_expansion * DEF_ESS.settings_expansion.factor,
-                    ),
-                    **DEF_ESS.input_dict,
+                **DEF_PV.input_dict,
+                period_eco=PERIOD_ECO,
+            ),
+            ess=ComparisonESS(
+                capacity=ExistExpansionValue(
+                    preexisting=st.session_state.ess_preexisting * DEF_ESS.settings_preexisting.factor,
+                    expansion=st.session_state.ess_expansion * DEF_ESS.settings_expansion.factor,
                 ),
+                **DEF_ESS.input_dict,
             ),
             economics=ComparisonInputEconomics(
                 period_sim=PERIOD_SIM,
@@ -253,7 +264,7 @@ def run_frontend():
                             expansion=st.session_state[f"chg_{k}_expansion"],
                         ),
                         pwr_max_w=st.session_state[f"chg_{k}_pwr"] * 1e3,
-                        cost_per_charger_eur=st.session_state[f"chg_{k}_cost"],
+                        capex_per_unit=st.session_state[f"chg_{k}_cost"],
                         **DEF_CHARGERS[k].input_dict,
                     )
                     for k in DEF_CHARGERS.keys()
