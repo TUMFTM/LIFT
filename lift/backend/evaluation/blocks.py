@@ -571,15 +571,14 @@ class ChargingInfrastructure(Aggregator):
 
 @dataclass
 class ScenarioSettings:
-    period_eco: int = (18,)
-    sim_start: pd.Timestamp = field(default_factory=lambda: pd.Timestamp("01-01-2023 00:00", tz="Europe/Berlin"))
-    sim_duration: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(days=365))
-    sim_freq: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(hours=1))
+    period_eco: int
+    wacc: float
+    sim_start: pd.Timestamp
+    sim_duration: pd.Timedelta
+    sim_freq: pd.Timedelta
 
-    latitude: float = 52.52
-    longitude: float = 13.4050
-
-    wacc: float = 0.05
+    latitude: float
+    longitude: float
 
     @classmethod
     def from_series_dict(cls, series: pd.Series) -> Self:
@@ -636,21 +635,14 @@ class Scenario(Aggregator):
 if __name__ == "__main__":
     # simple test
     from lift.backend.simulation.interfaces import SimResults
+    from time import time
 
+    start1 = time()
     df = pd.read_csv(Path("definition_transposed.csv"), index_col=0, header=[0, 1])
     series = df.loc["sc1", :]
+    start2 = time()
     scn = Scenario.from_series(series)
-
-    sim_res = SimResults(
-        energy_pv_pot_wh=1000,
-        energy_pv_curt_wh=100,
-        energy_grid_buy_wh=5000,
-        energy_grid_sell_wh=200,
-        pwr_grid_peak_w=3000,
-        energy_fleet_site_wh=4000,
-        energy_fleet_route_wh=1000,
-        energy_dem_site_wh=1000,
-        dist_km={"subfleet": {"hlt": 10000.0, "hst": 234.0}},
-    )
+    print(f"Scenario loaded in {time() - start1:.3f} s")
+    print(f"Scenario object initialized in {time() - start2:.3f} s")
 
     pass
