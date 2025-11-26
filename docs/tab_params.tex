@@ -27,9 +27,9 @@ $t_0$ & Simulationsstartzeit (UTC+1) & 01.01.2023 00:00 & — & — \\
 $t_{\text{sim}}$ & Simulationszeitraum &  $365$ & \si{\day} & — \\
 $t_{\text{prj}}$ & Projektlaufzeit & $18$ & \si{\year} & Annahme\\
 $\Delta t$ & Zeitschrittlänge & $1$ & \si{\hour} &  — \\
-— & Geographische Breite Depot & $48.135$ & \si{\degree}N & — \\
-— & Geographische Länge Depot & $11.582$ & \si{\degree}E  & — \\
-$r$ & gemittelter Kapitalkostensatz & $4$ & \si{\percent\per\year} & \cite{FraunhoferISE_2024} \\
+%— & Geographische Breite Depot & $48.135$ & \si{\degree}N & — \\
+%— & Geographische Länge Depot & $11.582$ & \si{\degree}E  & — \\
+%$r$ & gemittelter Kapitalkostensatz & $4$ & \si{\percent\per\year} & \cite{FraunhoferISE_2024} \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Netzanschluss (\ac{gcp})}} \\
@@ -38,7 +38,7 @@ $r$ & gemittelter Kapitalkostensatz & $4$ & \si{\percent\per\year} & \cite{Fraun
 $c_{\text{cap}}$ & Investitionskosten & $200$ & \si{\euro\per\kilo\watt} & \cite{nelder_reducing_2019, li_centralized_2023,  wang_infrastructure_2023, bakker_strategic_2025} \\
 $e_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung & $0$ & \si{\kilogram\per\kilo\watt}  & Vernachl.\\
 $e_{\text{buy}}$ & \ac{co2}-Emissionen Strommix 2023 & $0.386$ & \si{\kilogram\per\kwh} & \cite{UBA_2025} \\
-$ls$ & Abschreibungs-\,/\,Nutzungsdauer & 30 & \si{\year} & Annahme \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & 18 & \si{\year} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{\ac{pv}-Anlage}} \\
@@ -46,7 +46,7 @@ $ls$ & Abschreibungs-\,/\,Nutzungsdauer & 30 & \si{\year} & Annahme \\
 
 $c_{\text{cap}}$ & Investitionskosten inkl. Wechselrichter (2024) & $900$ & \si{\euro\per\kwp} & \cite{kost_levelized_2025} \\
 $e_{\text{cap}}$ & \ac{co2}-Emissionen (polykristallin, EU-Prod.) & $798$ & \si{\kilogram\per\kwp} & \cite{yildiz_investigation_2020} \\
-$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $30$ & \si{\year} & Annahme \\
+$ls$ & Abschreibungs-\,/\,Nutzungsdauer & $18$ & \si{\year} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Stationärspeicher (\ac{ess})}} \\
@@ -60,7 +60,7 @@ $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $12$ & \si{\year} & Annahme \\
 \multicolumn{5}{c}{\textbf{\acf{cis}}} \\
 \midrule
 
-$c_{\text{fix}}$ & Fixkosten Bau (Expansion Szenario) & $10000$ & \si{\euro} & Annahme \\
+%$c_{\text{fix}}$ & Fixkosten Bau (Expansion Szenario) & $10000$ & \si{\euro} & Annahme \\
 $e^{\text{AC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{ac}-Ladepunkt & $65.4$ & \si{\kilogram} & \cite{wallbox_life_2021} \\
 $e^{\text{DC}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{dc}-Ladepunkt & $6520$ & \si{\kilogram} & \cite{wallbox_life_2021} \\
 $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $8$ & \si{\year} & \cite{haller_total_2024} \\
@@ -81,7 +81,7 @@ $c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.132$ & \si{\euro\p
 $c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.185$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.269$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
-$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $80$ & \si{\percent} & Annahme \\
+%$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $80$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & $1.1$ & \si{\kwh\per\kilo\meter} & \cite{Speth_2024} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.27$ & \si{\liter\per\kilo\meter} & \cite{Stuetz_2025} \\
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $84600$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
@@ -99,7 +99,7 @@ $c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.132$ & \si{\euro\pe
 $c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev}& $0.185$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten (befreit) \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
-$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $70$ & \si{\percent} & Annahme \\
+%$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $70$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & $1.1$ & \si{\kwh\per\kilo\meter} & \cite{Speth_2024} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.25$ & \si{\liter\per\kilo\meter} & \cite{FleetGO_2025} \\
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $59000$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
@@ -115,7 +115,7 @@ $c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev} & $0.105$ & \si{\euro\p
 $c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.158$ & \si{\euro\per\kilo\meter} & \cite{Basma_2023} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0.242$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
-$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $40$ & \si{\percent} & Annahme \\
+%$x_{\text{toll}}$ & Anteil mautpflichtiger Strecken & $40$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & $0.6$ & \si{\kwh\per\kilo\meter} & \cite{Basma_2023} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.19$ & \si{\liter\per\kilo\meter} & \cite{FleetGO_2025} \\
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $26700$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
@@ -131,7 +131,7 @@ $c_{\text{mnt}}^{\text{BEV}}$ & Wartungskosten \acs{bev}& $0.028$ & \si{\euro\pe
 $c_{\text{mnt}}^{\text{ICEV}}$ & Wartungskosten \acs{icev} & $0.034$ & \si{\euro\per\kilo\meter} & \cite{molliere_evans_2022} \\
 $c_{\text{toll}}^{\text{BEV}}$ & Mautkosten \acs{bev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
 $c_{\text{toll}}^{\text{ICEV}}$ & Mautkosten \acs{icev} & $0$ & \si{\euro\per\kilo\meter} & \cite{bundesministeriumfurverkehr_gebuhrenstruktur_2024} \\
-$x_{\text{toll}}$ &  Anteil mautpflichtiger Strecken & $0$ & \si{\percent} & Annahme \\
+%$x_{\text{toll}}$ &  Anteil mautpflichtiger Strecken & $0$ & \si{\percent} & Annahme \\
 $b^{\text{BEV}}$ & Energieumsatz \acs{bev} & $0.3$ & \si{\kwh\per\kilo\meter} & \cite{molliere_evans_2022} \\
 $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.11$ & \si{\liter\per\kilo\meter} & \cite{FleetGO_2025} \\
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $13870$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
