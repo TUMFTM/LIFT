@@ -2,22 +2,239 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import ast
 from dataclasses import dataclass, field
+import importlib.resources as resources
 from pathlib import Path
+import re
 from typing import Self
 
+import demandlib
 import numpy as np
 import pandas as pd
+import pvlib
+import pytz
+
 
 from lift.backend.comparison.interfaces import ComparisonGrid, ComparisonInvestComponent, ComparisonInputCharger
+from lift.backend.simulation.interfaces import Coordinates
+from lift.backend.utils import safe_cache_data
 
 
+@safe_cache_data
+def _get_dti(start, duration, freq):
+    return pd.date_range(start=start, end=start + duration, freq=freq, inclusive="left")
+
+
+@safe_cache_data
+def _get_dti_extended(start, duration, freq):
+    return pd.date_range(start=start, end=start + duration, freq=freq, inclusive="both")
+
+
+@safe_cache_data
 def _get_block_series(series: pd.Series, block_names: str | list) -> pd.Series:
     if isinstance(block_names, str):
         block_names = [block_names]
     filtered = series[series.index.get_level_values("block").isin(block_names)].droplevel("block")
     return filtered
 
-    # return series[series.index.get_level_values('block') == block_names].droplevel("block")
+
+def _apply_timezone_preserve_local_time(
+    ts: pd.Series | pd.DataFrame, local_tz: pytz.BaseTzInfo
+) -> pd.Series | pd.DataFrame:
+    if ts.index.tz:
+        print("already TZ aware")
+        ts.tz_convert(local_tz)
+        return ts
+    ts = pd.concat(
+        [
+            ts.tz_localize(None).tz_localize(tz=local_tz, nonexistent="shift_forward", ambiguous=use_dst)
+            for use_dst in [
+                False,
+                True,
+            ]  # make sure to repeat values in the "duplicated" hour caused by shifting from DST
+        ],
+        axis=0,
+    )
+
+    # The previous operation generates duplicates at two steps:
+    #  (1) nonexistent="shift_forward" -> when shifting to DST (in european spring) all timesteps 02:00 <= t < 03:00
+    #       in previous local time are now indexed as 03:00
+    #  (2) use pd.concat() for the two timeseries
+    # remove all duplicate index entries and keep only last (relevant for (1), irrelevant for (2)) value
+    return ts.loc[~ts.index.duplicated(keep="last")].sort_index()
+
+
+def _resample_ts(ts: pd.Series, dti: pd.DatetimeIndex, method: str = "numeric_mean"):
+    """
+    Resample a time series to a specified frequency and forward fill missing values.
+
+    This function resamples the input time series (`ts`) based on the frequency defined in
+    `dti` (a pandas `DatetimeIndex`) and applies forward filling to handle any missing values
+    during resampling. An additional time step is added to the time series to ensure proper resampling.
+
+    Args:
+        ts (pd.Series): A pandas Series containing the time series data, with a DatetimeIndex.
+        dti (pd.DatetimeIndex): A pandas DatetimeIndex that defines the desired resampling frequency.
+        method (str, optional): The resampling method to use. Supported values are:
+            `numeric_mean` (default): Resample by taking the mean over each interval and forward-fill missing values.
+            `numeric_sum`: Resample by taking the sum over each interval and forward-fill missing values.
+            `numeric_first`: Resample by taking the first non-zero value in each interval; zeros are treated as missing.
+            `bool_all`: Resample using the min value of the interval (all elements have to be True).
+            `bool_any`: Resample using the max value of the interval (at least one element has to be True).
+
+    Returns:
+        pd.Series: A resampled and forward-filled time series, with the same `DatetimeIndex` as `dti`.
+    """
+
+    freq_old = ts.index[1] - ts.index[0]
+    freq_new = pd.Timedelta(dti.freq)
+
+    if (freq_old > freq_new and freq_old.total_seconds() % freq_new.total_seconds() != 0) or (
+        freq_old < freq_new and freq_new.total_seconds() % freq_old.total_seconds() != 0
+    ):
+        raise ValueError(
+            "Cannot resample because the current and target frequencies are not compatible. "
+            "Resampling is only supported when one frequency is an integer multiple of the other. "
+            f"(current: {freq_old}, target: {freq_new})"
+        )
+
+    method_map = {
+        "numeric_mean": lambda x: x.resample(freq_new).mean(),
+        "numeric_sum": lambda x: x.resample(freq_new).sum(),
+        "numeric_first": lambda x: x.mask(ts == 0).resample(freq_new).first().fillna(0.0),
+        "bool_all": lambda x: x.resample(freq_new).min(),
+        "bool_any": lambda x: x.resample(freq_new).max(),
+    }
+
+    if method not in method_map:
+        raise NotImplementedError(f"Method {method} is not implemented.")
+
+    # Add one additional entry to the timeseries to allow for proper resampling
+    ts = ts.reindex(ts.index.union(ts.index + freq_old))
+
+    return ts.pipe(method_map[method]).reindex(dti).ffill().bfill()
+
+
+@safe_cache_data
+def _get_log_pv(
+    coordinates: Coordinates,
+    start: pd.Timestamp,
+    duration: pd.Timedelta,
+    freq: pd.Timedelta,
+) -> np.typing.NDArray[np.float64]:
+    dti = _get_dti(start, duration, freq)
+
+    data, *_ = pvlib.iotools.get_pvgis_hourly(
+        latitude=coordinates.latitude,
+        longitude=coordinates.longitude,
+        start=int(dti.year.min()),
+        end=int(dti.year.max()),
+        raddatabase="PVGIS-SARAH3",
+        outputformat="json",
+        pvcalculation=True,
+        peakpower=1,  # convert kWp to Wp
+        pvtechchoice="crystSi",
+        mountingplace="free",
+        loss=0,
+        trackingtype=0,  # fixed mount
+        optimalangles=True,
+        url="https://re.jrc.ec.europa.eu/api/v5_3/",
+        map_variables=True,
+        timeout=30,  # default value
+    )
+    data = data["P"] / 1000
+    data.index = data.index.round("h")
+    data = data.tz_convert("Europe/Berlin")
+    data = _resample_ts(ts=data, dti=dti)
+    return data.values
+
+
+@safe_cache_data
+def _get_log_dem(
+    slp: str,
+    consumption_yrl_wh: float,
+    start: pd.Timestamp,
+    duration: pd.Timedelta,
+    freq: pd.Timedelta,
+) -> np.typing.NDArray[np.float64]:
+    dti = _get_dti(start, duration, freq)
+
+    if slp not in ["h0", "h0_dyn", "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "l0", "l1", "l2"]:
+        raise ValueError(f'Specified SLP "{slp}" is not valid. SLP has to be defined as lower case.')
+
+    # get power profile in 15 minute timesteps
+    ts = pd.concat(
+        [
+            (demandlib.bdew.ElecSlp(year=year).get_scaled_power_profiles({slp: consumption_yrl_wh}))
+            for year in dti.year.unique()
+        ]
+    )[slp]
+
+    # Time index ignores DST, but values adapt to DST -> apply new index with TZ information
+    ts.index = pd.date_range(
+        start=ts.index.min(), end=ts.index.max(), freq=ts.index.freq, inclusive="both", tz="Europe/Berlin"
+    )
+
+    return _resample_ts(ts=ts, dti=dti).values
+
+
+@safe_cache_data
+def _get_log_subfleet(
+    vehicle_type: str,
+    start: pd.Timestamp,
+    duration: pd.Timedelta,
+    freq: pd.Timedelta,
+) -> pd.DataFrame:
+    dti = _get_dti(start, duration, freq)
+
+    # Create a dtype map to explicitly assign dtypes to columns
+    with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
+        dtype_map = {}
+        for col in pd.read_csv(logfile, nrows=0, header=[0, 1]).columns:
+            suffix = col[1]
+            if suffix in {"atbase", "atac", "atdc"}:
+                dtype_map[col] = "boolean"
+            elif suffix in {"dist", "consumption", "dsoc"}:
+                dtype_map[col] = "float64"
+
+    with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
+        df = pd.read_csv(logfile, header=[0, 1], engine="c", low_memory=False, dtype=dtype_map)
+        df = (
+            df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True))
+            .drop(df.columns[0], axis=1)
+            .sort_index(
+                axis=1,
+                level=0,
+                key=lambda x: x.map(
+                    lambda s: int(m.group(1))
+                    # get the last continuous sequence of digits if possible
+                    if (m := re.search(r"(\d+)(?!.*\d)", s))
+                    else s
+                ),
+                sort_remaining=True,
+            )
+            .tz_convert("Europe/Berlin")
+        )
+
+        method_sampling = {
+            "atbase": "bool_all",
+            "atac": "bool_any",
+            "atdc": "bool_any",
+            "dsoc": "numeric_first",
+            "dist": "numeric_sum",
+            "consumption": "numeric_mean",
+        }
+
+        # Efficiently apply the resampling function to each column in the DataFrame
+        df = df.apply(
+            lambda col: _resample_ts(
+                ts=col,
+                dti=dti,
+                method=method_sampling[col.name[1]],
+            ),
+            axis=0,
+        )
+
+    return df.loc[dti, :]
 
 
 @dataclass
@@ -584,7 +801,7 @@ class ScenarioSettings:
     def from_series_dict(cls, series: pd.Series) -> Self:
         return cls(
             period_eco=series["period_eco"],
-            sim_start=pd.to_datetime(series["sim_start"], utc=True).tz_convert("Europe/Berlin"),
+            sim_start=pd.to_datetime(series["sim_start"]).tz_localize("Europe/Berlin"),
             sim_duration=pd.Timedelta(days=series["sim_duration"]),
             sim_freq=pd.Timedelta(hours=series["sim_freq"]),
             latitude=series["latitude"],
