@@ -240,11 +240,11 @@ def run_frontend():
                 pwr_max_w_baseline=np.inf
                 if st.session_state[f"load_mngmnt_baseline"]
                 != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                else st.session_state[f"load_mngmnt_slider_baseline"],
+                else st.session_state[f"load_mngmnt_slider_baseline"] * 1e3,
                 pwr_max_w_expansion=np.inf
                 if st.session_state[f"load_mngmnt_expansion"]
                 != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                else st.session_state[f"load_mngmnt_slider_expansion"],
+                else st.session_state[f"load_mngmnt_slider_expansion"] * 1e3,
                 chargers={
                     k: ComparisonInputCharger(
                         name=k,
