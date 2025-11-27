@@ -242,6 +242,14 @@ def _get_soc_min(max_charge_rate, dsoc, atbase):
     return np.clip(soc_min, 0.0, None)
 
 
+class GridPowerExceededError(Exception):
+    pass
+
+
+class SOCError(Exception):
+    pass
+
+
 @dataclass
 class EcoObject(ABC):
     period_eco: int
@@ -516,8 +524,9 @@ class Grid(ContinuousInvestBlock):
 
     def satisfy_demand(self, demand: float, idx: int) -> float:
         if demand > self.capacity + EPS:
-            # ToDo: GridError
-            raise ValueError(f"Grid demand {demand} W exceeds grid capacity {self.capacity} W in timestep {idx}.")
+            raise GridPowerExceededError(
+                f"Grid demand {demand} W exceeds grid capacity {self.capacity} W in timestep {idx}."
+            )
 
         if demand > 0:
             # buying from grid
@@ -618,7 +627,9 @@ class ESS(ContinuousInvestBlock):
             )
         self._soc -= p_ess * _td2h(self.sim_freq) / self.capacity
         if self._soc < (0 - EPS) or self._soc > (1 + EPS):
-            raise ValueError(f"SOC {self._soc} out of bounds after applying power {demand} W in timestep {idx}.")
+            raise SOCError(
+                f"SOC {self._soc} of block ESS out of bounds after applying power {demand} W in timestep {idx}."
+            )
 
         return demand - p_ess
 
@@ -661,21 +672,6 @@ class ChargerType(InvestBlock):
     p_max: float
     capex_per_unit: float
     capem_per_unit: float
-
-    @classmethod
-    def from_comparison_obj(
-        cls,
-        comparison_obj: ComparisonInputCharger,
-        phase: str,
-    ) -> Self:
-        return cls(
-            period_eco=comparison_obj.period_eco,
-            ls=comparison_obj.ls,
-            name=comparison_obj.name,
-            num=comparison_obj.num.get_value(phase),
-            capex_per_unit=comparison_obj.capex_per_unit,
-            capem_per_unit=comparison_obj.capem_per_unit,
-        )
 
     @property
     def _capex_single(self) -> float:
@@ -772,8 +768,9 @@ class ElectricFleetUnit:
 
         # catch errors
         if not ((-EPS) <= self.soc <= (1 + EPS)):
-            # ToDo: SOCError
-            raise ValueError(f"SOC {self.soc} out of bounds after charging {p_site} W in timestep {idx}.")
+            raise SOCError(
+                f"SOC {self.soc} of block {self.name} out of bounds after charging {p_site} W in timestep {idx}."
+            )
 
         # apply soc tracking
         self._soc_track[idx + 1] = self.soc
