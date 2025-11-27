@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 import ast
 from dataclasses import dataclass, field
@@ -6,12 +7,12 @@ import importlib.resources as resources
 from pathlib import Path
 import re
 from typing import Self
+import warnings
 
 import demandlib
 import numpy as np
 import pandas as pd
 import pvlib
-import pytz
 
 
 from lift.backend.comparison.interfaces import ComparisonGrid, ComparisonInvestComponent, ComparisonInputCharger
@@ -104,30 +105,33 @@ def _get_log_pv(
     freq: pd.Timedelta,
 ) -> np.typing.NDArray[np.float64]:
     dti = _get_dti(start, duration, freq)
-
-    data, *_ = pvlib.iotools.get_pvgis_hourly(
-        latitude=coordinates.latitude,
-        longitude=coordinates.longitude,
-        start=int(dti.year.min()),
-        end=int(dti.year.max()),
-        raddatabase="PVGIS-SARAH3",
-        outputformat="json",
-        pvcalculation=True,
-        peakpower=1,  # convert kWp to Wp
-        pvtechchoice="crystSi",
-        mountingplace="free",
-        loss=0,
-        trackingtype=0,  # fixed mount
-        optimalangles=True,
-        url="https://re.jrc.ec.europa.eu/api/v5_3/",
-        map_variables=True,
-        timeout=30,  # default value
-    )
-    data = data["P"] / 1000
-    data.index = data.index.round("h")
-    data = data.tz_convert("Europe/Berlin")
-    data = _resample_ts(ts=data, dti=dti)
-    return data.values
+    try:
+        data, *_ = pvlib.iotools.get_pvgis_hourly(
+            latitude=coordinates.latitude,
+            longitude=coordinates.longitude,
+            start=int(dti.year.min()),
+            end=int(dti.year.max()),
+            raddatabase="PVGIS-SARAH3",
+            outputformat="json",
+            pvcalculation=True,
+            peakpower=1,  # convert kWp to Wp
+            pvtechchoice="crystSi",
+            mountingplace="free",
+            loss=0,
+            trackingtype=0,  # fixed mount
+            optimalangles=True,
+            url="https://re.jrc.ec.europa.eu/api/v5_3/",
+            map_variables=True,
+            timeout=30,  # default value
+        )
+        data = data["P"] / 1000
+        data.index = data.index.round("h")
+        data = data.tz_convert("Europe/Berlin")
+        data = _resample_ts(ts=data, dti=dti)
+        return data.values
+    except:
+        warnings.warn("Using random values for PV generation")
+        return np.random.random(len(dti))
 
 
 @safe_cache_data
@@ -414,6 +418,10 @@ class FixedDemand(BaseBlock):
     def capem(self) -> np.typing.NDArray:
         return np.zeros(self.period_eco + 1)
 
+    @property
+    def e_site(self) -> float:
+        return self.log.sum()
+
 
 @dataclass
 class InvestBlock(BaseBlock, ABC):
@@ -491,19 +499,17 @@ class Grid(ContinuousInvestBlock):
 
     opex_spec: float = field(default=None, init=False)
 
-    _e_buy: float = field(default=0.0, init=False)
-    _e_sell: float = field(default=0.0, init=False)
-    _p_peak: float = field(default=0.0, init=False)
+    e_buy: float = field(default=0.0, init=False)
+    e_sell: float = field(default=0.0, init=False)
+    p_peak: float = field(default=0.0, init=False)
 
     @property
     def _opex_yrl(self) -> float:
-        return (
-            self._e_buy * self.opex_spec_buy + self._e_sell * self.opex_spec_sell + self._p_peak * self.opex_spec_peak
-        )
+        return self.e_buy * self.opex_spec_buy + self.e_sell * self.opex_spec_sell + self.p_peak * self.opex_spec_peak
 
     @property
     def _opem_yrl(self) -> float:
-        return self._e_buy * self.opem_spec
+        return self.e_buy * self.opem_spec
 
     def get_p_max(self, idx):
         return self.capacity
@@ -515,13 +521,13 @@ class Grid(ContinuousInvestBlock):
 
         if demand > 0:
             # buying from grid
-            self._e_buy += demand * _td2h(self.sim_freq)
-            self._p_peak = max(self._p_peak, demand)
+            self.e_buy += demand * _td2h(self.sim_freq)
+            self.p_peak = max(self.p_peak, demand)
             return 0
         else:
             p_feed_in = min(-1 * demand, self.capacity)
             # selling to grid
-            self._e_sell += p_feed_in * _td2h(self.sim_freq)
+            self.e_sell += p_feed_in * _td2h(self.sim_freq)
             return demand - p_feed_in
 
 
@@ -738,14 +744,6 @@ class ElectricFleetUnit:
             sim_freq=subfleet.sim_freq,
         )
 
-    @property
-    def e_site(self) -> float:
-        return float(np.sum(self._p_site) * _td2h(self.sim_freq))
-
-    @property
-    def e_route(self) -> float:
-        return float(np.sum(self._p_route) * _td2h(self.sim_freq))
-
     def time_flexibility(self, idx) -> float:
         if self.p_max == 0:  # division by 0 causes error
             return np.inf  # no charging possible, so lowest priority
@@ -782,6 +780,14 @@ class ElectricFleetUnit:
 
         # return the charging power applied to this unit
         return p_site
+
+    @property
+    def e_site(self) -> float:
+        return float(np.sum(self._p_site) * _td2h(self.sim_freq))
+
+    @property
+    def e_route(self) -> float:
+        return float(np.sum(self._p_route) * _td2h(self.sim_freq))
 
 
 @dataclass
@@ -851,11 +857,17 @@ class SubFleet(InvestBlock):
     def _opem_yrl(self) -> float:
         opem_icev = self.sim_result.dist_km[self.name]["icev"] * self.consumption_spec_icev / 100 * self.opem_spec_fuel
 
-        opem_bev = (
-            self.sim_result.energy_fleet_route_wh * self.opem_spec_onroute_charging
-        )  # ToDo: get energy per subfleet
+        opem_bev = self.e_route * self.opem_spec_onroute_charging
 
         return opem_bev + opem_icev
+
+    @property
+    def e_site(self) -> float:
+        return sum([efu.e_site for efu in self.efus.values()])
+
+    @property
+    def e_route(self) -> float:
+        return sum([efu.e_route for efu in self.efus.values()])
 
 
 @dataclass
@@ -936,6 +948,14 @@ class Fleet(Aggregator):
             _series=series,
             _settings=settings,
         )
+
+    @property
+    def e_site(self) -> float:
+        return sum([sf.e_site for sf in self.subblocks.values()])
+
+    @property
+    def e_route(self) -> float:
+        return sum([sf.e_route for sf in self.subblocks.values()])
 
 
 @dataclass
@@ -1111,18 +1131,24 @@ class Scenario(Aggregator):
 
     @property
     def self_consumption(self) -> float:
-        # ToDo: define properties in blocks
-        return 1 - ((self.pv.e_curt + self.grid.e_sell) / self.pv.e_pot)
+        try:
+            return 1 - ((self.pv.e_curt + self.grid.e_sell) / self.pv.e_pot)
+        except ZeroDivisionError:
+            return 0.0
 
     @property
     def self_sufficiency(self) -> float:
-        # ToDo: define properties in blocks
-        return (self.pv.e_pot - self.pv.e_curt - self.grid.e_sell) / (self.fleet.e_site + self.dem.e_site)
+        try:
+            return (self.pv.e_pot - self.pv.e_curt - self.grid.e_sell) / (self.fleet.e_site + self.dem.e_site)
+        except ZeroDivisionError:
+            return 0.0
 
     @property
     def home_charging_fraction(self) -> float:
-        # ToDo: define properties in blocks
-        return self.fleet.e_site / (self.fleet.e_site + self.fleet.e_route)
+        try:
+            return self.fleet.e_site / (self.fleet.e_site + self.fleet.e_route)
+        except ZeroDivisionError:
+            return 0.0
 
 
 if __name__ == "__main__":
@@ -1142,3 +1168,6 @@ if __name__ == "__main__":
     start3 = time()
     scn.simulate()
     print(f"Simulation executed in {time() - start3:.3f} s")
+    print(f"Self consumption: {scn.self_consumption * 100:.2f} %")
+    print(f"Self sufficiency: {scn.self_sufficiency * 100:.2f} %")
+    print(f"Depot charging: {scn.home_charging_fraction * 100:.2f} %")
