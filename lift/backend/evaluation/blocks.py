@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import importlib.resources as resources
 from pathlib import Path
 import re
-from typing import Self
+from typing import Literal, Self
 import warnings
 
 import demandlib
@@ -26,6 +26,20 @@ EPS = 1e-8
 @safe_cache_data
 def _td2h(td: pd.Timedelta) -> float:
     return td.total_seconds() / 3600.0
+
+
+@safe_cache_data
+def _calc_discount_factors(
+    periods: int, occurs_at: Literal["beginning", "middle", "end"], discount_rate: float
+) -> np.typing.NDArray[float]:
+    if discount_rate is None or discount_rate < 0:
+        raise ValueError("A positive discount rate must be provided if discounting is enabled.")
+
+    periods = np.arange(0, periods + 1) + 1
+    q = 1 + discount_rate
+
+    exp = {"beginning": 1, "middle": 0.5, "end": 0}.get(occurs_at, 0)
+    return 1 / (q ** (periods - exp))
 
 
 @safe_cache_data
@@ -295,13 +309,13 @@ class EcoObject(ABC):
 
     @property
     def capex_discounted(self) -> np.typing.NDArray:
-        # ToDo
-        return self.capex
+        return (
+            _calc_discount_factors(periods=self.period_eco, occurs_at="beginning", discount_rate=self.wacc) * self.capex
+        )
 
     @property
     def opex_discounted(self) -> np.typing.NDArray:
-        # ToDo
-        return self.opex
+        return _calc_discount_factors(periods=self.period_eco, occurs_at="end", discount_rate=self.wacc) * self.opex
 
     @property
     def costs(self) -> np.typing.NDArray:
@@ -789,6 +803,7 @@ class ElectricFleetUnit:
 
 @dataclass
 class SubFleet(InvestBlock):
+    # subfleet specific attributes
     name: str
     num_bev: int
     num_icev: int
@@ -807,6 +822,7 @@ class SubFleet(InvestBlock):
     consumption_spec_icev: float
     soc_init: float
 
+    # global subfleet attributes
     opex_spec_fuel: float
     opem_spec_fuel: float
     opex_spec_onroute_charging: float
@@ -839,19 +855,20 @@ class SubFleet(InvestBlock):
     def _opex_yrl(self) -> float:
         opex_bev = (
             self.sim_result.dist_km[self.name]["bev"] * (self.mntex_spec_bev + self.toll_spec_bev * self.toll_frac)
-            + self.sim_result.energy_fleet_route_wh * self.opex_spec_onroute_charging
-        )  # ToDo: get energy per subfleet
+            + self.e_route * self.opex_spec_onroute_charging
+        )  # ToDo: get distances
 
         opex_icev = self.sim_result.dist_km[self.name]["icev"] * (
             self.mntex_spec_icev
             + self.toll_spec_icev * self.toll_frac
             + self.opex_spec_fuel * self.consumption_spec_icev / 100
-        )
+        )  # ToDo: get distances
 
         return opex_bev + opex_icev
 
     @property
     def _opem_yrl(self) -> float:
+        # ToDo: get distances
         opem_icev = self.sim_result.dist_km[self.name]["icev"] * self.consumption_spec_icev / 100 * self.opem_spec_fuel
 
         opem_bev = self.e_route * self.opem_spec_onroute_charging
