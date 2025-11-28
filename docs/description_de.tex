@@ -13,7 +13,7 @@
 \usepackage{longtable}
 \usepackage{makecell}
 \usepackage[numbers]{natbib}
-\usepackage{todonotes}
+\usepackage[final]{todonotes}
 \usepackage{siunitx}
 \usepackage{eurosym}
 \usepackage{xcolor}
@@ -86,14 +86,17 @@
 \DeclareAcronym{flt}{short=FLT, long=Flotte,}
 \DeclareAcronym{gcp}{short=GCP, long=Netzanschlusspunkt,}
 \DeclareAcronym{gui}{short=GUI, long=grafische Benutzeroberfläche,}
+\DeclareAcronym{lkw}{short=Lkw, long=Lastkraftwagen,}
 \DeclareAcronym{icev}{short=ICEV, long=verbrennungsmotorisches Fahrzeug,}
 \DeclareAcronym{kpi}{short=KPI, long=Leistungskennzahl, plural-form=Leistungskennzahlen}
 \DeclareAcronym{lift}{short=LIFT, long=Logistics Infrastructure and Fleet Transformation,}
 \DeclareAcronym{cis}{short=CIS, long=Ladeinfrastruktur,}
 \DeclareAcronym{opex}{short=OPEX, long=betriebsbedingte Kosten\,/\,Emissionen,}
+\DeclareAcronym{pkw}{short=Pkw, long=Personenkraftwagen,}
 \DeclareAcronym{pv}{short=PV, long=Photovoltaik,}
 \DeclareAcronym{pvgis}{short=PVGIS, long=Photovoltaic Geographical Information System,}
 \DeclareAcronym{utc}{short=UTC, long=koordinierte Weltzeit,}
+\DeclareAcronym{zgg}{short=zGG, long=zulässiges Gesamtgewicht,}
 
 
 % Set page margins
@@ -222,7 +225,7 @@ Die verbleibende Leistung steht der Ladeinfrastruktur zur Verfügung.
 Die \textbf{\acf{flt}} besteht aus mehreren (in der \ac{gui} vier, siehe \autoref{sec:parameters}) Subflotten, die jeweils Fahrzeuge des gleichen Typs und Nutzungsprofils zusammenfassen.
 Dies können entweder rein verbrennungsmotorisch oder batterieelektrisch angetriebene Fahrzeuge sein, hybride Mischformen sind nicht abgebildet.
 Das Mobilitätsprofil einer Subflotte beinhaltet Zeitreihen, in denen für jedes Fahrzeug die Anwesenheit am Depot sowie der Energieverbrauch von Fahrten definiert wird.
-Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:parameters}) vordefiniert und als Datei abgelegt. \todo{taucht noch nicht in Quantitativen Annahmen auf}
+Dieses Profil ist (im Falle der \ac{gui} aus stochastischem Sampling, siehe \autoref{sec:parameters}) vordefiniert und als Datei abgelegt.
 Jedes Fahrzeug ist nur mit der in der Subflotte definierten Ladepunktklasse kompatibel.
 Die tatsächlich maximale Ladeleistung eines Fahrzeugs entspricht dem Minimum aus in der Subflotte definierten Fahrzeugladeleistung und der in der assoziierten Ladepunktklasse definierten Leistung.
 Je nach Flottengröße und \ac{cis}-Konfiguration sind sowohl die Anzahl verfügbarer Ladepunkte als auch die aktuell zur Verfügung stehende Ladeleistung eine knappe Resource.
@@ -397,10 +400,10 @@ Alle in \ac{lift} verwendeten und nicht in der \ac{gui} verwendeten Parameter bz
 \end{center}
 \end{scriptsize}
 
-\section{Quellen}
 \bibliographystyle{unsrtnat}
+\addcontentsline{toc}{section}{Literatur}
 \bibliography{references}
 
-\listoftodos
+%\listoftodos
 
 \end{document}

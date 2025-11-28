@@ -96,7 +96,7 @@
       "title": "Flotte",
       "subfleet": {
         "weight_total": {
-          "label": "Zulässiges Gesamtgewicht",
+          "label": "zulässiges Gesamtgewicht",
             "help": "Zulässiges Gesamtgewicht der Fahrzeuge in dieser Subflotte in Tonnen. Wird zur Kategorisierung und Auswahl passender Fahrzeugtypen verwendet. Bestimmt die verfügbaren Mobilitätsdaten und Verbrauchswerte."
         },
         "num_total": {

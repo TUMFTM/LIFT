@@ -2,11 +2,11 @@
   "hlt": {
     "name": "hlt",
     "label": {
-      "de": "Schwere Lkw",
-      "en": "Heavy-duty Trucks"
+      "de": "Glieder-/Sattelzüge",
+      "en": "Truck combinations"
     },
     "icon": "🚛",
-    "weight_max_t": 42,
+    "weight_max_t": "28-44",
     "battery_capacity_wh": 480000,
     "capem_bev": 84600.0,
     "capem_icev": 54000.0,
@@ -37,11 +37,11 @@
   "hst": {
     "name": "hst",
     "label": {
-      "de": "Schwerer Verteilverkehr",
-      "en": "Heavy distribution transport"
+      "de": "Schwere Lkw",
+      "en": "Heavy trucks"
     },
     "icon": "🚚",
-    "weight_max_t": 28,
+    "weight_max_t": "18-26",
     "battery_capacity_wh": 400000,
     "capem_bev": 59000.0,
     "capem_icev": 31200.0,
@@ -72,11 +72,11 @@
   "ust": {
     "name": "ust",
     "label": {
-      "de": "Urbaner Verteilverkehr",
-      "en": "Urban distribution transport truck"
+      "de": "Leichte Lkw",
+      "en": "Light 2rucks"
     },
     "icon": "🚚",
-    "weight_max_t": 12,
+    "weight_max_t": "7.5-18",
     "battery_capacity_wh": 160000,
     "capem_bev": 26700.0,
     "capem_icev": 16200.0,
@@ -107,11 +107,11 @@
   "usv": {
     "name": "usv",
     "label": {
-      "de": "Lieferwagen",
-      "en": "Light Commercial Vehicle"
+      "de": "Transporter",
+      "en": "Light commercial vehicles"
     },
     "icon": "🚐",
-    "weight_max_t": 3.5,
+    "weight_max_t": "3.5",
     "battery_capacity_wh": 81000,
     "capem_bev": 13870.0,
     "capem_icev": 8622.0,
@@ -143,10 +143,10 @@
     "name": "pkw",
     "label": {
       "de": "Pkw",
-      "en": "Passenger Car"
+      "en": "Passenger cars"
     },
     "icon": "\uD83D\uDE97",
-    "weight_max_t": 2.5,
+    "weight_max_t": "2.5",
     "battery_capacity_wh": 60000,
     "capem_bev": 13870.0,
     "capem_icev": 8622.0,
