@@ -1,3 +1,0 @@
-,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekday,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend,weekend
-,rel_prob,dep1_magnitude,dep1_time_mean,dep1_time_std,dep2_magnitude,dep2_time_mean,dep2_time_std,dist_mean,dist_std,idle_mean,idle_std,patience,consumption,speed_avg,rel_prob,dep1_magnitude,dep1_time_mean,dep1_time_std,dep2_magnitude,dep2_time_mean,dep2_time_std,dist_mean,dist_std,idle_mean,idle_std,patience,consumption,speed_avg
-driving,1,0.6,8,1.5,0.4,13,1.5,350,100,2.5,1.5,1,1100,65,1,0.5,9,1.5,0.5,14,1.5,350,100,2.5,1.5,1,1100,65
