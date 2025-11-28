@@ -221,7 +221,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.costs.axis')} in EUR",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width='stretch',
         )
 
         _heading_with_help(
@@ -240,7 +240,7 @@ def display_results(results, domain):
                 label=f"{get_label('main.kpi_diagrams.emissions.axis')} in t CO₂-eq.",
                 factor_display=1e-3,  # convert from kg to t
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width='stretch',
         )
 
         _heading_with_help(
@@ -258,7 +258,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_consumption.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width='stretch',
         )
 
         _heading_with_help(
@@ -276,7 +276,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_sufficiency.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width='stretch',
         )
 
         _heading_with_help(
@@ -294,7 +294,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.home_charging.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width='stretch',
         )
 
     _show_kpis(phases=phases, domain=domain.kpi_diagrams)
@@ -473,4 +473,4 @@ def plot_flow(
         )
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
