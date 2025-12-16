@@ -20,8 +20,6 @@ from dataclasses import asdict
 
 from time import time
 
-import pandas as pd
-
 from lift.frontend.definitions import DEF_GRID, DEF_PV, DEF_ESS, DEF_FLEET, DEF_CIS, DEF_SCN
 
 from lift.backend.comparison.interfaces import (
