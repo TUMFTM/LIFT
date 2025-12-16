@@ -17,8 +17,9 @@ Key Logic:
 """
 
 from dataclasses import asdict
-
 from time import time
+
+import pandas as pd
 
 from lift.frontend.definitions import DEF_GRID, DEF_PV, DEF_ESS, DEF_FLEET, DEF_CIS, DEF_SCN
 
@@ -64,7 +65,6 @@ def run_comparison(comp_scn: ComparisonScenario) -> ComparisonResult:
 
 if __name__ == "__main__":
     import numpy as np
-    import pandas as pd
 
     def value_factor_product(x):
         return x.value * x.factor
