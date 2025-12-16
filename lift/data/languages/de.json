@@ -62,6 +62,10 @@
       },
       "economics": {
         "title": "Wirtschaftliche Parameter",
+        "period_eco": {
+          "label": "Wirtschaftlicher Betrachtungszeitraum",
+          "help": "Dauer in Jahren, über die die wirtschaftliche Analyse durchgeführt wird."
+        },
         "discount": {
           "label": "Kapitalkostensatz",
             "help": "Zinssatz in Prozent zur Diskontierung zukünftiger Zahlungsströme. Typische Werte: 3-7%. Höhere Werte reduzieren den Barwert zukünftiger Investitionen stärker. Wird für die Berechnung des Net Present Cost (NPC) verwendet."

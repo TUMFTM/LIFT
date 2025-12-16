@@ -62,6 +62,10 @@
       },
       "economics": {
         "title": "Economic Parameters",
+        "period_eco": {
+          "label": "Economic Analysis Period",
+          "help": "Duration of the economic analysis in years. Determines the time horizon for cost and emission calculations."
+        },
         "discount": {
           "label": "Capital cost rate",
           "help": "Interest rate in percent for discounting future cash flows. Typical values: 3-7%. Higher values reduce the present value of future investments more strongly. Used for calculating Net Present Cost (NPC)."

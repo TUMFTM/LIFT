@@ -150,7 +150,7 @@ def run_frontend():
                 latitude=st.session_state.location.latitude,
                 longitude=st.session_state.location.longitude,
                 wacc=st.session_state.eco_discount_rate * DEF_SCN.wacc.factor,
-                period_eco=DEF_SCN.period_eco,
+                period_eco=int(st.session_state.eco_period * DEF_SCN.period_eco.factor),
                 sim_start=DEF_SCN.sim_start,
                 sim_duration=DEF_SCN.sim_duration,
                 sim_freq=DEF_SCN.sim_freq,

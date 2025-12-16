@@ -398,8 +398,8 @@ def plot_flow(
     y_label: str,
     phase_labels: tuple[str, str],
 ):
-    years = np.arange(DEF_SCN.period_eco + 1, dtype=int)
-    n_years = DEF_SCN.period_eco + 1
+    n_years = len(baseline_capex)  # DEF_SCN.period_eco + 1
+    years = np.arange(n_years, dtype=int)
 
     # the last entry holds data for the first year after the project duration
     # - capex: this entry holds salvage values, caused by components which are not at the end of their lifespan at

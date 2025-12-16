@@ -6,7 +6,6 @@
   },
   "icon": "📊",
   "values": {
-    "period_eco": 18,
     "timezone": "Europe/Berlin",
     "sim_start": "2023-01-01 00:00",
     "sim_duration": 365,
@@ -14,6 +13,15 @@
     "capem_initial": 0.0
   },
   "inputs": {
+    "period_eco": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 20.0,
+      "value": 18.0,
+      "step": 1.0,
+      "factor": 1.0,
+      "format": "%.0f"
+    },
     "wacc": {
       "input_type": "Slider",
       "min_value": 0.0,

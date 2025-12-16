@@ -150,6 +150,12 @@ def _get_input_location(domain):
 
 def _get_input_economic(domain):
     with domain.economics():
+        DEF_SCN.period_eco.get_streamlit_element(
+            label=f"{get_label('sidebar.general.economics.period_eco.label')}",
+            help_msg=get_label("sidebar.general.economics.period_eco.help"),
+            key="eco_period",
+            domain=st,
+        )
         DEF_SCN.wacc.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.discount.label')} (%)",
             help_msg=get_label("sidebar.general.economics.discount.help"),
