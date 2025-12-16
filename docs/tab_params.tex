@@ -1,6 +1,6 @@
 \begin{longtable}{
     @{}
-    >{\raggedright\arraybackslash}p{0.7cm}
+    >{\raggedright\arraybackslash}p{0.9cm}
     >{\raggedright\arraybackslash}p{6cm}
     >{\raggedleft\arraybackslash}p{1.6cm}
     >{\raggedright\arraybackslash}p{1.6cm}
@@ -55,6 +55,8 @@ $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $18$ & \si{\year} & Annahme \\
 $c_{\text{cap}}$ & Investitionskosten (Li-Ionen-System, 2024) & $450$ & \si{\euro\per\kwh} & \cite{kost_levelized_2025} \\
 $e_{\text{cap}}$ & \ac{co2}-Emissionen Herstellung & $69$ & \si{\kilogram\per\kwh} & \cite{bernath_impact_2021} \\
 $ls$ & Abschreibungs-\,/\,Nutzungsdauer & $12$ & \si{\year} & Annahme \\
+$C_{\text{Rate}}$ & C-Rate des Speichers & $0.5$ & \si{\per\hour} & Annahme \\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{\acf{cis}}} \\
@@ -87,6 +89,7 @@ $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.27$ & \si{\liter\per\kilo\me
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $84600$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $54000$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $480$ & \si{\kwh} & \cite{MAN_etgx_2025}\\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \pagebreak
@@ -105,6 +108,7 @@ $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.25$ & \si{\liter\per\kilo\me
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $59000$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $31200$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $414$ & \si{\kwh} & \cite{Mercedes_eactros_2025} \\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte Leichte \acs{lkw}} (\SIrange{7.5}{18}{\ton} \acs{zgg})} \\
@@ -121,6 +125,7 @@ $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.19$ & \si{\liter\per\kilo\me
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $26700$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $16200$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $160$ & \si{\kwh} & \cite{MAN_etgl_2025} \\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte Transporter} (\SI{3.5}{\ton} \acs{zgg})} \\
@@ -137,6 +142,7 @@ $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.11$ & \si{\liter\per\kilo\me
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $13870$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $8622$ & \si{\kilogram} & \cite{fritz_oekobilanz_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $81$ & \si{\kwh} & \cite{Mercedes_eSprinter_2025} \\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \multicolumn{5}{c}{\textbf{Flotte – Subflotte \acs{pkw}} (\SI{2.5}{\ton} \acs{zgg})} \\
@@ -153,6 +159,7 @@ $b^{\text{ICEV}}$ & Dieselverbrauch \acs{icev} & $0.06$ & \si{\liter\per\kilo\me
 $e^{\text{BEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{bev} & $4780$ & \si{\kilogram} & \cite{buberger_total_2022} \\
 $e^{\text{ICEV}}_{\text{cap}}$ & \acs{co2}-Emissionen Herstellung \acs{icev} & $2694$ & \si{\kilogram} & \cite{buberger_total_2022} \\
 $S_{\text{BEV}}$ & Batteriekapazität \acs{bev} & $58$ & \si{\kwh} & \cite{rosenberger_quantifying_2024} \\
+$SOC_{t=0}$ & SOC des Speichers zum Startzeitpunkt & $50$ & \si{\percent} & Annahme \\
 \midrule
 
 \end{longtable}
