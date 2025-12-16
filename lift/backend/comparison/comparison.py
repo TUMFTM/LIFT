@@ -65,13 +65,19 @@ def run_comparison(comp_scn: ComparisonScenario) -> ComparisonResult:
 
 
 if __name__ == "__main__":
+    import numpy as np
+    import pandas as pd
+
+    def value_factor_product(x):
+        return x.value * x.factor
+
     start = time()
 
     comp_scn = ComparisonScenario(
         settings=ComparisonSettings(
             latitude=48.1351,
             longitude=11.5820,
-            wacc=DEF_SCN.wacc.value * DEF_SCN.wacc.factor,
+            wacc=value_factor_product(DEF_SCN.wacc),
             period_eco=DEF_SCN.period_eco,
             sim_start=DEF_SCN.sim_start,
             sim_duration=DEF_SCN.sim_duration,
@@ -80,7 +86,7 @@ if __name__ == "__main__":
         fix=ComparisonFix(
             capex_initial=ExistExpansionValue(
                 baseline=0.0,
-                expansion=DEF_SCN.capex_initial.value * DEF_SCN.capex_initial.factor,
+                expansion=value_factor_product(DEF_SCN.capex_initial),
             ),
             capem_initial=ExistExpansionValue(
                 baseline=DEF_SCN.capem_initial,
@@ -89,32 +95,32 @@ if __name__ == "__main__":
         ),
         dem=ComparisonFixedDemand(
             slp=DEF_SCN.slp.value.lower(),
-            e_yrl=DEF_SCN.e_yrl.value * DEF_SCN.e_yrl.factor,
+            e_yrl=value_factor_product(DEF_SCN.e_yrl),
         ),
         grid=ComparisonGrid(
             capacity=ExistExpansionValue(
-                baseline=DEF_GRID.capacity_preexisting.value * DEF_GRID.capacity_preexisting.factor,
-                expansion=(DEF_GRID.capacity_preexisting.value + DEF_GRID.capacity_expansion.value)
-                * DEF_GRID.capacity_expansion.factor,
+                baseline=value_factor_product(DEF_GRID.capacity_preexisting),
+                expansion=value_factor_product(DEF_GRID.capacity_preexisting)
+                + value_factor_product(DEF_GRID.capacity_expansion),
             ),
-            opex_spec_buy=DEF_GRID.opex_spec_buy.value * DEF_GRID.opex_spec_buy.factor,
-            opex_spec_sell=DEF_GRID.opex_spec_sell.value * DEF_GRID.opex_spec_sell.factor,
-            opex_spec_peak=DEF_GRID.opex_spec_peak.value * DEF_GRID.opex_spec_peak.factor,
+            opex_spec_buy=value_factor_product(DEF_GRID.opex_spec_buy),
+            opex_spec_sell=value_factor_product(DEF_GRID.opex_spec_sell),
+            opex_spec_peak=value_factor_product(DEF_GRID.opex_spec_peak),
             **DEF_GRID.values,
         ),
         pv=ComparisonPV(
             capacity=ExistExpansionValue(
-                baseline=DEF_PV.capacity_preexisting.value * DEF_PV.capacity_preexisting.factor,
-                expansion=(DEF_PV.capacity_preexisting.value + DEF_PV.capacity_expansion.value)
-                * DEF_PV.capacity_expansion.factor,
+                baseline=value_factor_product(DEF_PV.capacity_preexisting),
+                expansion=value_factor_product(DEF_PV.capacity_preexisting)
+                + value_factor_product(DEF_PV.capacity_expansion),
             ),
             **DEF_PV.values,
         ),
         ess=ComparisonESS(
             capacity=ExistExpansionValue(
-                baseline=DEF_ESS.capacity_preexisting.value * DEF_ESS.capacity_preexisting.factor,
-                expansion=(DEF_ESS.capacity_preexisting.value + DEF_ESS.capacity_expansion.value)
-                * DEF_ESS.capacity_expansion.factor,
+                baseline=value_factor_product(DEF_ESS.capacity_preexisting),
+                expansion=value_factor_product(DEF_ESS.capacity_preexisting)
+                + value_factor_product(DEF_ESS.capacity_expansion),
             ),
             **DEF_ESS.values,
         ),
@@ -132,15 +138,15 @@ if __name__ == "__main__":
                     ),
                     charger="ac",
                     p_max=11 * 1e3,
-                    capex_per_unit_bev=250000 * DEF_FLEET.subblocks[k].capex_per_unit_bev.factor,
-                    capex_per_unit_icev=150000 * DEF_FLEET.subblocks[k].capex_per_unit_icev.factor,
-                    toll_frac=80 * DEF_FLEET.subblocks[k].toll_frac.factor,
+                    capex_per_unit_bev=value_factor_product(DEF_FLEET.subblocks[k].capex_per_unit_bev),
+                    capex_per_unit_icev=value_factor_product(DEF_FLEET.subblocks[k].capex_per_unit_icev),
+                    toll_frac=value_factor_product(DEF_FLEET.subblocks[k].toll_frac),
                     **DEF_FLEET.subblocks[k].values,
                 )
                 for k in DEF_FLEET.subblocks.keys()
             },
-            opex_spec_fuel=1.56 * DEF_FLEET.opex_spec_fuel.factor,
-            opex_spec_onroute_charging=49 * DEF_FLEET.opex_spec_onroute_charging.factor,
+            opex_spec_fuel=value_factor_product(DEF_FLEET.opex_spec_fuel),
+            opex_spec_onroute_charging=value_factor_product(DEF_FLEET.opex_spec_onroute_charging),
             **DEF_FLEET.values,
         ),
         cis=ComparisonChargingInfrastructure(
@@ -167,5 +173,9 @@ if __name__ == "__main__":
     }
 
     results = {scn_name: scn_obj.simulate() for scn_name, scn_obj in scn_dict.items()}
+
+    comp_result = ComparisonResult(baseline=results["baseline"], expansion=results["expansion"])
+
+    df_cost_comparison = pd.DataFrame({k: np.cumsum(v.totex_dis) for k, v in results.items()})
 
     print(f"Simulation completed in {time() - start:.2f} seconds.")
