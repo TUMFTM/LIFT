@@ -1081,15 +1081,22 @@ class ElectricFleetUnit:
             return np.inf  # no charging possible, so lowest priority
         return float(self.soc - self._soc_min[idx]) * self.capacity / self.p_max
 
-    def charge(self, p_available: float, idx: int):
+    def charge(
+        self,
+        p_available: float,
+        chargers: dict[str, int],
+        idx: int,
+    ):
         atbase = self.atbase[idx]
 
-        if atbase == 1:
+        if atbase == 1 and chargers[self.charger] > 0:
             p_site = min(
                 self.p_max_min,  # maximum power based on charger and vehicle limits
                 self.capacity * (1 - self.soc) / self.settings_sim.sim_freq_h,  # maximum power based on SOC limit
                 p_available,  # available power at site
             )
+            if p_site > 0:
+                chargers[self.charger] -= 1
         else:
             p_site = 0
         self._p_site[idx] = p_site
@@ -1114,7 +1121,7 @@ class ElectricFleetUnit:
         self._soc_track[idx + 1] = self.soc
 
         # return the charging power applied to this unit
-        return p_site
+        return p_site, chargers
 
     @property
     def e_site(self) -> float:
@@ -1182,7 +1189,6 @@ class SubFleet(InvestBlock):
         self.opex_spec_onroute_charging = opex_spec_onroute_charging
         self.opem_spec_onroute_charging = opem_spec_onroute_charging
 
-        # ToDo: pass settings_sim as argument
         self.log = _get_log_subfleet(
             vehicle_type=self.name,
             settings_sim=self.settings_sim,
@@ -1210,12 +1216,12 @@ class SubFleet(InvestBlock):
     @cached_property
     def _dist_yrl_bev(self) -> float:
         # ToDo: scale to yearly distance
-        return sum([self.log[(f"hlt{i}", "dist")].sum() for i in range(0, self.num_bev)])
+        return sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(0, self.num_bev)])
 
     @cached_property
     def _dist_yrl_icev(self) -> float:
         # ToDo: scale to yearly distance
-        return sum([self.log[(f"hlt{i}", "dist")].sum() for i in range(self.num_bev, self.num_icev)])
+        return sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(self.num_bev, self.num_icev)])
 
     @property
     def _opex_yrl(self) -> float:
@@ -1426,40 +1432,6 @@ class ChargingInfrastructure(Aggregator):
 
 
 @dataclass
-class ScenarioSettings:
-    period_eco: int
-    wacc: float
-    sim_start: pd.Timestamp
-    sim_duration: pd.Timedelta
-    sim_freq: pd.Timedelta
-
-    coordinates: Coordinates
-
-    @classmethod
-    def from_series_dict(cls, series: pd.Series) -> Self:
-        return cls(
-            period_eco=series["period_eco"],
-            sim_start=pd.to_datetime(series["sim_start"]).tz_localize("Europe/Berlin"),
-            sim_duration=pd.Timedelta(days=series["sim_duration"]),
-            sim_freq=pd.Timedelta(hours=series["sim_freq"]),
-            coordinates=Coordinates(latitude=series["latitude"], longitude=series["longitude"]),
-            wacc=series["wacc"],
-        )
-
-    @classmethod
-    def from_comparison_object(cls, comp_obj) -> Self:
-        dict_in = comp_obj.to_dict
-        coordinates = Coordinates(
-            latitude=dict_in.pop("latitude"),
-            longitude=dict_in.pop("longitude"),
-        )
-        return cls(
-            coordinates=coordinates,
-            **dict_in,
-        )
-
-
-@dataclass
 class Scenario(Aggregator):
     def __init__(
         self,
@@ -1599,8 +1571,10 @@ class Scenario(Aggregator):
             else:
                 p_max_fleet = self.cis.p_lm_max
 
+            chargers = {k: v.num for k, v in self.cis.subblocks.items()}
+
             for efu in sorted(efus, key=lambda x: x.time_flexibility(idx)):
-                p_efu = efu.charge(p_max_fleet, idx)
+                p_efu, chargers = efu.charge(p_available=p_max_fleet, chargers=chargers, idx=idx)
                 p_max_fleet -= p_efu
                 p_demand += p_efu
 
