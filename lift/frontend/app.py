@@ -1,20 +1,3 @@
-"""Streamlit frontend for LIFT.
-
-Purpose:
-- Provides the user interface to configure comparison scenarios and visualize results.
-- Manages language/labels, session state, and page styling.
-
-Relationships:
-- Calls `lift.backend.comparison.comparison.run_comparison(comparison_input)` to execute the backend.
-- Handles domain exceptions from `lift.backend.simulation.interfaces` to present actionable messages.
-- Uses UI helpers from `lift.frontend.sidebar`, `lift.frontend.results`, `lift.frontend.design`,
-  and label/version helpers from `lift.frontend.utils`.
-
-Key Logic:
-- Initializes session state and language, applies styles, and builds `comparison_input` via the sidebar.
-- On run, executes the comparison, displays results, and renders a localized footer with version info.
-"""
-
 from __future__ import annotations
 import os
 import traceback
@@ -29,41 +12,28 @@ os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 from lift.backend.comparison.comparison import run_comparison
 
 from lift.backend.comparison.interfaces import (
-    ComparisonInputLocation,
+    ExistExpansionValue,
+    ComparisonScenario,
+    ComparisonSettings,
+    ComparisonFix,
+    ComparisonFixedDemand,
     ComparisonGrid,
     ComparisonPV,
     ComparisonESS,
-    ComparisonInvestComponent,
-    ComparisonInputEconomics,
-    ComparisonInputSubfleet,
-    ComparisonInputCharger,
-    ComparisonInputChargingInfrastructure,
-    ComparisonInput,
-    ExistExpansionValue,
+    ComparisonFleet,
+    ComparisonSubFleet,
+    ComparisonChargingInfrastructure,
+    ComparisonChargerType,
 )
 
-from lift.backend.simulation.interfaces import GridPowerExceededError, SOCError
+from lift.backend.evaluation.blocks import GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
-from lift.frontend.definitions import (
-    DEF_GRID,
-    DEF_PV,
-    DEF_ESS,
-    DEF_ECONOMICS,
-    DEF_CHARGERS,
-    DEF_SUBFLEETS,
-    PERIOD_ECO,
-    PERIOD_SIM,
-    START_SIM,
-    FREQ_SIM,
-    CO2_PER_LITER_DIESEL_KG,
-    OPEM_SPEC_GRID,
-)
+from lift.frontend.definitions import DEF_GRID, DEF_PV, DEF_ESS, DEF_FLEET, DEF_CIS, DEF_SCN
 from lift.frontend.design import STYLES
 from lift.frontend.interfaces import StreamlitWrapper
 from lift.frontend.sidebar import create_sidebar_and_get_input
 from lift.frontend.results import display_results, display_empty_results
-
 from lift.frontend.utils import load_language, get_version, get_label
 
 VERSION = get_version()
@@ -172,111 +142,129 @@ def run_frontend():
     )
 
     # create sidebar and get input parameters from sidebar
-    settings = create_sidebar_and_get_input(domain=app.sidebar)
+    create_sidebar_and_get_input(domain=app.sidebar)
 
     def get_inputs():
-        return ComparisonInput(
-            location=ComparisonInputLocation(
-                coordinates=st.session_state.location,
+        return ComparisonScenario(
+            settings=ComparisonSettings(
+                latitude=st.session_state.location.latitude,
+                longitude=st.session_state.location.longitude,
+                wacc=st.session_state.eco_discount_rate * DEF_SCN.wacc.factor,
+                period_eco=DEF_SCN.period_eco,
+                sim_start=DEF_SCN.sim_start,
+                sim_duration=DEF_SCN.sim_duration,
+                sim_freq=DEF_SCN.sim_freq,
+            ),
+            fix=ComparisonFix(
+                capex_initial=ExistExpansionValue(
+                    baseline=0.0,
+                    expansion=st.session_state.eco_fix_cost_construction * DEF_SCN.capex_initial.factor,
+                ),
+                capem_initial=ExistExpansionValue(
+                    baseline=0.0,
+                    expansion=DEF_SCN.capem_initial,
+                ),
+            ),
+            dem=ComparisonFixedDemand(
                 slp=st.session_state.slp.lower(),
-                consumption_yrl_wh=st.session_state.consumption_yrl_wh * 1e6,
+                e_yrl=st.session_state.consumption_yrl_wh * DEF_SCN.e_yrl.factor,
             ),
             grid=ComparisonGrid(
                 capacity=ExistExpansionValue(
-                    preexisting=st.session_state.grid_preexisting * DEF_GRID.settings_preexisting.factor,
-                    expansion=st.session_state.grid_expansion * DEF_GRID.settings_expansion.factor,
+                    baseline=st.session_state.grid_preexisting * DEF_GRID.capacity_preexisting.factor,
+                    expansion=(st.session_state.grid_preexisting + st.session_state.grid_expansion)
+                    * DEF_GRID.capacity_expansion.factor,
                 ),
-                opex_spec_buy=st.session_state.eco_opex_spec_grid_buy
-                * DEF_ECONOMICS.settings_opex_spec_grid_buy.factor,
-                opex_spec_sell=st.session_state.eco_opex_spec_grid_sell
-                * DEF_ECONOMICS.settings_opex_spec_grid_sell.factor,
-                opex_spec_peak=st.session_state.eco_opex_spec_grid_peak
-                * DEF_ECONOMICS.settings_opex_spec_grid_peak.factor,
-                **DEF_GRID.input_dict,
-                period_eco=PERIOD_ECO,
+                opex_spec_buy=st.session_state.eco_opex_spec_grid_buy * DEF_GRID.opex_spec_buy.factor,
+                opex_spec_sell=st.session_state.eco_opex_spec_grid_sell * DEF_GRID.opex_spec_sell.factor,
+                opex_spec_peak=st.session_state.eco_opex_spec_grid_peak * DEF_GRID.opex_spec_peak.factor,
+                **DEF_GRID.values,
             ),
             pv=ComparisonPV(
                 capacity=ExistExpansionValue(
-                    preexisting=st.session_state.pv_preexisting * DEF_PV.settings_preexisting.factor,
-                    expansion=st.session_state.pv_expansion * DEF_PV.settings_expansion.factor,
+                    baseline=st.session_state.pv_preexisting * DEF_PV.capacity_preexisting.factor,
+                    expansion=(st.session_state.pv_preexisting + st.session_state.pv_expansion)
+                    * DEF_PV.capacity_expansion.factor,
                 ),
-                **DEF_PV.input_dict,
-                period_eco=PERIOD_ECO,
+                **DEF_PV.values,
             ),
             ess=ComparisonESS(
                 capacity=ExistExpansionValue(
-                    preexisting=st.session_state.ess_preexisting * DEF_ESS.settings_preexisting.factor,
-                    expansion=st.session_state.ess_expansion * DEF_ESS.settings_expansion.factor,
+                    baseline=st.session_state.ess_preexisting * DEF_ESS.capacity_preexisting.factor,
+                    expansion=(st.session_state.ess_preexisting + st.session_state.ess_expansion)
+                    * DEF_ESS.capacity_expansion.factor,
                 ),
-                **DEF_ESS.input_dict,
+                **DEF_ESS.values,
             ),
-            economics=ComparisonInputEconomics(
-                period_sim=PERIOD_SIM,
-                start_sim=START_SIM,
-                freq_sim=FREQ_SIM,
-                discount_rate=st.session_state.eco_discount_rate * DEF_ECONOMICS.settings_discount_rate.factor,
-                fix_cost_construction=st.session_state.eco_fix_cost_construction
-                * DEF_ECONOMICS.settings_fix_cost_construction.factor,
-                opex_spec_grid_buy=st.session_state.eco_opex_spec_grid_buy
-                * DEF_ECONOMICS.settings_opex_spec_grid_buy.factor,
-                opex_spec_grid_sell=st.session_state.eco_opex_spec_grid_sell
-                * DEF_ECONOMICS.settings_opex_spec_grid_sell.factor,
-                opex_spec_grid_peak=st.session_state.eco_opex_spec_grid_peak
-                * DEF_ECONOMICS.settings_opex_spec_grid_peak.factor,
-                opex_spec_route_charging=st.session_state.eco_opex_spec_route_charging
-                * DEF_ECONOMICS.settings_opex_spec_route_charging.factor,
-                opex_fuel=st.session_state.eco_opex_spec_fuel * DEF_ECONOMICS.settings_opex_spec_fuel.factor,
-                period_eco=PERIOD_ECO,
-                co2_per_liter_diesel_kg=CO2_PER_LITER_DIESEL_KG,
-                opem_spec_grid=OPEM_SPEC_GRID,
+            fleet=ComparisonFleet(
+                subblocks={
+                    k: ComparisonSubFleet(
+                        name=k,
+                        num_bev=ExistExpansionValue(
+                            baseline=st.session_state[f"num_bev_preexisting_{k}"],
+                            expansion=st.session_state[f"num_bev_preexisting_{k}"]
+                            + st.session_state[f"num_bev_expansion_{k}"],
+                        ),
+                        num_icev=ExistExpansionValue(
+                            baseline=st.session_state[f"num_{k}"] - st.session_state[f"num_bev_preexisting_{k}"],
+                            expansion=st.session_state[f"num_{k}"]
+                            - (
+                                st.session_state[f"num_bev_preexisting_{k}"]
+                                + st.session_state[f"num_bev_expansion_{k}"]
+                            ),
+                        ),
+                        charger=st.session_state[f"charger_{k}"].lower(),
+                        p_max=st.session_state[f"pwr_max_{k}"] * 1e3,
+                        capex_per_unit_bev=st.session_state[f"capex_bev_{k}"]
+                        * DEF_FLEET.subblocks[k].capex_per_unit_bev.factor,
+                        capex_per_unit_icev=st.session_state[f"capex_icev_{k}"]
+                        * DEF_FLEET.subblocks[k].capex_per_unit_icev.factor,
+                        toll_frac=st.session_state[f"toll_frac_{k}"] * DEF_FLEET.subblocks[k].toll_frac.factor,
+                        **DEF_FLEET.subblocks[k].values,
+                    )
+                    for k in DEF_FLEET.subblocks.keys()
+                },
+                opex_spec_fuel=st.session_state.eco_opex_spec_fuel * DEF_FLEET.opex_spec_fuel.factor,
+                opem_spec_fuel=DEF_FLEET.opem_spec_fuel,
+                opex_spec_onroute_charging=st.session_state.eco_opex_spec_route_charging
+                * DEF_FLEET.opex_spec_onroute_charging.factor,
+                opem_spec_onroute_charging=DEF_FLEET.opem_spec_onroute_charging,
             ),
-            subfleets={
-                k: ComparisonInputSubfleet(
-                    name=k,
-                    num_bev=ExistExpansionValue(
-                        preexisting=st.session_state[f"num_bev_preexisting_{k}"],
-                        expansion=st.session_state[f"num_bev_expansion_{k}"],
+            cis=ComparisonChargingInfrastructure(
+                p_lm_max=ExistExpansionValue(
+                    baseline=(
+                        np.inf
+                        if st.session_state[f"load_mngmnt_baseline"]
+                        != get_label("sidebar.chargers.load_mngmnt.type.options.static")
+                        else st.session_state[f"load_mngmnt_slider_baseline"]
                     ),
-                    num_total=st.session_state[f"num_{k}"],
-                    charger=st.session_state[f"charger_{k}"].lower(),
-                    pwr_max_w=st.session_state[f"pwr_max_{k}"] * 1e3,
-                    capex_bev_eur=st.session_state[f"capex_bev_{k}"] * DEF_SUBFLEETS[k].settings_capex_bev.factor,
-                    capex_icev_eur=st.session_state[f"capex_icev_{k}"] * DEF_SUBFLEETS[k].settings_capex_icev.factor,
-                    toll_frac=st.session_state[f"toll_frac_{k}"] * DEF_SUBFLEETS[k].settings_toll_share.factor,
-                    **DEF_SUBFLEETS[k].input_dict,
-                )
-                for k in DEF_SUBFLEETS.keys()
-            },
-            charging_infrastructure=ComparisonInputChargingInfrastructure(
-                pwr_max_w_baseline=np.inf
-                if st.session_state[f"load_mngmnt_baseline"]
-                != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                else st.session_state[f"load_mngmnt_slider_baseline"],
-                pwr_max_w_expansion=np.inf
-                if st.session_state[f"load_mngmnt_expansion"]
-                != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                else st.session_state[f"load_mngmnt_slider_expansion"],
-                chargers={
-                    k: ComparisonInputCharger(
+                    expansion=(
+                        np.inf
+                        if st.session_state[f"load_mngmnt_expansion"]
+                        != get_label("sidebar.chargers.load_mngmnt.type.options.static")
+                        else st.session_state[f"load_mngmnt_slider_expansion"]
+                    ),
+                ),
+                subblocks={
+                    k: ComparisonChargerType(
                         name=k,
                         num=ExistExpansionValue(
-                            preexisting=st.session_state[f"chg_{k}_preexisting"],
-                            expansion=st.session_state[f"chg_{k}_expansion"],
+                            baseline=st.session_state[f"chg_{k}_preexisting"],
+                            expansion=st.session_state[f"chg_{k}_preexisting"] + st.session_state[f"chg_{k}_expansion"],
                         ),
-                        pwr_max_w=st.session_state[f"chg_{k}_pwr"] * 1e3,
+                        p_max=st.session_state[f"chg_{k}_pwr"] * 1e3,
                         capex_per_unit=st.session_state[f"chg_{k}_cost"],
-                        **DEF_CHARGERS[k].input_dict,
+                        **DEF_CIS.subblocks[k].values,
                     )
-                    for k in DEF_CHARGERS.keys()
+                    for k in DEF_CIS.subblocks.keys()
                 },
             ),
         )
 
     if st.session_state["run_backend"] is True:
         try:
-            results = run_comparison(comparison_input=get_inputs())
+            results = run_comparison(comp_scn=get_inputs())
             display_results(results, domain=app.main)
-
         except GridPowerExceededError as e:
             st.error(f"{get_label('main.errors.grid')} {e}")
         except SOCError as e:

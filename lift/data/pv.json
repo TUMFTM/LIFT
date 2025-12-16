@@ -1,16 +1,34 @@
 {
-  "capex_spec": 0.9,
-  "capem_spec": 0.798,
-  "ls": 18,
-  "settings_preexisting": {
-    "min_value": 0.0,
-    "max_value": 1000.0,
-    "value": 10.0
+  "name": "pv",
+  "label": {
+    "de": "PV-Anlage",
+    "en": "PV Array"
   },
-  "settings_expansion": {
-    "min_value": 0.0,
-    "max_value": 1000.0,
-    "value": 40.0,
-    "step": 1.0
+  "icon": "☀️",
+  "values": {
+    "ls": 18,
+    "capex_spec": 0.9,
+    "capem_spec": 0.798,
+    "opex_spec": 0.0,
+    "opem_spec": 0.0
+  },
+  "inputs": {
+    "capacity_preexisting": {
+      "input_type": "Number",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 10.0,
+      "factor": 1e3,
+      "format": "%.0f"
+    },
+    "capacity_expansion": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 40.0,
+      "step": 1.0,
+      "factor": 1e3,
+      "format": "%.0f"
+    }
   }
 }

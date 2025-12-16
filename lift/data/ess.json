@@ -1,16 +1,36 @@
 {
-  "capex_spec": 0.45,
-  "capem_spec": 0.069,
-  "ls": 9,
-  "settings_preexisting": {
-    "min_value": 0.0,
-    "max_value": 1000.0,
-    "value": 5.0
+  "name": "ess",
+  "label": {
+    "de": "Stationärspeicher",
+    "en": "Stationary Storage"
   },
-  "settings_expansion": {
-    "min_value": 0.0,
-    "max_value": 1000.0,
-    "value": 15.0,
-    "step": 1.0
+  "icon": "🔋",
+  "values": {
+    "ls": 9,
+    "capex_spec": 0.45,
+    "capem_spec": 0.069,
+    "opex_spec": 0.0,
+    "opem_spec": 0.0,
+    "c_rate_max": 0.5,
+    "soc_init": 0.5
+  },
+  "inputs": {
+    "capacity_preexisting": {
+      "input_type": "Number",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 5.0,
+      "factor": 1e3,
+      "format": "%.0f"
+    },
+    "capacity_expansion": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 15.0,
+      "step": 1.0,
+      "factor": 1e3,
+      "format": "%.0f"
+    }
   }
 }

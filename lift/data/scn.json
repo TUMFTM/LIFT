@@ -1,0 +1,50 @@
+{
+  "name": "scenario",
+  "label": {
+    "de": "Szenario",
+    "en": "Scenario"
+  },
+  "icon": "📊",
+  "values": {
+    "period_eco": 18,
+    "timezone": "Europe/Berlin",
+    "sim_start": "2023-01-01 00:00",
+    "sim_duration": 365,
+    "sim_freq": 1.0,
+    "capem_initial": 0.0
+  },
+  "inputs": {
+    "wacc": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 20.0,
+      "value": 5.0,
+      "step": 0.1,
+      "factor": 1e-2,
+      "format": "%0.1f"
+    },
+    "slp": {
+      "input_type": "Select",
+      "options": ["H0", "H0_dyn", "G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "L0", "L1", "L2"],
+      "value": "G0"
+    },
+    "e_yrl": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 50.0,
+      "step": 1.0,
+      "factor": 1e6,
+      "format": "%.0f"
+    },
+    "capex_initial": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 1000.0,
+      "value": 10.0,
+      "step": 1.0,
+      "factor": 1e3,
+      "format": "%.0f"
+    }
+  }
+}

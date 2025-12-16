@@ -1,172 +1,270 @@
-"""Comparison-level interfaces for baseline vs. expansion scenarios.
-
-Purpose:
-- Defines the top-level input structures (`ComparisonInput`) that capture both baseline and expansion
-  phase parameters in a single configuration object.
-- Provides `ComparisonResult` which bundles phase results and computes comparative metrics (NPC delta,
-  payback periods, CO₂ delta).
-
-Relationships:
-- Consumed by `frontend/sidebar.py` to build user inputs; passed to `backend/comparison/comparison.py`
-  for orchestration.
-- `ComparisonInput*` classes are converted to phase-specific inputs via `evaluation.interfaces` factories.
-- `ComparisonResult` aggregates `PhaseResult` objects from the evaluation layer and exposes convenience
-  properties for frontend visualization.
-
-Key Logic:
-- `ExistExpansionValue` encapsulates values that differ between phases (preexisting vs. expansion capacity).
-  Its `get_value(phase)` method returns the appropriate value for baseline (preexisting) or expansion (total).
-- `ComparisonResult` computes payback periods via linear interpolation on cumulative cashflow differences.
-  NPC delta and CO₂ delta are simple differences of aggregated totals.
-"""
-
-from dataclasses import dataclass, field
-from typing import Literal
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 
-import lift.backend.evaluation as eval
-import lift.backend.simulation as sim
+if TYPE_CHECKING:
+    from lift.backend.evaluation.blocks import ScenarioResult
 
 
 @dataclass
 class ExistExpansionValue:
-    preexisting: float | int
+    baseline: float | int
     expansion: float | int
 
+
+@dataclass(frozen=True)
+class ComparisonSettings:
+    latitude: float
+    longitude: float
+    wacc: float
+    period_eco: int
+    sim_start: pd.Timestamp
+    sim_duration: pd.Timedelta
+    sim_freq: pd.Timedelta
+
     @property
-    def total(self) -> float:
-        return self.preexisting + self.expansion
-
-    def get_value(self, phase: Literal["baseline", "expansion"]) -> float:
-        return self.preexisting if phase == "baseline" else self.total
-
-
-@dataclass
-class ComparisonInvestComponent:
-    capacity: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=10e3, expansion=50e3))
-    capex_spec: float = 1.0
-    capem_spec: float = 1.0
-    opex_spec: float = 1.0
-    opem_spec: float = 1.0
-    ls: int = 18
-    period_eco: int = 18
-
-
-@dataclass
-class ComparisonGrid(ComparisonInvestComponent):
-    opex_spec_buy: float = 1.0
-    opex_spec_sell: float = 1.0
-    opex_spec_peak: float = 1.0
-    opem_spec: float = 1.0
-    ls: int = 18
-
-
-@dataclass
-class ComparisonPV(ComparisonInvestComponent):
-    pass
-
-
-@dataclass
-class ComparisonESS(ComparisonInvestComponent):
-    pass
-
-
-@dataclass
-class ComparisonInputLocation:
-    coordinates: sim.Coordinates = field(default_factory=sim.Coordinates)
-    slp: str = "h0"
-    consumption_yrl_wh: float = 10000000.0
-
-
-@dataclass
-class ComparisonInputSubfleet:
-    name: str = "hlt"
-    num_bev: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=1, expansion=4))
-    num_total: int = 5
-    battery_capacity_wh: float = 80e3
-    charger: str = "ac"
-    pwr_max_w: float = 11e3
-    capex_bev_eur: float = 100e3
-    capex_icev_eur: float = 80e3
-    toll_frac: float = 0.3
-    ls: float = 6.0
-    capem_bev: float = 20000.0
-    capem_icev: float = 15000.0
-    mntex_eur_km_bev: float = 0.05
-    mntex_eur_km_icev: float = 0.1
-    consumption_icev: float = 27.0
-    toll_eur_per_km_bev: float = 0.0
-    toll_eur_per_km_icev: float = 1.0
-
-
-@dataclass
-class ComparisonInputCharger:
-    period_eco: int = 18
-    ls: int = 18
-    name: str = "ac"
-    num: ExistExpansionValue = field(default_factory=lambda: ExistExpansionValue(preexisting=0, expansion=4))
-    pwr_max_w: float = 11e3
-    capex_per_unit: float = 3000.0
-    capem_per_unit: float = 1.0
-
-
-@dataclass
-class ComparisonInputChargingInfrastructure:
-    pwr_max_w_baseline: float = np.inf
-    pwr_max_w_expansion: float = np.inf
-    chargers: dict[str, ComparisonInputCharger] = field(default_factory=lambda: {"ac": ComparisonInputCharger()})
-
-
-@dataclass
-class ComparisonInputEconomics:
-    period_sim: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(days=365))
-    start_sim: pd.Timestamp = field(default_factory=lambda: pd.Timestamp("2023-01-01 00:00"))
-    freq_sim: pd.Timedelta = field(default_factory=lambda: pd.Timedelta(hours=1))
-    fix_cost_construction: float = 10000
-    opex_spec_grid_buy: float = 30e-5
-    opex_spec_grid_sell: float = -6e-5
-    opex_spec_grid_peak: float = 150e-3
-    opex_spec_route_charging: float = 49e-5
-    opex_fuel: float = 1.7
-    period_eco: int = 18
-    discount_rate: float = 0.05
-    co2_per_liter_diesel_kg: float = 3.08
-    opem_spec_grid: float = 0.0004
-
-
-@dataclass
-class ComparisonInput:
-    location: ComparisonInputLocation = field(default_factory=ComparisonInputLocation)
-
-    grid: ComparisonGrid = field(default_factory=lambda: ComparisonGrid())
-    pv: ComparisonPV = field(default_factory=lambda: ComparisonPV())
-    ess: ComparisonESS = field(default_factory=lambda: ComparisonESS())
-
-    economics: ComparisonInputEconomics = field(default_factory=ComparisonInputEconomics)
-
-    subfleets: dict[str, ComparisonInputSubfleet] = field(
-        default_factory=lambda: {
-            "hlt": ComparisonInputSubfleet(name="hlt"),
-            "hst": ComparisonInputSubfleet(name="hst"),
+    def to_dict(self):
+        return {
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "wacc": self.wacc,
+            "period_eco": self.period_eco,
+            "sim_start": self.sim_start,
+            "sim_duration": self.sim_duration,
+            "sim_freq": self.sim_freq,
         }
-    )
 
-    charging_infrastructure: ComparisonInputChargingInfrastructure = field(
-        default_factory=lambda: ComparisonInputChargingInfrastructure()
-    )
+
+@dataclass(frozen=True)
+class ComparisonFix:
+    capex_initial: ExistExpansionValue
+    capem_initial: ExistExpansionValue
+
+    @property
+    def to_dict(self):
+        return {
+            "capex_initial": self.capex_initial,
+            "capem_initial": self.capem_initial,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonFixedDemand:
+    slp: str
+    e_yrl: float
+
+    @property
+    def to_dict(self):
+        return {
+            "slp": self.slp,
+            "e_yrl": self.e_yrl,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonGrid:
+    ls: int
+    capacity: ExistExpansionValue
+    capex_spec: float
+    capem_spec: float
+    opex_spec_buy: float
+    opex_spec_sell: float
+    opex_spec_peak: float
+    opem_spec: float
+
+    @property
+    def to_dict(self):
+        return {
+            "ls": self.ls,
+            "capacity": self.capacity,
+            "capex_spec": self.capex_spec,
+            "capem_spec": self.capem_spec,
+            "opex_spec_buy": self.opex_spec_buy,
+            "opex_spec_sell": self.opex_spec_sell,
+            "opex_spec_peak": self.opex_spec_peak,
+            "opem_spec": self.opem_spec,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonPV:
+    ls: int
+    capacity: ExistExpansionValue
+    capex_spec: float
+    capem_spec: float
+    opex_spec: float
+    opem_spec: float
+
+    @property
+    def to_dict(self):
+        return {
+            "ls": self.ls,
+            "capacity": self.capacity,
+            "capex_spec": self.capex_spec,
+            "capem_spec": self.capem_spec,
+            "opex_spec": self.opex_spec,
+            "opem_spec": self.opem_spec,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonESS:
+    ls: int
+    capacity: ExistExpansionValue
+    capex_spec: float
+    capem_spec: float
+    opex_spec: float
+    opem_spec: float
+    c_rate_max: float
+    soc_init: float
+
+    @property
+    def to_dict(self):
+        return {
+            "ls": self.ls,
+            "capacity": self.capacity,
+            "capex_spec": self.capex_spec,
+            "capem_spec": self.capem_spec,
+            "opex_spec": self.opex_spec,
+            "opem_spec": self.opem_spec,
+            "c_rate_max": self.c_rate_max,
+            "soc_init": self.soc_init,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonSubFleet:
+    name: str
+    ls: int
+    num_bev: ExistExpansionValue
+    num_icev: ExistExpansionValue
+    capacity: float
+    charger: str
+    p_max: float
+    capex_per_unit_bev: float
+    capex_per_unit_icev: float
+    capem_per_unit_bev: float
+    capem_per_unit_icev: float
+    mntex_spec_bev: float
+    mntex_spec_icev: float
+    toll_frac: float
+    toll_spec_bev: float
+    toll_spec_icev: float
+    consumption_spec_icev: float
+    soc_init: float
+
+    @property
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "ls": self.ls,
+            "num_bev": self.num_bev,
+            "num_icev": self.num_icev,
+            "capacity": self.capacity,
+            "charger": self.charger,
+            "p_max": self.p_max,
+            "capex_per_unit_bev": self.capex_per_unit_bev,
+            "capex_per_unit_icev": self.capex_per_unit_icev,
+            "capem_per_unit_bev": self.capem_per_unit_bev,
+            "capem_per_unit_icev": self.capem_per_unit_icev,
+            "mntex_spec_bev": self.mntex_spec_bev,
+            "mntex_spec_icev": self.mntex_spec_icev,
+            "toll_frac": self.toll_frac,
+            "toll_spec_bev": self.toll_spec_bev,
+            "toll_spec_icev": self.toll_spec_icev,
+            "consumption_spec_icev": self.consumption_spec_icev,
+            "soc_init": self.soc_init,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonFleet:
+    subblocks: dict[str, ComparisonSubFleet]
+    opex_spec_fuel: float
+    opem_spec_fuel: float
+    opex_spec_onroute_charging: float
+    opem_spec_onroute_charging: float
+
+    @property
+    def to_dict(self):
+        return {
+            "subblocks": self.subblocks,
+            "opex_spec_fuel": self.opex_spec_fuel,
+            "opem_spec_fuel": self.opem_spec_fuel,
+            "opex_spec_onroute_charging": self.opex_spec_onroute_charging,
+            "opem_spec_onroute_charging": self.opem_spec_onroute_charging,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonChargerType:
+    name: str
+    num: ExistExpansionValue
+    p_max: float
+    capex_per_unit: float
+    capem_per_unit: float
+    ls: int
+
+    @property
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "num": self.num,
+            "p_max": self.p_max,
+            "capex_per_unit": self.capex_per_unit,
+            "capem_per_unit": self.capem_per_unit,
+            "ls": self.ls,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonChargingInfrastructure:
+    subblocks: dict[str, ComparisonChargerType]
+    p_lm_max: ExistExpansionValue
+
+    @property
+    def to_dict(self):
+        return {
+            "subblocks": self.subblocks,
+            "p_lm_max": self.p_lm_max,
+        }
+
+
+@dataclass(frozen=True)
+class ComparisonScenario:
+    settings: ComparisonSettings
+    fix: ComparisonFix
+    dem: ComparisonFixedDemand
+    grid: ComparisonGrid
+    pv: ComparisonPV
+    ess: ComparisonESS
+    fleet: ComparisonFleet
+    cis: ComparisonChargingInfrastructure
+
+    @property
+    def to_dict(self):
+        return {
+            "fix": self.fix,
+            "dem": self.dem,
+            "grid": self.grid,
+            "pv": self.pv,
+            "ess": self.ess,
+            "fleet": self.fleet,
+            "cis": self.cis,
+        }
 
 
 @dataclass
 class ComparisonResult:
-    baseline: eval.PhaseResult
-    expansion: eval.PhaseResult
+    baseline: "ScenarioResult"
+    expansion: "ScenarioResult"
 
     @property
     def npc_delta(self) -> float:
-        return self.baseline.cashflow_dis["totex"].sum() - self.expansion.cashflow_dis["totex"].sum()
+        return self.baseline.totex_dis.sum() - self.expansion.totex_dis.sum()
 
     @staticmethod
     def get_payback_period_yrs(diff) -> float | None:
@@ -181,18 +279,14 @@ class ComparisonResult:
 
     @property
     def payback_period_yrs(self) -> float | None:
-        diff = np.cumsum(self.baseline.cashflow_dis["totex"].sum(axis=0)) - np.cumsum(
-            self.expansion.cashflow_dis["totex"].sum(axis=0)
-        )
+        diff = np.cumsum(self.baseline.totex_dis.sum(axis=0)) - np.cumsum(self.expansion.totex_dis.sum(axis=0))
         return self.get_payback_period_yrs(diff)
 
     @property
     def co2_delta(self) -> float:
-        return self.baseline.emissions["totex"].sum() - self.expansion.emissions["totex"].sum()
+        return self.baseline.totem.sum() - self.expansion.totem.sum()
 
     @property
     def payback_period_co2_yrs(self) -> float | None:
-        diff = np.cumsum(self.baseline.emissions["totex"].sum(axis=0)) - np.cumsum(
-            self.expansion.emissions["totex"].sum(axis=0)
-        )
+        diff = np.cumsum(self.baseline.totem.sum(axis=0)) - np.cumsum(self.expansion.totem.sum(axis=0))
         return self.get_payback_period_yrs(diff)

@@ -26,8 +26,8 @@ import streamlit as st
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 
-from .definitions import PERIOD_ECO
-from .design import COLOR_BL, COLOR_EX, LINE_HORIZONTAL
+from .definitions import DEF_SCN
+from .design import COLOR_BL, COLOR_EX
 from .utils import get_label
 
 
@@ -216,12 +216,12 @@ def display_results(results, domain):
         )
         col1.altair_chart(
             _create_bar_comparison(
-                val_baseline=results.baseline.cashflow_dis["totex"].sum(),
-                val_expansion=results.expansion.cashflow_dis["totex"].sum(),
+                val_baseline=results.baseline.totex_dis.sum(),
+                val_expansion=results.expansion.totex_dis.sum(),
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.costs.axis')} in EUR",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width="stretch",
         )
 
         _heading_with_help(
@@ -234,13 +234,13 @@ def display_results(results, domain):
         )
         col2.altair_chart(
             _create_bar_comparison(
-                val_baseline=results.baseline.emissions["totex"].sum(),
-                val_expansion=results.expansion.emissions["totex"].sum(),
+                val_baseline=results.baseline.totem.sum(),
+                val_expansion=results.expansion.totem.sum(),
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.emissions.axis')} in t CO₂-eq.",
                 factor_display=1e-3,  # convert from kg to t
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width="stretch",
         )
 
         _heading_with_help(
@@ -258,7 +258,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_consumption.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width="stretch",
         )
 
         _heading_with_help(
@@ -276,7 +276,7 @@ def display_results(results, domain):
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_sufficiency.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width="stretch",
         )
 
         _heading_with_help(
@@ -289,12 +289,12 @@ def display_results(results, domain):
         )
         col5.altair_chart(
             _create_ring_comparison(
-                val_baseline=results.baseline.site_charging,
-                val_expansion=results.expansion.site_charging,
+                val_baseline=results.baseline.home_charging_fraction,
+                val_expansion=results.expansion.home_charging_fraction,
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.home_charging.axis')} in %",
             ).properties(**PLOT_CONFIG),
-            use_container_width=True,
+            width="stretch",
         )
 
     _show_kpis(phases=phases, domain=domain.kpi_diagrams)
@@ -309,10 +309,10 @@ def display_results(results, domain):
         col1, col2 = st.columns([4, 1])
         with col1:
             plot_flow(
-                baseline_capex=results.baseline.cashflow_dis["capex"].sum(axis=0),
-                baseline_opex=results.baseline.cashflow_dis["opex"].sum(axis=0),
-                expansion_capex=results.expansion.cashflow_dis["capex"].sum(axis=0),
-                expansion_opex=results.expansion.cashflow_dis["opex"].sum(axis=0),
+                baseline_capex=results.baseline.capex_dis,
+                baseline_opex=results.baseline.opex_dis,
+                expansion_capex=results.expansion.capex_dis,
+                expansion_opex=results.expansion.opex_dis,
                 x_label=get_label("main.time_diagrams.costs.xaxis"),
                 y_label=f"{get_label('main.time_diagrams.costs.yaxis')} in EUR",
                 phase_labels=phases,
@@ -338,7 +338,7 @@ def display_results(results, domain):
                 size=5,
             )
             st.markdown(
-                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {PERIOD_ECO} {get_label('main.time_diagrams.costs.saving.years')}"
+                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {DEF_SCN.period_eco} {get_label('main.time_diagrams.costs.saving.years')}"
             )
 
     with domain.time_diagrams.emissions():
@@ -350,10 +350,10 @@ def display_results(results, domain):
         col1, col2 = st.columns([4, 1])
         with col1:
             plot_flow(
-                baseline_capex=results.baseline.emissions["capex"].sum(axis=0) * 1e-3,  # convert from kg to t
-                baseline_opex=results.baseline.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
-                expansion_capex=results.expansion.emissions["capex"].sum(axis=0) * 1e-3,  # convert from kg to t
-                expansion_opex=results.expansion.emissions["opex"].sum(axis=0) * 1e-3,  # convert from kg to t
+                baseline_capex=results.baseline.capem * 1e-3,  # convert from kg to t
+                baseline_opex=results.baseline.opem * 1e-3,  # convert from kg to t
+                expansion_capex=results.expansion.capem * 1e-3,  # convert from kg to t
+                expansion_opex=results.expansion.opem * 1e-3,  # convert from kg to t
                 x_label=get_label("main.time_diagrams.emissions.xaxis"),
                 y_label=f"{get_label('main.time_diagrams.emissions.yaxis')} in t CO₂-eq.",
                 phase_labels=phases,
@@ -379,7 +379,7 @@ def display_results(results, domain):
                 size=5,
             )
             st.markdown(
-                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {PERIOD_ECO} {get_label('main.time_diagrams.emissions.saving.years')}"
+                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {DEF_SCN.period_eco} {get_label('main.time_diagrams.emissions.saving.years')}"
             )
 
 
@@ -398,8 +398,8 @@ def plot_flow(
     y_label: str,
     phase_labels: tuple[str, str],
 ):
-    years = np.arange(PERIOD_ECO + 1, dtype=int)
-    n_years = PERIOD_ECO + 1
+    years = np.arange(DEF_SCN.period_eco + 1, dtype=int)
+    n_years = DEF_SCN.period_eco + 1
 
     # the last entry holds data for the first year after the project duration
     # - capex: this entry holds salvage values, caused by components which are not at the end of their lifespan at
@@ -411,7 +411,6 @@ def plot_flow(
     # This logic is also implemented in the discounting of capex and opex.
     # Therefore, opex are shifted by one year in this plotting code (end of year n equals beginning of year n + 1)
     # Additionally, a value for the start of the line at 0, 0 has to be added
-
     df = pd.DataFrame(
         data={
             "value": np.concatenate(
@@ -473,4 +472,4 @@ def plot_flow(
         )
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")

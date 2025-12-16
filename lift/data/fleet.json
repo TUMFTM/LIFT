@@ -1,0 +1,414 @@
+{
+  "name": "fleet",
+  "label": {
+    "de": "Flotte",
+    "en": "Fleet"
+  },
+  "icon": "\uD83C\uDD7F\uFE0F",
+  "values": {
+    "opem_spec_fuel": 0.5,
+    "opem_spec_onroute_charging": 0.05
+  },
+  "inputs": {
+    "opex_spec_fuel": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 3.0,
+      "value": 1.56,
+      "step": 0.01,
+      "factor": 1.0,
+      "format": "%0.2f"
+    },
+    "opex_spec_onroute_charging": {
+      "input_type": "Slider",
+      "min_value": 0.0,
+      "max_value": 3.0,
+      "value": 0.49,
+      "step": 0.01,
+      "factor": 1e-3,
+      "format": "%0.2f"
+    }
+  },
+  "subblocks": {
+    "hlt": {
+      "name": "hlt",
+      "label": {
+        "de": "Glieder-/Sattelzüge",
+        "en": "Truck combinations"
+      },
+      "icon": "🚛",
+      "weight_max": "28-42",
+      "values": {
+        "ls": 6,
+        "capacity": 480e3,
+        "capem_per_unit_bev": 84.6e3,
+        "capem_per_unit_icev": 54e3,
+        "mntex_spec_bev": 0.1324,
+        "mntex_spec_icev": 0.185,
+        "toll_spec_bev": 0.0,
+        "toll_spec_icev": 0.269,
+        "consumption_spec_icev": 27.0,
+        "soc_init": 0.5
+      },
+      "inputs": {
+        "num_total": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "max_value": 50.0,
+          "value": 0.0
+        },
+        "num_bev_preexisting": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "num_bev_expansion": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "charger": {
+          "input_type": "Select"
+        },
+        "p_max": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "step": 1.0,
+          "factor": 1e3,
+          "format": "%.0f"
+        },
+        "capex_per_unit_bev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 250e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "capex_per_unit_icev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 150e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "toll_frac": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100.0,
+          "value": 80.0,
+          "step": 1.0,
+          "factor": 1e-2,
+          "format": "%.0f"
+        }
+      }
+    },
+    "hst": {
+      "name": "hst",
+      "label": {
+        "de": "Schwere Lkw",
+        "en": "Heavy-duty Trucks"
+      },
+      "icon": "🚚",
+      "weight_max": "18-26",
+      "values": {
+        "ls": 6,
+        "capacity": 400e3,
+        "capem_per_unit_bev": 59e3,
+        "capem_per_unit_icev": 31.2e3,
+        "mntex_spec_bev": 0.1324,
+        "mntex_spec_icev": 0.185,
+        "toll_spec_bev": 0.0,
+        "toll_spec_icev": 0.242,
+        "consumption_spec_icev": 23.0,
+        "soc_init": 0.5
+      },
+      "inputs": {
+        "num_total": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "max_value": 50.0,
+          "value": 0.0
+        },
+        "num_bev_preexisting": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "num_bev_expansion": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "charger": {
+          "input_type": "Select"
+        },
+        "p_max": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "step": 1.0,
+          "factor": 1e3,
+          "format": "%.0f"
+        },
+        "capex_per_unit_bev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 250e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "capex_per_unit_icev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 150e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "toll_frac": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100.0,
+          "value": 70.0,
+          "step": 1.0,
+          "factor": 1e-2,
+          "format": "%.0f"
+        }
+      }
+    },
+    "ust": {
+      "name": "ust",
+      "label": {
+        "de": "Leichte Lkw",
+        "en": "Light Trucks"
+      },
+      "icon": "🚚",
+      "weight_max": "7.5-18",
+      "values": {
+        "ls": 6,
+        "capacity": 160e3,
+        "capem_per_unit_bev": 26.7e3,
+        "capem_per_unit_icev": 16.2e3,
+        "mntex_spec_bev": 0.1051,
+        "mntex_spec_icev": 0.1577,
+        "toll_spec_bev": 0.0,
+        "toll_spec_icev": 0.137,
+        "consumption_spec_icev": 19.0,
+        "soc_init": 0.5
+      },
+      "inputs": {
+        "num_total": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "max_value": 50.0,
+          "value": 0.0
+        },
+        "num_bev_preexisting": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "num_bev_expansion": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "charger": {
+          "input_type": "Select"
+        },
+        "p_max": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "step": 1.0,
+          "factor": 1e3,
+          "format": "%.0f"
+        },
+        "capex_per_unit_bev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 150e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "capex_per_unit_icev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 250e3,
+          "value": 100e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "toll_frac": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100.0,
+          "value": 40.0,
+          "step": 1.0,
+          "factor": 1e-2,
+          "format": "%.0f"
+        }
+      }
+    },
+    "usv": {
+      "name": "usv",
+      "label": {
+        "de": "Transporter",
+        "en": "Light commercial vehicle"
+      },
+      "icon": "🚐",
+      "weight_max": "3.5",
+      "values": {
+        "ls": 6,
+        "capacity": 81e3,
+        "capem_per_unit_bev": 13.87e3,
+        "capem_per_unit_icev": 8.622e3,
+        "mntex_spec_bev": 0.0275,
+        "mntex_spec_icev": 0.0339,
+        "toll_spec_bev": 0.0,
+        "toll_spec_icev": 0.0,
+        "consumption_spec_icev": 15.0,
+        "soc_init": 0.5
+      },
+      "inputs": {
+        "num_total": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "max_value": 50.0,
+          "value": 0.0
+        },
+        "num_bev_preexisting": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "num_bev_expansion": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "charger": {
+          "input_type": "Select"
+        },
+        "p_max": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "step": 1.0,
+          "factor": 1e3,
+          "format": "%.0f"
+        },
+        "capex_per_unit_bev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100e3,
+          "value": 45e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "capex_per_unit_icev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100e3,
+          "value": 35e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "toll_frac": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100.0,
+          "value": 0.0,
+          "step": 1.0,
+          "factor": 1e-2,
+          "format": "%.0f"
+        }
+      }
+    },
+    "pkw": {
+      "name": "pkw",
+      "label": {
+        "de": "PKW",
+        "en": "Passenger cars"
+      },
+      "icon": "\uD83D\uDE97",
+      "weight_max": "2.5",
+      "values": {
+        "ls": 6,
+        "capacity": 58e3,
+        "capem_per_unit_bev": 4.78e3,
+        "capem_per_unit_icev": 2.694e3,
+        "mntex_spec_bev": 0.036,
+        "mntex_spec_icev": 0.063,
+        "toll_spec_bev": 0.0,
+        "toll_spec_icev": 0.0,
+        "consumption_spec_icev": 6.0,
+        "soc_init": 0.5
+      },
+      "inputs": {
+        "num_total": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "max_value": 50.0,
+          "value": 0.0
+        },
+        "num_bev_preexisting": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "num_bev_expansion": {
+          "input_type": "Number",
+          "min_value": 0.0,
+          "value": 0.0
+        },
+        "charger": {
+          "input_type": "Select"
+        },
+        "p_max": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "step": 1.0,
+          "factor": 1e3,
+          "format": "%.0f"
+        },
+        "capex_per_unit_bev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100e3,
+          "value": 45e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "capex_per_unit_icev": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100e3,
+          "value": 35e3,
+          "step": 1e3,
+          "factor": 1.0,
+          "format": "%.0f"
+        },
+        "toll_frac": {
+          "input_type": "Slider",
+          "min_value": 0.0,
+          "max_value": 100.0,
+          "value": 0.0,
+          "step": 1.0,
+          "factor": 1e-2,
+          "format": "%.0f"
+        }
+      }
+    }
+  }
+}

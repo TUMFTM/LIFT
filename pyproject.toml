@@ -24,6 +24,7 @@ dependencies = [
     "pytz",
     "streamlit",
     "streamlit_folium",
+    "oemof-solph",
 ]
 
 [dependency-groups]

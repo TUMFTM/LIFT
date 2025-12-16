@@ -16,14 +16,15 @@ Key Logic:
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal, Self
 
+import pandas as pd
 import streamlit as st
 
 from .utils import get_label
 
-from lift.backend.simulation.interfaces import Coordinates
+from lift.backend.evaluation.blocks import Coordinates
 
 
 class StreamlitWrapper:
@@ -57,8 +58,8 @@ class SettingsInput(ABC):
 
 @dataclass
 class SettingsNumeric(SettingsInput, ABC):
-    max_value: float
-    value: float
+    max_value: float = 1.0
+    value: float = 0.0
     min_value: float = 0.0
     format: str = "%.0f"
     factor: float = 1.0
@@ -97,8 +98,8 @@ class SettingsNumberInput(SettingsNumeric):
 
 @dataclass
 class SettingsSelectBox(SettingsInput):
-    options: list[str]
-    value: str
+    options: list[str] | None = None
+    value: str | None = None
 
     def get_streamlit_element(self, label: str, help_msg: str | None = None, key: str | None = None, domain=st):
         return domain.selectbox(
@@ -110,18 +111,42 @@ class SettingsSelectBox(SettingsInput):
         )
 
 
+def create_settings_obj(input_type: Literal["Slider", "Number", "Select"], **kwargs) -> SettingsInput:
+    # ToDo: use single dispatchmethod?
+    if input_type == "Slider":
+        return SettingsSlider(**kwargs)
+    elif input_type == "Number":
+        return SettingsNumberInput(**kwargs)
+    elif input_type == "Select":
+        return SettingsSelectBox(**kwargs)
+    else:
+        raise ValueError(f"Input type '{input_type}' is not supported.")
+
+
+@dataclass(frozen=True)
 class FrontendInterface(ABC):
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, dict_def) -> Self: ...
-
-
-@dataclass
-class FrontendBlockInterface(FrontendInterface, ABC):
     name: str
     label: str | dict[str, str]  # use dict to support different languages
     icon: str
-    ls: int
+
+    _value_keys: list[str] = field(repr=False)
+    _input_keys: list[str] = field(repr=False)
+
+    @classmethod
+    def from_dict(cls, dict_def) -> Self:
+        values = dict_def.pop("values", {})
+        inputs = dict_def.pop("inputs", {})
+        return cls(
+            **dict_def,
+            **values,
+            **{k: create_settings_obj(**v) for k, v in inputs.items()},
+            _value_keys=list(values.keys()),
+            _input_keys=list(inputs.keys()),
+        )
+
+    @property
+    def values(self) -> dict:
+        return {k: getattr(self, k) for k in self._value_keys}
 
     def get_label(self, language: str):
         """
@@ -155,144 +180,157 @@ class FrontendBlockInterface(FrontendInterface, ABC):
             )
 
 
-@dataclass
-class FrontendEnergyBlockInterface(FrontendBlockInterface, ABC):
-    settings_preexisting: SettingsNumberInput
-    settings_expansion: SettingsSlider
+@dataclass(frozen=True)
+class FrontendBlockInterface(FrontendInterface, ABC):
+    ls: int
 
 
-@dataclass
-class FrontendChargerInterface(FrontendEnergyBlockInterface):
-    settings_pwr_max: SettingsSlider
-    settings_cost_per_unit_eur: SettingsSlider
-    capem: float
-
-    @classmethod
-    def from_dict(cls, dict_def) -> Self:
-        settings = {
-            "settings_pwr_max": SettingsSlider(**dict_def["settings_pwr_max"], factor=1e3),
-            "settings_preexisting": SettingsNumberInput(**dict_def["settings_preexisting"]),
-            "settings_expansion": SettingsSlider(**dict_def["settings_expansion"], step=1.0),
-            "settings_cost_per_unit_eur": SettingsSlider(**dict_def["settings_cost_per_unit_eur"]),
-        }
-        return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
-
-    @property
-    def input_dict(self):
-        return {
-            k: getattr(self, k, None)
-            for k in [
-                "ls",
-                "capem",
-            ]
-        }
-
-
-@dataclass
-class FrontendSubFleetInterface(FrontendBlockInterface):
-    weight_max_t: float
-    battery_capacity_wh: float
-    capem_bev: float
-    capem_icev: float
-    weight_empty_bev: float
-    weight_empty_icev: float
-    toll_eur_per_km_bev: float
-    toll_eur_per_km_icev: float
-    mntex_eur_km_bev: float
-    mntex_eur_km_icev: float
-    consumption_icev: float
-    settings_toll_share: SettingsSlider
-    settings_capex_bev: SettingsSlider
-    settings_capex_icev: SettingsSlider
-
-    @classmethod
-    def from_dict(cls, dict_def) -> Self:
-        settings = {
-            "settings_toll_share": SettingsSlider(**dict_def["settings_toll_share"], factor=1e-2),
-            "settings_capex_bev": SettingsSlider(**dict_def["settings_capex_bev"], step=1000.0),
-            "settings_capex_icev": SettingsSlider(**dict_def["settings_capex_icev"], step=1000.0),
-        }
-        return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
-
-    @property
-    def input_dict(self):
-        return {
-            k: getattr(self, k, None)
-            for k in [
-                "battery_capacity_wh",
-                "ls",
-                "capem_bev",
-                "capem_icev",
-                "mntex_eur_km_bev",
-                "mntex_eur_km_icev",
-                "consumption_icev",
-                "toll_eur_per_km_bev",
-                "toll_eur_per_km_icev",
-            ]
-        }
-
-
-@dataclass
-class FrontendSizableBlockInterface(FrontendEnergyBlockInterface):
-    """
-    Use to model:
-    - Grid connection
-    - Photovoltaic array (PV)
-    - Battery electric stationary storage (BESS)
-    """
+@dataclass(frozen=True)
+class FrontendContinuousBlockInterface(FrontendBlockInterface, ABC):
+    capacity_preexisting: SettingsInput
+    capacity_expansion: SettingsInput
 
     capex_spec: float
     capem_spec: float
+    opex_spec: float
+    opem_spec: float
+
+
+@dataclass(frozen=True)
+class FrontendGridInterface(FrontendContinuousBlockInterface):
+    opex_spec: float = field(default=None, init=False, repr=False)
+    opex_spec_buy: SettingsInput
+    opex_spec_sell: SettingsInput
+    opex_spec_peak: SettingsInput
+
+
+@dataclass(frozen=True)
+class FrontendPVInterface(FrontendContinuousBlockInterface):
+    pass
+
+
+@dataclass(frozen=True)
+class FrontendESSInterface(FrontendContinuousBlockInterface):
+    c_rate_max: float
+    soc_init: float
+
+
+@dataclass(frozen=True)
+class FrontendDiscreteBlockInterface(FrontendBlockInterface):
+    capex_per_unit: SettingsInput
+    capem_per_unit: float
+
+    num_preexisting: SettingsInput
+    num_expansion: SettingsInput
+
+
+@dataclass(frozen=True)
+class FrontendChargerTypeInterface(FrontendDiscreteBlockInterface):
+    p_max: SettingsInput
+
+
+@dataclass(frozen=True)
+class FrontendSubfleetInterface(FrontendDiscreteBlockInterface):
+    # for subfleets these values are distinguished by bev/icev
+    capex_per_unit: SettingsInput = field(default=None, init=False, repr=False)
+    capem_per_unit: float = field(default=None, init=False, repr=False)
+    num_preexisting: SettingsInput = field(default=None, init=False, repr=False)
+    num_expansion: SettingsInput = field(default=None, init=False, repr=False)
+
+    weight_max: float  # required for labeling purpose in GUI, no effect on calculation
+    capacity: float
+    capem_per_unit_bev: float
+    capem_per_unit_icev: float
+    mntex_spec_bev: float
+    mntex_spec_icev: float
+    toll_spec_bev: float
+    toll_spec_icev: float
+    consumption_spec_icev: float
+    soc_init: float
+
+    num_total: SettingsInput
+    num_bev_preexisting: SettingsInput
+    num_bev_expansion: SettingsInput
+    charger: SettingsInput
+    p_max: SettingsInput
+    capex_per_unit_bev: SettingsInput
+    capex_per_unit_icev: SettingsInput
+    toll_frac: SettingsInput
+
+
+@dataclass(frozen=True)
+class FrontendAggregatorInterface(FrontendInterface, ABC):
+    subblocks: dict[str, FrontendBlockInterface]
+
+    @classmethod
+    @abstractmethod
+    def create_subblock_from_dict(cls, dict_def) -> FrontendBlockInterface: ...
 
     @classmethod
     def from_dict(cls, dict_def) -> Self:
-        settings = {
-            "settings_preexisting": SettingsNumberInput(**dict_def["settings_preexisting"], factor=1e3),
-            "settings_expansion": SettingsSlider(**dict_def["settings_expansion"], factor=1e3),
-        }
-        return cls(**{key: dict_def[key] for key in dict_def if key not in settings}, **settings)
-
-    @property
-    def input_dict(self) -> dict:
-        return {
-            k: getattr(self, k, None)
-            for k in [
-                "capex_spec",
-                "capem_spec",
-                "ls",
-            ]
-        }
-
-
-@dataclass
-class FrontendDemandInterface:
-    settings_dem_profile: SettingsSelectBox
-    settings_dem_yr: SettingsSlider
-
-    @classmethod
-    def from_parameters(
-        cls,
-        options: list,
-        options_default: str,
-        max_value: float,
-        value: float,
-        step: float,
-    ) -> Self:
+        values = dict_def.pop("values", {})
+        inputs = dict_def.pop("inputs", {})
+        subblocks = dict_def.pop("subblocks", {})
         return cls(
-            settings_dem_profile=SettingsSelectBox(options=options, value=options_default),
-            settings_dem_yr=SettingsSlider(min_value=0.0, max_value=max_value, value=value, step=step, factor=1e6),
+            **dict_def,
+            **values,
+            **{k: create_settings_obj(**v) for k, v in inputs.items()},
+            subblocks={k: cls.create_subblock_from_dict(v) for k, v in subblocks.items()},
+            _value_keys=list(values.keys()),
+            _input_keys=list(inputs.keys()),
         )
 
 
-@dataclass
-class FrontendEconomicsInterface:
-    settings_discount_rate: SettingsSlider
-    settings_fix_cost_construction: SettingsSlider
-    settings_opex_spec_grid_buy: SettingsSlider
-    settings_opex_spec_grid_sell: SettingsSlider
-    settings_opex_spec_grid_peak: SettingsSlider
-    settings_opex_spec_route_charging: SettingsSlider
-    settings_opex_spec_fuel: SettingsSlider
+@dataclass(frozen=True)
+class FrontendChargingInfrastructureInterface(FrontendAggregatorInterface):
+    p_lm_max_preexisting: SettingsInput = field(default=None, init=False)
+    p_lm_max_expansion: SettingsInput = field(default=None, init=False)
+
+    @classmethod
+    def create_subblock_from_dict(cls, dict_def) -> FrontendChargerTypeInterface:
+        return FrontendChargerTypeInterface.from_dict(dict_def)
+
+
+@dataclass(frozen=True)
+class FrontendFleetInterface(FrontendAggregatorInterface):
+    opem_spec_fuel: float
+    opem_spec_onroute_charging: float
+
+    opex_spec_fuel: SettingsInput
+    opex_spec_onroute_charging: SettingsInput
+
+    @classmethod
+    def create_subblock_from_dict(cls, dict_def) -> FrontendSubfleetInterface:
+        return FrontendSubfleetInterface.from_dict(dict_def)
+
+
+@dataclass(frozen=True)
+class FrontendScenarioInterface(FrontendInterface):
+    period_eco: int
+    sim_start: pd.Timestamp
+    sim_duration: pd.Timedelta
+    sim_freq: pd.Timedelta
+    capem_initial: float
+
+    wacc: SettingsInput
+    slp: SettingsInput
+    e_yrl: SettingsInput
+    capex_initial: SettingsInput
+
+    @classmethod
+    def from_dict(cls, dict_def) -> Self:
+        values = dict_def.pop("values", {})
+        values["sim_start"] = pd.Timestamp(values["sim_start"]).tz_localize(values.pop("timezone"))
+        values["sim_duration"] = pd.Timedelta(days=values["sim_duration"])
+        values["sim_freq"] = pd.Timedelta(hours=values["sim_freq"])
+        inputs = dict_def.pop("inputs", {})
+        return cls(
+            **dict_def,
+            **values,
+            **{k: create_settings_obj(**v) for k, v in inputs.items()},
+            _value_keys=list(values.keys()),
+            _input_keys=list(inputs.keys()),
+        )
 
 
 @dataclass

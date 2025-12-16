@@ -27,17 +27,21 @@ from streamlit_folium import st_folium
 
 from .definitions import (
     DEF_LANGUAGE_OPTIONS,
-    DEF_DEMAND,
     DEF_GRID,
     DEF_PV,
     DEF_ESS,
-    DEF_ECONOMICS,
-    DEF_SUBFLEETS,
-    DEF_CHARGERS,
+    DEF_FLEET,
+    DEF_CIS,
+    DEF_SCN,
+)
+
+from .interfaces import (
+    FrontendCoordinates,
+    FrontendSubfleetInterface,
+    FrontendChargerTypeInterface,
 )
 
 from .design import LINE_HORIZONTAL
-from .interfaces import FrontendSubFleetInterface, FrontendChargerInterface, FrontendCoordinates
 from .utils import load_language, get_label
 
 SHARE_COLUMN_INPUT = [3, 7]
@@ -74,14 +78,14 @@ def _get_input_location(domain):
     with domain.energy_system():
         st.markdown(f"**{get_label('sidebar.general.energy_system.demand.title')}**")
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-        DEF_DEMAND.settings_dem_profile.get_streamlit_element(
+        DEF_SCN.slp.get_streamlit_element(
             label=get_label("sidebar.general.energy_system.demand.slp.label"),
             help_msg=get_label("sidebar.general.energy_system.demand.slp.help"),
             key="slp",
             domain=col1,
         )
 
-        DEF_DEMAND.settings_dem_yr.get_streamlit_element(
+        DEF_SCN.e_yrl.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.demand.consumption.label')} (MWh)",
             help_msg=get_label("sidebar.general.energy_system.demand.consumption.help"),
             key="consumption_yrl_wh",
@@ -93,14 +97,14 @@ def _get_input_location(domain):
         st.markdown(f"**{get_label('sidebar.general.energy_system.grid.title')}**")
 
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-        DEF_GRID.settings_preexisting.get_streamlit_element(
+        DEF_GRID.capacity_preexisting.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.grid.existing.label')} (kW)",
             help_msg=get_label("sidebar.general.energy_system.grid.existing.help"),
             key="grid_preexisting",
             domain=col1,
         )
 
-        DEF_GRID.settings_expansion.get_streamlit_element(
+        DEF_GRID.capacity_expansion.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.grid.expansion.label')} (kW)",
             help_msg=get_label("sidebar.general.energy_system.grid.expansion.help"),
             key="grid_expansion",
@@ -111,14 +115,14 @@ def _get_input_location(domain):
 
         st.markdown(f"**{get_label('sidebar.general.energy_system.pv.title')}**")
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-        DEF_PV.settings_preexisting.get_streamlit_element(
+        DEF_PV.capacity_preexisting.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.pv.existing.label')} (kWp)",
             help_msg=get_label("sidebar.general.energy_system.pv.existing.help"),
             key="pv_preexisting",
             domain=col1,
         )
 
-        DEF_PV.settings_expansion.get_streamlit_element(
+        DEF_PV.capacity_expansion.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.pv.expansion.label')} (kWp)",
             help_msg=get_label("sidebar.general.energy_system.pv.expansion.help"),
             key="pv_expansion",
@@ -129,14 +133,14 @@ def _get_input_location(domain):
 
         st.markdown(f"**{get_label('sidebar.general.energy_system.ess.title')}**")
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-        DEF_ESS.settings_preexisting.get_streamlit_element(
+        DEF_ESS.capacity_preexisting.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.ess.existing.label')} (kWh)",
             help_msg=get_label("sidebar.general.energy_system.ess.existing.help"),
             key="ess_preexisting",
             domain=col1,
         )
 
-        DEF_ESS.settings_expansion.get_streamlit_element(
+        DEF_ESS.capacity_expansion.get_streamlit_element(
             label=f"{get_label('sidebar.general.energy_system.ess.expansion.label')} (kWh)",
             help_msg=get_label("sidebar.general.energy_system.ess.expansion.help"),
             key="ess_expansion",
@@ -146,43 +150,43 @@ def _get_input_location(domain):
 
 def _get_input_economic(domain):
     with domain.economics():
-        DEF_ECONOMICS.settings_discount_rate.get_streamlit_element(
+        DEF_SCN.wacc.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.discount.label')} (%)",
             help_msg=get_label("sidebar.general.economics.discount.help"),
             key="eco_discount_rate",
             domain=st,
         )
-        DEF_ECONOMICS.settings_fix_cost_construction.get_streamlit_element(
+        DEF_SCN.capex_initial.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.fixcost.label')} (EUR)",
             help_msg=get_label("sidebar.general.economics.fixcost.help"),
             key="eco_fix_cost_construction",
             domain=st,
         )
-        DEF_ECONOMICS.settings_opex_spec_grid_buy.get_streamlit_element(
+        DEF_GRID.opex_spec_buy.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.opexbuy.label')} (EUR/kWh)",
             help_msg=get_label("sidebar.general.economics.opexbuy.help"),
             key="eco_opex_spec_grid_buy",
             domain=st,
         )
-        DEF_ECONOMICS.settings_opex_spec_grid_sell.get_streamlit_element(
+        DEF_GRID.opex_spec_sell.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.opexfeedin.label')} (EUR/kWh)",
             help_msg=get_label("sidebar.general.economics.opexfeedin.help"),
             key="eco_opex_spec_grid_sell",
             domain=st,
         )
-        DEF_ECONOMICS.settings_opex_spec_grid_peak.get_streamlit_element(
+        DEF_GRID.opex_spec_peak.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.opexpeakpower.label')} (EUR/kWp)",
             help_msg=get_label("sidebar.general.economics.opexpeakpower.help"),
             key="eco_opex_spec_grid_peak",
             domain=st,
         )
-        DEF_ECONOMICS.settings_opex_spec_route_charging.get_streamlit_element(
+        DEF_FLEET.opex_spec_onroute_charging.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.opexonroute.label')} (EUR/kWh)",
             help_msg=get_label("sidebar.general.economics.opexonroute.help"),
             key="eco_opex_spec_route_charging",
             domain=st,
         )
-        DEF_ECONOMICS.settings_opex_spec_fuel.get_streamlit_element(
+        DEF_FLEET.opex_spec_fuel.get_streamlit_element(
             label=f"{get_label('sidebar.general.economics.opexfuel.label')} (EUR/l)",
             help_msg=get_label("sidebar.general.economics.opexfuel.help"),
             key="eco_opex_spec_fuel",
@@ -190,10 +194,10 @@ def _get_input_economic(domain):
         )
 
 
-def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain):
+def _get_params_subfleet(subfleet: FrontendSubfleetInterface, domain):
     with domain().expander(
         label=f"**{subfleet.get_label(st.session_state['language'])}**  \n"
-        f"{subfleet.weight_max_t} t {get_label('sidebar.fleet.subfleet.weight_total.label')}",
+        f"{subfleet.weight_max} t {get_label('sidebar.fleet.subfleet.weight_total.label')}",
         icon=subfleet.icon,
         expanded=False,
     ):
@@ -233,10 +237,10 @@ def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain):
         col1.selectbox(
             label=get_label("sidebar.fleet.subfleet.charger.label"),
             key=f"charger_{subfleet.name}",
-            options=[x.label for x in DEF_CHARGERS.values()],
+            options=[x.label for x in DEF_CIS.subblocks.values()],
             help=get_label("sidebar.fleet.subfleet.charger.help"),
         )
-        max_value = DEF_CHARGERS[st.session_state[f"charger_{subfleet.name}"].lower()].settings_pwr_max.max_value
+        max_value = DEF_CIS.subblocks[st.session_state[f"charger_{subfleet.name}"].lower()].p_max.max_value
         col2.slider(
             label=f"{get_label('sidebar.fleet.subfleet.pwr_max.label')} (kW)",
             key=f"pwr_max_{subfleet.name}",
@@ -248,17 +252,17 @@ def _get_params_subfleet(subfleet: FrontendSubFleetInterface, domain):
             help=get_label("sidebar.fleet.subfleet.pwr_max.help"),
         )
 
-        subfleet.settings_capex_bev.get_streamlit_element(
+        subfleet.capex_per_unit_bev.get_streamlit_element(
             label=f"{get_label('sidebar.fleet.subfleet.capex.label')} BEV (EUR)",
             key=f"capex_bev_{subfleet.name}",
             help_msg=get_label("sidebar.fleet.subfleet.capex.help"),
         )
-        subfleet.settings_capex_icev.get_streamlit_element(
+        subfleet.capex_per_unit_icev.get_streamlit_element(
             label=f"{get_label('sidebar.fleet.subfleet.capex.label')} ICEV (EUR)",
             key=f"capex_icev_{subfleet.name}",
             help_msg=get_label("sidebar.fleet.subfleet.capex.help"),
         )
-        subfleet.settings_toll_share.get_streamlit_element(
+        subfleet.toll_frac.get_streamlit_element(
             label=f"{get_label('sidebar.fleet.subfleet.share_toll.label')} (%)",
             key=f"toll_frac_{subfleet.name}",
             help_msg=get_label("sidebar.fleet.subfleet.share_toll.help"),
@@ -279,7 +283,7 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]):
         help=get_label("sidebar.chargers.load_mngmnt.type.help"),
     )
     if st.session_state[f"load_mngmnt_{phase}"] == get_label("sidebar.chargers.load_mngmnt.type.options.static"):
-        pwr_max_grid = (
+        p_max_grid = (
             st.session_state.grid_preexisting
             if phase == "baseline"
             else st.session_state.grid_preexisting + st.session_state.grid_expansion
@@ -287,9 +291,9 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]):
         col2.slider(
             label=f"{get_label('sidebar.chargers.load_mngmnt.pwr_max.label')} (kW)",
             min_value=0.0,
-            max_value=pwr_max_grid,
+            max_value=p_max_grid,
             value=(
-                pwr_max_grid * 0.5
+                p_max_grid * 0.5
                 if not st.session_state.get(f"load_mngmnt_slider_{phase}", None)
                 else st.session_state[f"load_mngmnt_slider_{phase}"]
             ),
@@ -300,33 +304,33 @@ def _get_load_mngmnt(phase: Literal["baseline", "expansion"]):
         )
 
 
-def _get_params_charger(charger: FrontendChargerInterface, domain):
+def _get_params_charger(charger: FrontendChargerTypeInterface, domain):
     with domain().expander(
         label=f"**{charger.label}{get_label('sidebar.chargers.charger.title_suffix')}**",
         icon=charger.icon,
         expanded=False,
     ):
         col1, col2 = st.columns(SHARE_COLUMN_INPUT)
-        charger.settings_preexisting.get_streamlit_element(
+        charger.num_preexisting.get_streamlit_element(
             label=get_label("sidebar.chargers.charger.existing.label"),
             key=f"chg_{charger.name.lower()}_preexisting",
             domain=col1,
             help_msg=get_label("sidebar.chargers.charger.existing.help"),
         )
-        charger.settings_expansion.get_streamlit_element(
+        charger.num_expansion.get_streamlit_element(
             label=get_label("sidebar.chargers.charger.expansion.label"),
             key=f"chg_{charger.name.lower()}_expansion",
             domain=col2,
             help_msg=get_label("sidebar.chargers.charger.expansion.help"),
         )
 
-        charger.settings_pwr_max.get_streamlit_element(
+        charger.p_max.get_streamlit_element(
             label=f"{get_label('sidebar.chargers.charger.pwr_max.label')} (kW)",
             key=f"chg_{charger.name.lower()}_pwr",
             help_msg=get_label("sidebar.chargers.charger.pwr_max.help"),
         )
 
-        charger.settings_cost_per_unit_eur.get_streamlit_element(
+        charger.capex_per_unit.get_streamlit_element(
             label=f"{get_label('sidebar.chargers.charger.capex.label')} (EUR)",
             key=f"chg_{charger.name.lower()}_cost",
             help_msg=get_label("sidebar.chargers.charger.capex.help"),
@@ -337,7 +341,9 @@ def _get_params_charging_infrastructure(domain):
     with domain().expander(label=f"**{get_label('sidebar.chargers.load_mngmnt.title')}**", icon="⚖️"):
         _get_load_mngmnt(phase="baseline")
         _get_load_mngmnt(phase="expansion")
-    chargers = {chg_name: _get_params_charger(chg_def, domain=domain) for chg_name, chg_def in DEF_CHARGERS.items()}
+    chargers = {
+        chg_name: _get_params_charger(chg_def, domain=domain) for chg_name, chg_def in DEF_CIS.subblocks.items()
+    }
 
 
 def _get_simsettings(domain):
@@ -347,7 +353,7 @@ def _get_simsettings(domain):
     )
 
     if st.session_state["auto_refresh"] or col2.button(
-        f"**{get_label('sidebar.calculate')}**", icon="🚀", key="calc", use_container_width=True
+        f"**{get_label('sidebar.calculate')}**", icon="🚀", key="calc", width="stretch"
     ):
         st.session_state["run_backend"] = True
 
@@ -367,7 +373,7 @@ def create_sidebar_and_get_input(domain):
     _get_input_location(domain=domain.general)
     _get_input_economic(domain=domain.general)
 
-    for sf in DEF_SUBFLEETS.values():
+    for sf in DEF_FLEET.subblocks.values():
         _get_params_subfleet(sf, domain=domain.fleet)
 
     # get charging infrastructure parameters

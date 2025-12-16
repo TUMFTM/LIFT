@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import ast
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from enum import Enum
+from functools import cached_property
 import importlib.resources as resources
 from pathlib import Path
 import re
-from typing import Literal, Self
+from time import time
+from typing import Any, Literal, Self
 import warnings
 
 import demandlib
@@ -14,42 +17,11 @@ import numpy as np
 import pandas as pd
 import pvlib
 
-
-from lift.backend.comparison.interfaces import ComparisonGrid, ComparisonInvestComponent, ComparisonInputCharger
-from lift.backend.simulation.interfaces import Coordinates
+from lift.backend.comparison.interfaces import ExistExpansionValue
 from lift.backend.utils import safe_cache_data
 
 
 EPS = 1e-8
-
-
-@safe_cache_data
-def _td2h(td: pd.Timedelta) -> float:
-    return td.total_seconds() / 3600.0
-
-
-@safe_cache_data
-def _calc_discount_factors(
-    periods: int, occurs_at: Literal["beginning", "middle", "end"], discount_rate: float
-) -> np.typing.NDArray[float]:
-    if discount_rate is None or discount_rate < 0:
-        raise ValueError("A positive discount rate must be provided if discounting is enabled.")
-
-    periods = np.arange(0, periods + 1) + 1
-    q = 1 + discount_rate
-
-    exp = {"beginning": 1, "middle": 0.5, "end": 0}.get(occurs_at, 0)
-    return 1 / (q ** (periods - exp))
-
-
-@safe_cache_data
-def _get_dti(start, duration, freq):
-    return pd.date_range(start=start, end=start + duration, freq=freq, inclusive="left")
-
-
-@safe_cache_data
-def _get_dti_extended(start, duration, freq):
-    return pd.date_range(start=start, end=start + duration, freq=freq, inclusive="both")
 
 
 @safe_cache_data
@@ -114,17 +86,14 @@ def _resample_ts(ts: pd.Series, dti: pd.DatetimeIndex, method: str = "numeric_me
 @safe_cache_data
 def _get_log_pv(
     coordinates: Coordinates,
-    start: pd.Timestamp,
-    duration: pd.Timedelta,
-    freq: pd.Timedelta,
+    settings_sim: SimSettings,
 ) -> np.typing.NDArray[np.float64]:
-    dti = _get_dti(start, duration, freq)
     try:
         data, *_ = pvlib.iotools.get_pvgis_hourly(
             latitude=coordinates.latitude,
             longitude=coordinates.longitude,
-            start=int(dti.year.min()),
-            end=int(dti.year.max()),
+            start=int(settings_sim.dti.year.min()),
+            end=int(settings_sim.dti.year.max()),
             raddatabase="PVGIS-SARAH3",
             outputformat="json",
             pvcalculation=True,
@@ -141,29 +110,28 @@ def _get_log_pv(
         data = data["P"] / 1000
         data.index = data.index.round("h")
         data = data.tz_convert("Europe/Berlin")
-        data = _resample_ts(ts=data, dti=dti)
+        data = _resample_ts(ts=data, dti=settings_sim.dti)
         return data.values
     except:
         warnings.warn("Using random values for PV generation")
-        return np.random.random(len(dti))
+        return np.random.random(len(settings_sim.dti))
 
 
 @safe_cache_data
 def _get_log_dem(
     slp: str,
     e_yrl: float,
-    start: pd.Timestamp,
-    duration: pd.Timedelta,
-    freq: pd.Timedelta,
+    settings_sim: SimSettings,
 ) -> np.typing.NDArray[np.float64]:
-    dti = _get_dti(start, duration, freq)
-
     if slp not in ["h0", "h0_dyn", "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "l0", "l1", "l2"]:
         raise ValueError(f'Specified SLP "{slp}" is not valid. SLP has to be defined as lower case.')
 
     # get power profile in 15 minute timesteps
     ts = pd.concat(
-        [(demandlib.bdew.ElecSlp(year=year).get_scaled_power_profiles({slp: e_yrl})) for year in dti.year.unique()]
+        [
+            (demandlib.bdew.ElecSlp(year=year).get_scaled_power_profiles({slp: e_yrl}))
+            for year in settings_sim.dti.year.unique()
+        ]
     )[slp]
 
     # Time index ignores DST, but values adapt to DST -> apply new index with TZ information
@@ -171,18 +139,14 @@ def _get_log_dem(
         start=ts.index.min(), end=ts.index.max(), freq=ts.index.freq, inclusive="both", tz="Europe/Berlin"
     )
 
-    return _resample_ts(ts=ts, dti=dti).values
+    return _resample_ts(ts=ts, dti=settings_sim.dti).values
 
 
 @safe_cache_data
 def _get_log_subfleet(
     vehicle_type: str,
-    start: pd.Timestamp,
-    duration: pd.Timedelta,
-    freq: pd.Timedelta,
+    settings_sim: SimSettings,
 ) -> pd.DataFrame:
-    dti = _get_dti(start, duration, freq)
-
     # Create a dtype map to explicitly assign dtypes to columns
     with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
         dtype_map = {}
@@ -225,13 +189,13 @@ def _get_log_subfleet(
         df = df.apply(
             lambda col: _resample_ts(
                 ts=col,
-                dti=dti,
+                dti=settings_sim.dti,
                 method=method_sampling[col.name[1]],
             ),
             axis=0,
         )
 
-    return df.loc[dti, :]
+    return df.loc[settings_sim.dti, :]
 
 
 @safe_cache_data
@@ -256,6 +220,31 @@ def _get_soc_min(max_charge_rate, dsoc, atbase):
     return np.clip(soc_min, 0.0, None)
 
 
+@dataclass
+class Coordinates:
+    latitude: float = 48.148
+    longitude: float = 11.507
+
+    @classmethod
+    def from_frontend_coordinates(cls, frontend_coordinates: "FrontendCoordinates") -> Self:
+        return cls(
+            latitude=frontend_coordinates.latitude,
+            longitude=frontend_coordinates.longitude,
+        )
+
+    @property
+    def as_tuple(self) -> tuple[float, float]:
+        return self.latitude, self.longitude
+
+    @staticmethod
+    def _decimal_to_dms(decimal_deg: float) -> tuple[int, int, float]:
+        degrees = int(abs(decimal_deg))
+        minutes_full = (abs(decimal_deg) - degrees) * 60
+        minutes = int(minutes_full)
+        seconds = (minutes_full - minutes) * 60
+        return degrees, minutes, seconds
+
+
 class GridPowerExceededError(Exception):
     pass
 
@@ -264,30 +253,137 @@ class SOCError(Exception):
     pass
 
 
-@dataclass
-class EcoObject(ABC):
-    period_eco: int
-    wacc: float
-    parent: EcoObject | None
+@dataclass(frozen=True)
+class SimSettings:
+    sim_start: pd.Timestamp
+    sim_duration: pd.Timedelta
+    sim_freq: pd.Timedelta
+
+    coordinates: Coordinates
 
     @classmethod
-    def _get_dict_from_settings(
-        cls,
-        settings: ScenarioSettings,
-    ) -> dict:
+    def from_series_dict(cls, series: pd.Series) -> Self:
+        return cls(
+            sim_start=pd.Timestamp(series["sim_start"]).tz_localize("Europe/Berlin"),
+            sim_duration=pd.Timedelta(days=series["sim_duration"]),
+            sim_freq=pd.Timedelta(hours=series["sim_freq"]),
+            coordinates=Coordinates(
+                latitude=series["latitude"],
+                longitude=series["longitude"],
+            ),
+        )
+
+    @classmethod
+    def from_comparison_object(cls, comp_obj: Any) -> Self:
+        return cls(
+            sim_start=comp_obj.sim_start,
+            sim_duration=comp_obj.sim_duration,
+            sim_freq=comp_obj.sim_freq,
+            coordinates=Coordinates(
+                latitude=comp_obj.latitude,
+                longitude=comp_obj.longitude,
+            ),
+        )
+
+    def _create_dti(self, inclusive: Literal["both", "left"]) -> pd.DatetimeIndex:
+        return pd.date_range(
+            start=self.sim_start, end=self.sim_start + self.sim_duration, freq=self.sim_freq, inclusive=inclusive
+        )
+
+    @cached_property
+    def dti(self) -> pd.DatetimeIndex:
+        return self._create_dti("left")
+
+    @cached_property
+    def dti_extended(self) -> pd.DatetimeIndex:
+        return self._create_dti("both")
+
+    @cached_property
+    def sim_freq_h(self) -> float:
+        return self.sim_freq.total_seconds() / 3600.0
+
+
+class Occurrence(Enum):
+    BEGINNING = 1
+    MIDDLE = 0.5
+    END = 0
+
+
+@dataclass(frozen=True)
+class EcoSettings:
+    period_eco: int
+    wacc: float
+
+    @classmethod
+    def from_series_dict(cls, series: pd.Series) -> Self:
+        return cls(
+            period_eco=series["period_eco"],
+            wacc=series["wacc"],
+        )
+
+    @classmethod
+    def from_comparison_object(cls, comp_obj: Any) -> Self:
+        return cls(
+            period_eco=comp_obj.period_eco,
+            wacc=comp_obj.wacc,
+        )
+
+    def __post_init__(self):
+        if self.wacc is None or self.wacc < 0:
+            raise ValueError("A positive discount rate must be provided if discounting is enabled.")
+
+    def _calc_discount_factors(self, occurs_at: Occurrence) -> np.typing.NDArray[float]:
+        periods = np.arange(1, self.period_eco + 2)
+        return np.reciprocal(np.power(1 + self.wacc, periods - occurs_at.value))  # np.reciprocal(x) ^= 1/x
+
+    @cached_property
+    def _discount_factors_cache(self) -> dict:
+        # Cache discount factors for all occurrences
         return {
-            "period_eco": settings.period_eco,
-            "wacc": settings.wacc,
+            Occurrence.BEGINNING: self._calc_discount_factors(Occurrence.BEGINNING),
+            Occurrence.MIDDLE: self._calc_discount_factors(Occurrence.MIDDLE),
+            Occurrence.END: self._calc_discount_factors(Occurrence.END),
         }
+
+    def get_discount_factors(self, occurs_at: Occurrence) -> np.typing.NDArray[float]:
+        # Retrieve the discount factors from the cache based on the occurrence
+        return self._discount_factors_cache[occurs_at]
+
+
+@dataclass
+class ScenarioResult:
+    self_sufficiency: float
+    self_consumption: float
+    home_charging_fraction: float
+    capex_dis: np.typing.NDArray[np.floating]
+    opex_dis: np.typing.NDArray[np.floating]
+    totex_dis: np.typing.NDArray[np.floating]
+    capem: np.typing.NDArray[np.floating]
+    opem: np.typing.NDArray[np.floating]
+    totem: np.typing.NDArray[np.floating]
+
+
+class EcoObject(ABC):
+    def __init__(self, settings_eco: EcoSettings):
+        self.settings_eco = settings_eco
 
     @classmethod
     @abstractmethod
     def from_series_settings(
         cls,
-        series: pd.Series,
         block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        **kwargs,
+    ) -> Self: ...
+
+    @classmethod
+    @abstractmethod
+    def from_comparison_object(
+        cls,
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        phase: str,
         **kwargs,
     ) -> Self: ...
 
@@ -309,13 +405,11 @@ class EcoObject(ABC):
 
     @property
     def capex_discounted(self) -> np.typing.NDArray:
-        return (
-            _calc_discount_factors(periods=self.period_eco, occurs_at="beginning", discount_rate=self.wacc) * self.capex
-        )
+        return self.settings_eco.get_discount_factors(Occurrence.BEGINNING) * self.capex
 
     @property
     def opex_discounted(self) -> np.typing.NDArray:
-        return _calc_discount_factors(periods=self.period_eco, occurs_at="end", discount_rate=self.wacc) * self.opex
+        return self.settings_eco.get_discount_factors(Occurrence.END) * self.opex
 
     @property
     def costs(self) -> np.typing.NDArray:
@@ -342,22 +436,70 @@ class EcoObject(ABC):
         return float(np.sum(self.emissions))
 
 
-@dataclass
+class Aggregator(EcoObject, ABC):
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        subblocks: dict[str, EcoObject],
+    ):
+        super().__init__(settings_eco=settings_eco)
+
+        self.subblocks = subblocks
+
+    def __getattr__(self, item):
+        if item in self.subblocks:
+            return self.subblocks[item]
+        else:
+            return super().__getattribute__(item)
+
+    @property
+    def capex(self) -> np.typing.NDArray:
+        return sum([subblock.capex for subblock in self.subblocks.values()])
+
+    @property
+    def capem(self) -> np.typing.NDArray:
+        return sum([subblock.capem for subblock in self.subblocks.values()])
+
+    @property
+    def opex(self) -> np.typing.NDArray:
+        return sum([subblock.opex for subblock in self.subblocks.values()])
+
+    @property
+    def opem(self) -> np.typing.NDArray:
+        return sum([subblock.opem for subblock in self.subblocks.values()])
+
+
 class BaseBlock(EcoObject, ABC):
-    sim_start: pd.Timestamp
-    sim_duration: pd.Timedelta
-    sim_freq: pd.Timedelta
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+    ):
+        super().__init__(settings_eco=settings_eco)
+        self.settings_sim = settings_sim
 
     @classmethod
-    def _get_dict_from_settings(
+    def from_comparison_object(
         cls,
-        settings: ScenarioSettings,
-    ) -> dict:
-        return super()._get_dict_from_settings(settings) | {
-            "sim_start": settings.sim_start,
-            "sim_duration": settings.sim_duration,
-            "sim_freq": settings.sim_freq,
-        }
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        phase: str,
+        **kwargs,
+    ) -> Self:
+        return cls(
+            **{
+                key: (
+                    getattr(getattr(comp_obj, key), phase)
+                    if isinstance(getattr(comp_obj, key), ExistExpansionValue)
+                    else getattr(comp_obj, key)
+                )
+                for key in comp_obj.to_dict.keys()
+            },
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            **kwargs,
+        )
 
     @property
     @abstractmethod
@@ -369,10 +511,10 @@ class BaseBlock(EcoObject, ABC):
 
     def _get_operational_cashflow_from_year(self, c):
         # allocate result
-        opex = np.empty(self.period_eco + 1)
+        opex = np.empty(self.settings_eco.period_eco + 1)
 
         # fill first N years with the scalar
-        opex[: self.period_eco] = c
+        opex[: self.settings_eco.period_eco] = c
 
         # last element is zero
         opex[-1] = 0.0
@@ -396,31 +538,41 @@ class BaseBlock(EcoObject, ABC):
         return self._get_operational_cashflow_from_year(c=self._opem_yrl)
 
 
-@dataclass
 class FixedDemand(BaseBlock):
-    slp: str
-    e_yrl: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        slp: str,
+        e_yrl: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+        )
 
-    log: np.typing.NDArray[np.float64] = field(default=None, init=False)
+        self.slp = slp
+        self.e_yrl = e_yrl
 
-    def __post_init__(self):
         self.log = _get_log_dem(
-            slp=self.slp, e_yrl=self.e_yrl, start=self.sim_start, duration=self.sim_duration, freq=self.sim_freq
+            slp=self.slp,
+            e_yrl=self.e_yrl,
+            settings_sim=self.settings_sim,
         )
 
     @classmethod
     def from_series_settings(
         cls,
-        series: pd.Series,
         block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
         **kwargs,
     ) -> Self:
         return cls(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
             **_get_block_series(series, block_name).to_dict(),
-            **cls._get_dict_from_settings(settings),
-            parent=parent,
             **kwargs,
         )
 
@@ -434,48 +586,60 @@ class FixedDemand(BaseBlock):
 
     @property
     def capex(self) -> np.typing.NDArray:
-        return np.zeros(self.period_eco + 1)
+        return np.zeros(self.settings_eco.period_eco + 1)
 
     @property
     def capem(self) -> np.typing.NDArray:
-        return np.zeros(self.period_eco + 1)
+        return np.zeros(self.settings_eco.period_eco + 1)
 
     @property
     def e_site(self) -> float:
         return self.log.sum()
 
 
-@dataclass
 class InvestBlock(BaseBlock, ABC):
-    ls: int
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+        )
+
+        self.ls = ls
 
     @classmethod
     def from_series_settings(
         cls,
-        series: pd.Series,
         block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
         **kwargs,
     ) -> Self:
         return cls(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
             **_get_block_series(series, block_name).to_dict(),
-            **cls._get_dict_from_settings(settings),
-            parent=parent,
             **kwargs,
         )
 
     def _calc_replacements(self) -> np.typing.NDArray:
-        years = np.arange(self.period_eco + 1)
+        years = np.arange(self.settings_eco.period_eco + 1)
 
         # Replacement years: start + 0, lifespan, 2*lifespan, ...
-        replacement_years = np.arange(0, self.period_eco, self.ls)
+        replacement_years = np.arange(0, self.settings_eco.period_eco, self.ls)
 
         repl = np.isin(years, replacement_years).astype(float)
 
         # residual value
-        repl[self.period_eco] = (
-            (-1 * (1 - (self.period_eco % self.ls) / self.ls)) if self.period_eco % self.ls != 0 else 0
+        repl[self.settings_eco.period_eco] = (
+            (-1 * (1 - (self.settings_eco.period_eco % self.ls) / self.ls))
+            if self.settings_eco.period_eco % self.ls != 0
+            else 0
         )
         return repl
 
@@ -498,11 +662,28 @@ class InvestBlock(BaseBlock, ABC):
 
 @dataclass
 class ContinuousInvestBlock(InvestBlock, ABC):
-    capacity: float
-    capex_spec: float
-    capem_spec: float
-    opex_spec: float
-    opem_spec: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        capacity: float,
+        capex_spec: float,
+        capem_spec: float,
+        opex_spec: float,
+        opem_spec: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+        )
+
+        self.capacity = capacity
+        self.capex_spec = capex_spec
+        self.capem_spec = capem_spec
+        self.opex_spec = opex_spec
+        self.opem_spec = opem_spec
 
     @property
     def _capex_single(self) -> float:
@@ -515,15 +696,55 @@ class ContinuousInvestBlock(InvestBlock, ABC):
 
 @dataclass
 class Grid(ContinuousInvestBlock):
-    opex_spec_buy: float
-    opex_spec_sell: float
-    opex_spec_peak: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        capacity: float,
+        capex_spec: float,
+        capem_spec: float,
+        opem_spec: float,
+        opex_spec_buy: float,
+        opex_spec_sell: float,
+        opex_spec_peak: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+            capacity=capacity,
+            capex_spec=capex_spec,
+            capem_spec=capem_spec,
+            opex_spec=0,
+            opem_spec=opem_spec,
+        )
 
-    opex_spec: float = field(default=None, init=False)
+        self.opex_spec_buy = opex_spec_buy
+        self.opex_spec_sell = opex_spec_sell
+        self.opex_spec_peak = opex_spec_peak
 
-    e_buy: float = field(default=0.0, init=False)
-    e_sell: float = field(default=0.0, init=False)
-    p_peak: float = field(default=0.0, init=False)
+        self.e_buy = 0.0
+        self.e_sell = 0.0
+        self.p_peak = 0.0
+
+    @classmethod
+    def _keys_from_comparison_object(cls) -> list[str]:
+        return [
+            "period_eco",
+            "wacc",
+            "sim_start",
+            "sim_duration",
+            "sim_freq",
+            "ls",
+            "capacity",
+            "capex_spec",
+            "capem_spec",
+            "opem_spec",
+            "opex_spec_buy",
+            "opex_spec_sell",
+            "opex_spec_peak",
+        ]
 
     @property
     def _opex_yrl(self) -> float:
@@ -544,40 +765,53 @@ class Grid(ContinuousInvestBlock):
 
         if demand > 0:
             # buying from grid
-            self.e_buy += demand * _td2h(self.sim_freq)
+            self.e_buy += demand * self.settings_sim.sim_freq_h
             self.p_peak = max(self.p_peak, demand)
             return 0
         else:
             p_feed_in = min(-1 * demand, self.capacity)
             # selling to grid
-            self.e_sell += p_feed_in * _td2h(self.sim_freq)
-            return demand - p_feed_in
+            self.e_sell += p_feed_in * self.settings_sim.sim_freq_h
+            return demand + p_feed_in
 
 
-@dataclass
 class PV(ContinuousInvestBlock):
-    coordinates: Coordinates
-
-    log: np.typing.NDArray[np.float64] = field(default=None, init=False)
-
-    _p_curt: float = field(default=0.0, init=False)
-
-    def __post_init__(self):
-        self.log = (
-            _get_log_pv(
-                coordinates=self.coordinates, start=self.sim_start, duration=self.sim_duration, freq=self.sim_freq
-            )
-            * self.capacity
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        capacity: float,
+        capex_spec: float,
+        capem_spec: float,
+        opex_spec: float,
+        opem_spec: float,
+        log: np.typing.NDArray[np.float64] | None = None,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+            capacity=capacity,
+            capex_spec=capex_spec,
+            capem_spec=capem_spec,
+            opex_spec=opex_spec,
+            opem_spec=opem_spec,
         )
 
-    @classmethod
-    def _get_dict_from_settings(
-        cls,
-        settings: ScenarioSettings,
-    ) -> dict:
-        return super()._get_dict_from_settings(settings) | {
-            "coordinates": settings.coordinates,
-        }
+        self.log = (
+            log
+            if log
+            else (
+                _get_log_pv(
+                    coordinates=self.settings_sim.coordinates,
+                    settings_sim=self.settings_sim,
+                )
+                * self.capacity
+            )
+        )
+
+        self._p_curt = 0.0
 
     @property
     def _opex_yrl(self) -> float:
@@ -598,17 +832,42 @@ class PV(ContinuousInvestBlock):
 
     @property
     def e_curt(self) -> float:
-        return self._p_curt * _td2h(self.sim_freq)
+        return self._p_curt * self.settings_sim.sim_freq_h
 
     @property
     def e_pot(self) -> float:
-        return np.sum(self.log) * _td2h(self.sim_freq)
+        return np.sum(self.log) * self.settings_sim.sim_freq_h
 
 
-@dataclass
 class ESS(ContinuousInvestBlock):
-    c_rate_max: float
-    _soc: float = field(default=0.5, init=False)
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        capacity: float,
+        capex_spec: float,
+        capem_spec: float,
+        opex_spec: float,
+        opem_spec: float,
+        soc_init: float,
+        c_rate_max: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+            capacity=capacity,
+            capex_spec=capex_spec,
+            capem_spec=capem_spec,
+            opex_spec=opex_spec,
+            opem_spec=opem_spec,
+        )
+
+        self.c_rate_max = c_rate_max
+        self.soc = soc_init
+        self._soc_track = np.zeros(len(self.settings_sim.dti) + 1)
+        self._soc_track[0] = self.soc
 
     @property
     def _opex_yrl(self) -> float:
@@ -621,46 +880,90 @@ class ESS(ContinuousInvestBlock):
     def get_p_max(self, idx):
         return min(
             self.capacity * self.c_rate_max,  # power limit due to c-rate
-            self.capacity * self._soc / _td2h(self.sim_freq),  # power limit due to energy content)
+            self.capacity * self.soc / self.settings_sim.sim_freq_h,  # power limit due to energy content)
         )
 
     def satisfy_demand(self, demand: float, idx):
+        if self.capacity == 0:
+            return demand
+
         # discharging
         if demand > 0:
             p_ess = min(
                 demand,
                 self.capacity * self.c_rate_max,  # power limit due to c-rate
-                self.capacity * self._soc / _td2h(self.sim_freq),  # power limit due to energy content
+                self.capacity * self.soc / self.settings_sim.sim_freq_h,  # power limit due to energy content
             )
         # charging
         else:
             p_ess = max(
                 demand,  # max as all values are negative
                 -self.capacity * self.c_rate_max,  # power limit due to c-rate
-                -self.capacity * (1 - self._soc) / _td2h(self.sim_freq),  # power limit due to energy content
+                -self.capacity * (1 - self.soc) / self.settings_sim.sim_freq_h,  # power limit due to energy content
             )
-        self._soc -= p_ess * _td2h(self.sim_freq) / self.capacity
-        if self._soc < (0 - EPS) or self._soc > (1 + EPS):
+        self.soc -= p_ess * self.settings_sim.sim_freq_h / self.capacity
+        self._soc_track[idx] = self.soc
+        if self.soc < (0 - EPS) or self.soc > (1 + EPS):
             raise SOCError(
-                f"SOC {self._soc} of block ESS out of bounds after applying power {demand} W in timestep {idx}."
+                f"SOC {self.soc} of block ESS out of bounds after applying power {demand} W in timestep {idx}."
             )
 
         return demand - p_ess
 
 
-@dataclass
 class FixedCosts(InvestBlock):
-    capex_initial: float
-    capem_initial: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        capex_initial: float,
+        capem_initial: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+        )
+
+        self.capex_initial = capex_initial
+        self.capem_initial = capem_initial
 
     @classmethod
-    def _get_dict_from_settings(
+    def from_series_settings(
         cls,
-        settings: ScenarioSettings,
-    ) -> dict:
-        return super()._get_dict_from_settings(settings) | {
-            "ls": settings.period_eco,  # one time investment
-        }
+        block_name: str,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        **kwargs,
+    ) -> Self:
+        return super().from_series_settings(
+            block_name=block_name,
+            series=series,
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=settings_eco.period_eco,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_comparison_object(
+        cls,
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        phase: str,
+        **kwargs,
+    ) -> Self:
+        return super().from_comparison_object(
+            comp_obj=comp_obj,
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            phase=phase,
+            ls=settings_eco.period_eco,
+            **kwargs,
+        )
 
     @property
     def _capex_single(self) -> float:
@@ -679,13 +982,29 @@ class FixedCosts(InvestBlock):
         return 0
 
 
-@dataclass
 class ChargerType(InvestBlock):
-    name: str
-    num: int
-    p_max: float
-    capex_per_unit: float
-    capem_per_unit: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        name: str,
+        num: int,
+        p_max: float,
+        capex_per_unit: float,
+        capem_per_unit: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+        )
+
+        self.name = name
+        self.num = num
+        self.p_max = p_max
+        self.capex_per_unit = capex_per_unit
+        self.capem_per_unit = capem_per_unit
 
     @property
     def _capex_single(self) -> float:
@@ -704,55 +1023,58 @@ class ChargerType(InvestBlock):
         return 0
 
 
-@dataclass
 class ElectricFleetUnit:
-    sim_freq: pd.Timedelta
-    name: str
-    atbase: np.typing.NDArray[np.float64]
-    consumption: np.typing.NDArray[np.float64]
-    capacity: float
-    charger: str
-    p_max: float
-    soc: float
+    def __init__(
+        self,
+        settings_sim: SimSettings,
+        name: str,
+        p_max: float,
+        atbase: np.typing.NDArray[np.float64],
+        consumption: np.typing.NDArray[np.float64],
+        capacity: float,
+        charger: str,
+        soc_init: float,
+    ):
+        self.settings_sim = settings_sim
+        self.name = name
+        self.p_max = p_max
+        self.atbase = atbase
+        self.consumption = consumption
+        self.capacity = capacity
+        self.charger = charger
+        self.soc = soc_init
 
-    p_max_min: float = field(init=False)
+        self.p_max_min = None
 
-    _soc_min: np.typing.NDArray[np.float64] = field(init=False)
-    _soc_track: np.typing.NDArray[np.float64] = field(init=False)
-    _p_site: np.typing.NDArray[np.float64] = field(init=False)
-    _p_route: np.typing.NDArray[np.float64] = field(init=False)
-
-    def __post_init__(self):
         self._soc_track = np.zeros(len(self.atbase) + 1)
         self._soc_track[0] = self.soc
+
+        self._soc_min = _get_soc_min(
+            max_charge_rate=self.p_max * self.settings_sim.sim_freq_h / self.capacity,
+            dsoc=self.consumption * self.settings_sim.sim_freq_h / self.capacity,
+            atbase=self.atbase,
+        )
 
         self._p_site = np.zeros_like(self.atbase)
         self._p_route = np.zeros_like(self.atbase)
 
-        self._soc_min = _get_soc_min(
-            max_charge_rate=self.p_max * _td2h(self.sim_freq) / self.capacity,
-            dsoc=self.consumption * _td2h(self.sim_freq) / self.capacity,
-            atbase=self.atbase,
-        )
-
     @classmethod
     def from_subfleet(
         cls,
+        settings_sim: SimSettings,
         name: str,
         atbase: np.typing.NDArray[np.float64],
         consumption: np.typing.NDArray[np.float64],
         subfleet: SubFleet,
     ):
-        return cls(
-            name=name,
-            atbase=atbase,
-            consumption=consumption,
-            capacity=subfleet.capacity,
-            charger=subfleet.charger,
-            p_max=subfleet.p_max,
-            soc=subfleet.soc_init,
-            sim_freq=subfleet.sim_freq,
-        )
+        params_subfleet = {
+            "p_max": subfleet.p_max,
+            "capacity": subfleet.capacity,
+            "charger": subfleet.charger,
+            "soc_init": subfleet.soc_init,
+        }
+
+        return cls(settings_sim=settings_sim, name=name, atbase=atbase, consumption=consumption, **params_subfleet)
 
     def time_flexibility(self, idx) -> float:
         if self.p_max == 0:  # division by 0 causes error
@@ -765,7 +1087,7 @@ class ElectricFleetUnit:
         if atbase == 1:
             p_site = min(
                 self.p_max_min,  # maximum power based on charger and vehicle limits
-                self.capacity * (1 - self.soc) / _td2h(self.sim_freq),  # maximum power based on SOC limit
+                self.capacity * (1 - self.soc) / self.settings_sim.sim_freq_h,  # maximum power based on SOC limit
                 p_available,  # available power at site
             )
         else:
@@ -773,11 +1095,13 @@ class ElectricFleetUnit:
         self._p_site[idx] = p_site
 
         # update SOC based on charging power
-        self.soc += (p_site - self.consumption[idx]) * _td2h(self.sim_freq) / self.capacity
+        self.soc += (p_site - self.consumption[idx]) * self.settings_sim.sim_freq_h / self.capacity
 
         # on-route charging
         if self.soc < (-EPS) and not atbase:
-            self._p_route[idx] = -1 * self.soc * self.capacity / _td2h(self.sim_freq)  # power needed to reach SOC=0
+            self._p_route[idx] = (
+                -1 * self.soc * self.capacity / self.settings_sim.sim_freq_h
+            )  # power needed to reach SOC=0
             self.soc = 0.0
 
         # catch errors
@@ -794,47 +1118,79 @@ class ElectricFleetUnit:
 
     @property
     def e_site(self) -> float:
-        return float(np.sum(self._p_site) * _td2h(self.sim_freq))
+        return float(np.sum(self._p_site) * self.settings_sim.sim_freq_h)
 
     @property
     def e_route(self) -> float:
-        return float(np.sum(self._p_route) * _td2h(self.sim_freq))
+        return float(np.sum(self._p_route) * self.settings_sim.sim_freq_h)
 
 
-@dataclass
 class SubFleet(InvestBlock):
-    # subfleet specific attributes
-    name: str
-    num_bev: int
-    num_icev: int
-    capacity: float
-    charger: str
-    p_max: float
-    capex_per_unit_bev: float
-    capem_per_unit_bev: float
-    capex_per_unit_icev: float
-    capem_per_unit_icev: float
-    mntex_spec_bev: float
-    mntex_spec_icev: float
-    toll_frac: float
-    toll_spec_bev: float
-    toll_spec_icev: float
-    consumption_spec_icev: float
-    soc_init: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        ls: int,
+        name: str,
+        num_bev: int,
+        num_icev: int,
+        capacity: float,
+        charger: str,
+        p_max: float,
+        capex_per_unit_bev: float,
+        capem_per_unit_bev: float,
+        capex_per_unit_icev: float,
+        capem_per_unit_icev: float,
+        mntex_spec_bev: float,
+        mntex_spec_icev: float,
+        toll_frac: float,
+        toll_spec_bev: float,
+        toll_spec_icev: float,
+        consumption_spec_icev: float,
+        soc_init: float,
+        # global subfleet attributes
+        opex_spec_fuel: float,
+        opem_spec_fuel: float,
+        opex_spec_onroute_charging: float,
+        opem_spec_onroute_charging: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            ls=ls,
+        )
 
-    # global subfleet attributes
-    opex_spec_fuel: float
-    opem_spec_fuel: float
-    opex_spec_onroute_charging: float
-    opem_spec_onroute_charging: float
+        self.name = name
+        self.num_bev = num_bev
+        self.num_icev = num_icev
+        self.capacity = capacity
+        self.charger = charger
+        self.p_max = p_max
+        self.capex_per_unit_bev = capex_per_unit_bev
+        self.capem_per_unit_bev = capem_per_unit_bev
+        self.capex_per_unit_icev = capex_per_unit_icev
+        self.capem_per_unit_icev = capem_per_unit_icev
+        self.mntex_spec_bev = mntex_spec_bev
+        self.mntex_spec_icev = mntex_spec_icev
+        self.toll_frac = toll_frac
+        self.toll_spec_bev = toll_spec_bev
+        self.toll_spec_icev = toll_spec_icev
+        self.consumption_spec_icev = consumption_spec_icev
+        self.soc_init = soc_init
+        self.opex_spec_fuel = opex_spec_fuel
+        self.opem_spec_fuel = opem_spec_fuel
+        self.opex_spec_onroute_charging = opex_spec_onroute_charging
+        self.opem_spec_onroute_charging = opem_spec_onroute_charging
 
-    def __post_init__(self):
+        # ToDo: pass settings_sim as argument
         self.log = _get_log_subfleet(
-            vehicle_type=self.name, start=self.sim_start, duration=self.sim_duration, freq=self.sim_freq
+            vehicle_type=self.name,
+            settings_sim=self.settings_sim,
         )
 
         self.efus = {
             f"{self.name}{i}": ElectricFleetUnit.from_subfleet(
+                settings_sim=self.settings_sim,
                 name=f"{self.name}{i}",
                 atbase=self.log.loc[:, (f"{self.name}{i}", "atbase")].astype(int).values,
                 consumption=self.log.loc[:, (f"{self.name}{i}", "consumption")].astype(int).values,
@@ -851,26 +1207,34 @@ class SubFleet(InvestBlock):
     def _capem_single(self) -> float:
         return self.num_bev * self.capem_per_unit_bev + self.num_icev * self.capem_per_unit_icev
 
+    @cached_property
+    def _dist_yrl_bev(self) -> float:
+        # ToDo: scale to yearly distance
+        return sum([self.log[(f"hlt{i}", "dist")].sum() for i in range(0, self.num_bev)])
+
+    @cached_property
+    def _dist_yrl_icev(self) -> float:
+        # ToDo: scale to yearly distance
+        return sum([self.log[(f"hlt{i}", "dist")].sum() for i in range(self.num_bev, self.num_icev)])
+
     @property
     def _opex_yrl(self) -> float:
         opex_bev = (
-            self.sim_result.dist_km[self.name]["bev"] * (self.mntex_spec_bev + self.toll_spec_bev * self.toll_frac)
+            self._dist_yrl_bev * (self.mntex_spec_bev + self.toll_spec_bev * self.toll_frac)
             + self.e_route * self.opex_spec_onroute_charging
-        )  # ToDo: get distances
+        )
 
-        opex_icev = self.sim_result.dist_km[self.name]["icev"] * (
+        opex_icev = self._dist_yrl_icev * (
             self.mntex_spec_icev
             + self.toll_spec_icev * self.toll_frac
             + self.opex_spec_fuel * self.consumption_spec_icev / 100
-        )  # ToDo: get distances
+        )
 
         return opex_bev + opex_icev
 
     @property
     def _opem_yrl(self) -> float:
-        # ToDo: get distances
-        opem_icev = self.sim_result.dist_km[self.name]["icev"] * self.consumption_spec_icev / 100 * self.opem_spec_fuel
-
+        opem_icev = self._dist_yrl_icev * self.consumption_spec_icev / 100 * self.opem_spec_fuel
         opem_bev = self.e_route * self.opem_spec_onroute_charging
 
         return opem_bev + opem_icev
@@ -884,83 +1248,90 @@ class SubFleet(InvestBlock):
         return sum([efu.e_route for efu in self.efus.values()])
 
 
-@dataclass
-class Aggregator(EcoObject, ABC):
-    subblocks: dict | None
-    _series: pd.Series
-    _settings: ScenarioSettings
-
-    def __getattr__(self, item):
-        if item in self.subblocks:
-            return self.subblocks[item]
-        else:
-            return super().__getattribute__(item)
-
-    @property
-    def capex(self) -> np.typing.NDArray:
-        return sum([block.capex for block in self.subblocks.values()])
-
-    @property
-    def capem(self) -> np.typing.NDArray:
-        return sum([block.capem_per_unit for block in self.subblocks.values()])
-
-    @property
-    def opex(self) -> np.typing.NDArray:
-        return sum([block.opex for block in self.subblocks.values()])
-
-    @property
-    def opem(self) -> np.typing.NDArray:
-        return sum([block.opem for block in self.blocks.values()])
-
-
-@dataclass
 class Fleet(Aggregator):
-    opex_spec_fuel: float
-    opem_spec_fuel: float
-    opex_spec_onroute_charging: float
-    opem_spec_onroute_charging: float
-
-    def __post_init__(self):
-        params_subfleet_global = {
-            "opex_spec_fuel": self.opex_spec_fuel,
-            "opem_spec_fuel": self.opem_spec_fuel,
-            "opex_spec_onroute_charging": self.opex_spec_onroute_charging,
-            "opem_spec_onroute_charging": self.opem_spec_onroute_charging,
-        }
-
-        self.subblocks = {
-            sf_name: SubFleet.from_series_settings(
-                series=self._series,
-                block_name=sf_name,
-                settings=self._settings,
-                parent=self,
-                **params_subfleet_global,
-            )
-            for sf_name in ast.literal_eval(self._series[("fleet", "subblocks")])
-        }
-
-        delattr(self, "_series")
-        delattr(self, "_settings")
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        subblocks=dict[str, SubFleet],
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            subblocks=subblocks,
+        )
 
     @classmethod
     def from_series_settings(
         cls,
-        series: pd.Series,
         block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
         **kwargs,
     ) -> Self:
         block_dict = _get_block_series(series, "fleet").to_dict()
-        block_dict.pop("subblocks")
+
+        # get subfleet parameters which are defined on fleet level
+        params_subblocks = {
+            k: block_dict.pop(k)
+            for k in ["opex_spec_fuel", "opem_spec_fuel", "opex_spec_onroute_charging", "opem_spec_onroute_charging"]
+        }
+
+        # create subblock dict with SubFleet objects
+        subblocks = {
+            sf_name: SubFleet.from_series_settings(
+                block_name=sf_name,
+                series=series,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
+                **params_subblocks,
+            )
+            for sf_name in ast.literal_eval(block_dict.pop("subblocks"))
+        }
 
         return cls(
-            **cls._get_dict_from_settings(settings),
+            settings_eco=settings_eco,
             **block_dict,
-            subblocks=None,
-            parent=parent,
-            _series=series,
-            _settings=settings,
+            subblocks=subblocks,
+        )
+
+    @classmethod
+    def from_comparison_object(
+        cls,
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        phase: str,
+        **kwargs,
+    ) -> Self:
+        dict_in = comp_obj.to_dict
+
+        params_subblocks = {
+            k: dict_in.pop(k)
+            for k in ["opex_spec_fuel", "opem_spec_fuel", "opex_spec_onroute_charging", "opem_spec_onroute_charging"]
+        }
+
+        subblocks = {
+            k: SubFleet.from_comparison_object(
+                comp_obj=v,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
+                phase=phase,
+                **params_subblocks,
+            )
+            for k, v in dict_in.pop("subblocks").items()
+        }
+
+        return cls(
+            **{
+                key: (
+                    getattr(getattr(comp_obj, key), phase)
+                    if isinstance(getattr(comp_obj, key), ExistExpansionValue)
+                    else getattr(comp_obj, key)
+                )
+                for key in dict_in
+            },
+            settings_eco=settings_eco,
+            subblocks=subblocks,
         )
 
     @property
@@ -972,42 +1343,85 @@ class Fleet(Aggregator):
         return sum([sf.e_route for sf in self.subblocks.values()])
 
 
-@dataclass
 class ChargingInfrastructure(Aggregator):
-    p_lm_max: float
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        subblocks: dict[str, ChargerType],
+        p_lm_max: float,
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            subblocks=subblocks,
+        )
 
-    def __post_init__(self):
-        self.subblocks = {
-            subblock_name: ChargerType.from_series_settings(
-                series=series,
-                block_name=subblock_name,
-                settings=self._settings,
-                parent=self,
-            )
-            for subblock_name in ast.literal_eval(series[("cis", "subblocks")])
-        }
-        delattr(self, "_series")
-        delattr(self, "_settings")
+        self.p_lm_max = p_lm_max
 
     @classmethod
     def from_series_settings(
         cls,
-        series: pd.Series,
         block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
         **kwargs,
     ) -> Self:
         block_dict = _get_block_series(series, "cis").to_dict()
-        block_dict.pop("subblocks")
+
+        # get subfleet parameters which are defined on fleet level
+        params_subblocks = {k: block_dict.pop(k) for k in []}
+
+        # create subblock dict with SubFleet objects
+        subblocks = {
+            chg_name: ChargerType.from_series_settings(
+                block_name=chg_name,
+                series=series,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
+                **params_subblocks,
+            )
+            for chg_name in ast.literal_eval(block_dict.pop("subblocks"))
+        }
 
         return cls(
-            **cls._get_dict_from_settings(settings),
+            settings_eco=settings_eco,
             **block_dict,
-            _series=series,
-            _settings=settings,
-            subblocks=None,
-            parent=parent,
+            subblocks=subblocks,
+        )
+
+    @classmethod
+    def from_comparison_object(
+        cls,
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        phase: str,
+        **kwargs,
+    ) -> Self:
+        dict_in = comp_obj.to_dict
+
+        subblocks = {
+            k: ChargerType.from_comparison_object(
+                comp_obj=v,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
+                phase=phase,
+            )
+            for k, v in dict_in.pop("subblocks").items()
+        }
+
+        return cls(
+            **{
+                key: (
+                    getattr(getattr(comp_obj, key), phase)
+                    if isinstance(getattr(comp_obj, key), ExistExpansionValue)
+                    else getattr(comp_obj, key)
+                )
+                for key in dict_in
+            },
+            settings_eco=settings_eco,
+            subblocks=subblocks,
+            **kwargs,
         )
 
 
@@ -1032,22 +1446,50 @@ class ScenarioSettings:
             wacc=series["wacc"],
         )
 
+    @classmethod
+    def from_comparison_object(cls, comp_obj) -> Self:
+        dict_in = comp_obj.to_dict
+        coordinates = Coordinates(
+            latitude=dict_in.pop("latitude"),
+            longitude=dict_in.pop("longitude"),
+        )
+        return cls(
+            coordinates=coordinates,
+            **dict_in,
+        )
+
 
 @dataclass
 class Scenario(Aggregator):
-    sim_start: pd.Timestamp
-    sim_duration: pd.Timedelta
-    sim_freq: pd.Timedelta
+    def __init__(
+        self,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        subblocks: dict[str, EcoObject],
+    ):
+        super().__init__(
+            settings_eco=settings_eco,
+            subblocks=subblocks,
+        )
+        self.settings_sim = settings_sim
 
-    def __post_init__(self):
-        self.subblocks = {
-            block_name: block_cls.from_series_settings(
+    @classmethod
+    def from_series_settings(
+        cls,
+        block_name: str,
+        series: pd.Series,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        **kwargs,
+    ) -> Self:
+        subblocks = {
+            block: block_cls.from_series_settings(
                 series=series,
-                block_name=block_name,
-                settings=self._settings,
-                parent=self,
+                block_name=block,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
             )
-            for block_name, block_cls in [
+            for block, block_cls in [
                 ("fix", FixedCosts),
                 ("grid", Grid),
                 ("pv", PV),
@@ -1058,71 +1500,104 @@ class Scenario(Aggregator):
             "fleet": Fleet.from_series_settings(
                 series=series,
                 block_name="fleet",
-                settings=self._settings,
-                parent=self,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
             ),
             "cis": ChargingInfrastructure.from_series_settings(
                 series=series,
                 block_name="cis",
-                settings=self._settings,
-                parent=self,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
             ),
         }
 
-        delattr(self, "_series")
-        delattr(self, "_settings")
-
-    @classmethod
-    def _get_dict_from_settings(
-        cls,
-        settings: ScenarioSettings,
-    ) -> dict:
-        return super()._get_dict_from_settings(settings) | {
-            "sim_start": settings.sim_start,
-            "sim_duration": settings.sim_duration,
-            "sim_freq": settings.sim_freq,
-        }
-
-    @classmethod
-    def from_series_settings(
-        cls,
-        series: pd.Series,
-        block_name: str,
-        settings: ScenarioSettings,
-        parent: EcoObject | None,
-        **kwargs,
-    ) -> Self:
         return cls(
-            **cls._get_dict_from_settings(settings),
-            _series=series,
-            _settings=settings,
-            subblocks=None,
-            parent=None,
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            subblocks=subblocks,
         )
 
     @classmethod
     def from_series(cls, definition: pd.Series) -> Self:
-        settings = ScenarioSettings.from_series_dict(
-            definition[definition.index.get_level_values("block") == "scn"].droplevel("block").to_dict()
+        series_scn = definition[definition.index.get_level_values("block") == "scn"].droplevel("block").to_dict()
+        settings_eco = EcoSettings.from_series_dict(pd.Series(series_scn))
+        settings_sim = SimSettings.from_series_dict(pd.Series(series_scn))
+
+        return cls.from_series_settings(
+            block_name="scn",
+            series=definition,
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
         )
 
-        return cls.from_series_settings(series=definition, block_name="scn", settings=settings, parent=None)
+    @classmethod
+    def from_comparison_object(
+        cls,
+        comp_obj: Any,
+        settings_eco: EcoSettings,
+        settings_sim: SimSettings,
+        phase: str,
+        **kwargs,
+    ) -> Self:
+        comp_dict = comp_obj.to_dict
+        cls_map = {
+            "fix": FixedCosts,
+            "grid": Grid,
+            "pv": PV,
+            "ess": ESS,
+            "dem": FixedDemand,
+            "fleet": Fleet,
+            "cis": ChargingInfrastructure,
+        }
+
+        subblocks = {
+            k: cls_map[k].from_comparison_object(
+                comp_obj=v,
+                settings_eco=settings_eco,
+                settings_sim=settings_sim,
+                phase=phase,
+            )
+            for k, v in comp_dict.items()
+        }
+
+        return cls(
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            subblocks=subblocks,
+        )
+
+    @classmethod
+    def from_comparison(
+        cls,
+        comp_obj: Any,
+        phase: str,
+    ) -> Self:
+        settings_eco = EcoSettings.from_comparison_object(comp_obj.settings)
+        settings_sim = SimSettings.from_comparison_object(comp_obj.settings)
+
+        return cls.from_comparison_object(
+            comp_obj=comp_obj,
+            settings_eco=settings_eco,
+            settings_sim=settings_sim,
+            phase=phase,
+        )
 
     def simulate(self):
-        efus = [efu for sf in scn.fleet.subblocks.values() for efu in sf.efus.values()]
+        start = time()
+        efus = [efu for sf in self.fleet.subblocks.values() for efu in sf.efus.values()]
 
         # get maximum charging power per EFU limited by EFU and specified charger
         for efu in efus:
-            efu.p_max_min = min(efu.p_max, scn.cis.subblocks[efu.charger].p_max)
+            efu.p_max_min = min(efu.p_max, self.cis.subblocks[efu.charger].p_max)
 
-        for idx in range(len(_get_dti(self.sim_start, self.sim_duration, self.sim_freq))):
+        for idx in range(len(self.settings_sim.dti)):
             # get FixedDemand power demand of timestep
             p_demand = self.dem.log[idx]
 
-            if scn.cis.p_lm_max == np.inf:
-                p_max_fleet = scn.grid.get_p_max(idx) + scn.pv.get_p_max(idx) + scn.ess.get_p_max(idx) - p_demand
+            if self.cis.p_lm_max == np.inf:
+                p_max_fleet = self.grid.get_p_max(idx) + self.pv.get_p_max(idx) + self.ess.get_p_max(idx) - p_demand
             else:
-                p_max_fleet = scn.cis.p_lm_max
+                p_max_fleet = self.cis.p_lm_max
 
             for efu in sorted(efus, key=lambda x: x.time_flexibility(idx)):
                 p_efu = efu.charge(p_max_fleet, idx)
@@ -1141,20 +1616,33 @@ class Scenario(Aggregator):
             )  # demand should be negative (excess for curtailment ) or zero here
 
             self.pv.curtail_power(-1 * p_demand)
-        pass
+
+        print(f"Scenario simulation time: {time() - start:.4f} s")
+
+        return ScenarioResult(
+            self_sufficiency=self.self_sufficiency,
+            self_consumption=self.self_consumption,
+            home_charging_fraction=self.home_charging_fraction,
+            capex_dis=self.capex_discounted,
+            opex_dis=self.opex_discounted,
+            totex_dis=self.costs_discounted,
+            capem=self.capem,
+            opem=self.opem,
+            totem=self.emissions,
+        )
 
     @property
     def self_consumption(self) -> float:
-        try:
+        if self.pv.e_pot > 0:
             return 1 - ((self.pv.e_curt + self.grid.e_sell) / self.pv.e_pot)
-        except ZeroDivisionError:
+        else:
             return 0.0
 
     @property
     def self_sufficiency(self) -> float:
-        try:
-            return (self.pv.e_pot - self.pv.e_curt - self.grid.e_sell) / (self.fleet.e_site + self.dem.e_site)
-        except ZeroDivisionError:
+        if (e_site := (self.fleet.e_site + self.dem.e_site)) > 0:
+            return (self.pv.e_pot - self.pv.e_curt - self.grid.e_sell) / e_site
+        else:
             return 0.0
 
     @property
@@ -1166,7 +1654,6 @@ class Scenario(Aggregator):
 
 
 if __name__ == "__main__":
-    from time import time
     from transpose_csv import transpose_csv
 
     start1 = time()
@@ -1174,9 +1661,9 @@ if __name__ == "__main__":
     transpose_csv("definition.csv", save=True)
     df = pd.read_csv(Path("definition_transposed.csv"), index_col=0, header=[0, 1])
 
-    series = df.loc["sc1", :]
+    series_scn = df.loc["sc1", :]
     start2 = time()
-    scn = Scenario.from_series(series)
+    scn = Scenario.from_series(series_scn)
     print(f"Scenario loaded in {time() - start1:.3f} s")
     print(f"Scenario object initialized in {time() - start2:.3f} s")
     start3 = time()
