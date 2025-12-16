@@ -7,8 +7,8 @@
   "icon": "☀️",
   "values": {
     "ls": 18,
-    "capex_spec": 0.9,
-    "capem_spec": 0.798,
+    "capex_spec": 900e-3,
+    "capem_spec": 798e-3,
     "opex_spec": 0.0,
     "opem_spec": 0.0
   },

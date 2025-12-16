@@ -6,9 +6,9 @@
   },
   "icon": "🔋",
   "values": {
-    "ls": 9,
-    "capex_spec": 0.45,
-    "capem_spec": 0.069,
+    "ls": 12,
+    "capex_spec": 450e-3,
+    "capem_spec": 69e-3,
     "opex_spec": 0.0,
     "opem_spec": 0.0,
     "c_rate_max": 0.5,

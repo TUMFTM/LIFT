@@ -6,8 +6,8 @@
   },
   "icon": "\uD83C\uDD7F\uFE0F",
   "values": {
-    "opem_spec_fuel": 0.5,
-    "opem_spec_onroute_charging": 0.05
+    "opem_spec_fuel": 3.08,
+    "opem_spec_onroute_charging": 0.386e-3
   },
   "inputs": {
     "opex_spec_fuel": {
@@ -116,14 +116,14 @@
       "weight_max": "18-26",
       "values": {
         "ls": 6,
-        "capacity": 400e3,
+        "capacity": 414e3,
         "capem_per_unit_bev": 59e3,
         "capem_per_unit_icev": 31.2e3,
         "mntex_spec_bev": 0.1324,
         "mntex_spec_icev": 0.185,
         "toll_spec_bev": 0.0,
         "toll_spec_icev": 0.242,
-        "consumption_spec_icev": 23.0,
+        "consumption_spec_icev": 25.0,
         "soc_init": 0.5
       },
       "inputs": {
@@ -275,7 +275,7 @@
         "mntex_spec_icev": 0.0339,
         "toll_spec_bev": 0.0,
         "toll_spec_icev": 0.0,
-        "consumption_spec_icev": 15.0,
+        "consumption_spec_icev": 11.0,
         "soc_init": 0.5
       },
       "inputs": {
@@ -348,7 +348,7 @@
         "capem_per_unit_bev": 4.78e3,
         "capem_per_unit_icev": 2.694e3,
         "mntex_spec_bev": 0.036,
-        "mntex_spec_icev": 0.063,
+        "mntex_spec_icev": 0.062,
         "toll_spec_bev": 0.0,
         "toll_spec_icev": 0.0,
         "consumption_spec_icev": 6.0,

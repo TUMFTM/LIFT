@@ -7,9 +7,9 @@
   "icon": "🔌⚡",
   "values": {
     "ls": 18,
-    "capex_spec": 0.2,
-    "capem_spec": 1.0,
-    "opem_spec": 0.0004
+    "capex_spec": 200e-3,
+    "capem_spec": 0.0,
+    "opem_spec": 0.386e-3
   },
   "inputs": {
     "capacity_preexisting": {

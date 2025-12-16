@@ -13,7 +13,7 @@
       "label": "AC",
       "icon": "🔌",
       "values": {
-        "ls": 6,
+        "ls": 8,
         "capem_per_unit": 65.4
       },
       "inputs": {
@@ -57,7 +57,7 @@
       "label": "DC",
       "icon": "⚡️",
       "values": {
-        "ls": 6,
+        "ls": 8,
         "capem_per_unit": 6520.0
       },
       "inputs": {
