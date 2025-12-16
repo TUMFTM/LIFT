@@ -279,7 +279,7 @@ class ComparisonResult:
 
     @property
     def payback_period_yrs(self) -> float | None:
-        diff = np.cumsum(self.baseline.totex_dis.sum(axis=0)) - np.cumsum(self.expansion.totex_dis.sum(axis=0))
+        diff = np.cumsum(self.baseline.totex_dis) - np.cumsum(self.expansion.totex_dis)
         return self.get_payback_period_yrs(diff)
 
     @property
@@ -288,5 +288,5 @@ class ComparisonResult:
 
     @property
     def payback_period_co2_yrs(self) -> float | None:
-        diff = np.cumsum(self.baseline.totem.sum(axis=0)) - np.cumsum(self.expansion.totem.sum(axis=0))
+        diff = np.cumsum(self.baseline.totem) - np.cumsum(self.expansion.totem)
         return self.get_payback_period_yrs(diff)
