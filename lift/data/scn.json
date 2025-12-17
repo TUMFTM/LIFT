@@ -15,11 +15,11 @@
   "inputs": {
     "period_eco": {
       "input_type": "Slider",
-      "min_value": 0.0,
-      "max_value": 20.0,
-      "value": 18.0,
-      "step": 1.0,
-      "factor": 1.0,
+      "min_value": 0,
+      "max_value": 30,
+      "value": 18,
+      "step": 1,
+      "factor": 1,
       "format": "%.0f"
     },
     "wacc": {
@@ -48,10 +48,10 @@
     "capex_initial": {
       "input_type": "Slider",
       "min_value": 0.0,
-      "max_value": 1000.0,
-      "value": 10.0,
-      "step": 1.0,
-      "factor": 1e3,
+      "max_value": 1e6,
+      "value": 10e3,
+      "step": 1e3,
+      "factor": 1.0,
       "format": "%.0f"
     }
   }

@@ -9,9 +9,9 @@ import streamlit as st
 # Is automatically deleted after import
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
-from lift.backend.comparison.comparison import run_comparison
+from lift.backend.comparison import run_comparison
 
-from lift.backend.comparison.interfaces import (
+from lift.backend.interfaces import (
     ExistExpansionValue,
     ComparisonScenario,
     ComparisonSettings,
@@ -26,7 +26,7 @@ from lift.backend.comparison.interfaces import (
     ComparisonChargerType,
 )
 
-from lift.backend.evaluation.blocks import GridPowerExceededError, SOCError
+from lift.backend.scenario import GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
 from lift.frontend.definitions import DEF_GRID, DEF_PV, DEF_ESS, DEF_FLEET, DEF_CIS, DEF_SCN

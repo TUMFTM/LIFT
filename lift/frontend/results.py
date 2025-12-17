@@ -338,7 +338,7 @@ def display_results(results, domain):
                 size=5,
             )
             st.markdown(
-                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {DEF_SCN.period_eco} {get_label('main.time_diagrams.costs.saving.years')}"
+                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {results.baseline.period_eco} {get_label('main.time_diagrams.costs.saving.years')}"
             )
 
     with domain.time_diagrams.emissions():

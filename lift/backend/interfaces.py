@@ -6,7 +6,7 @@ import pandas as pd
 
 
 if TYPE_CHECKING:
-    from lift.backend.evaluation.blocks import ScenarioResult
+    from lift.backend.scenario import ScenarioResult
 
 
 @dataclass

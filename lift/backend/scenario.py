@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pvlib
 
-from lift.backend.comparison.interfaces import ExistExpansionValue
+from lift.backend.interfaces import ExistExpansionValue
 from lift.backend.utils import safe_cache_data
 
 
@@ -83,147 +83,10 @@ def _resample_ts(ts: pd.Series, dti: pd.DatetimeIndex, method: str = "numeric_me
     return ts.pipe(method_map[method]).reindex(dti).ffill().bfill()
 
 
-@safe_cache_data
-def _get_log_pv(
-    coordinates: Coordinates,
-    settings_sim: SimSettings,
-) -> np.typing.NDArray[np.float64]:
-    try:
-        data, *_ = pvlib.iotools.get_pvgis_hourly(
-            latitude=coordinates.latitude,
-            longitude=coordinates.longitude,
-            start=int(settings_sim.dti.year.min()),
-            end=int(settings_sim.dti.year.max()),
-            raddatabase="PVGIS-SARAH3",
-            outputformat="json",
-            pvcalculation=True,
-            peakpower=1,  # convert kWp to Wp
-            pvtechchoice="crystSi",
-            mountingplace="free",
-            loss=0,
-            trackingtype=0,  # fixed mount
-            optimalangles=True,
-            url="https://re.jrc.ec.europa.eu/api/v5_3/",
-            map_variables=True,
-            timeout=30,  # default value
-        )
-        data = data["P"] / 1000
-        data.index = data.index.round("h")
-        data = data.tz_convert("Europe/Berlin")
-        data = _resample_ts(ts=data, dti=settings_sim.dti)
-        return data.values
-    except:
-        warnings.warn("Using random values for PV generation")
-        return np.random.random(len(settings_sim.dti))
-
-
-@safe_cache_data
-def _get_log_dem(
-    slp: str,
-    e_yrl: float,
-    settings_sim: SimSettings,
-) -> np.typing.NDArray[np.float64]:
-    if slp not in ["h0", "h0_dyn", "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "l0", "l1", "l2"]:
-        raise ValueError(f'Specified SLP "{slp}" is not valid. SLP has to be defined as lower case.')
-
-    # get power profile in 15 minute timesteps
-    ts = pd.concat(
-        [
-            (demandlib.bdew.ElecSlp(year=year).get_scaled_power_profiles({slp: e_yrl}))
-            for year in settings_sim.dti.year.unique()
-        ]
-    )[slp]
-
-    # Time index ignores DST, but values adapt to DST -> apply new index with TZ information
-    ts.index = pd.date_range(
-        start=ts.index.min(), end=ts.index.max(), freq=ts.index.freq, inclusive="both", tz="Europe/Berlin"
-    )
-
-    return _resample_ts(ts=ts, dti=settings_sim.dti).values
-
-
-@safe_cache_data
-def _get_log_subfleet(
-    vehicle_type: str,
-    settings_sim: SimSettings,
-) -> pd.DataFrame:
-    # Create a dtype map to explicitly assign dtypes to columns
-    with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
-        dtype_map = {}
-        for col in pd.read_csv(logfile, nrows=0, header=[0, 1]).columns:
-            suffix = col[1]
-            if suffix in {"atbase", "atac", "atdc"}:
-                dtype_map[col] = "boolean"
-            elif suffix in {"dist", "consumption", "dsoc"}:
-                dtype_map[col] = "float64"
-
-    with resources.files("lift.data.mobility").joinpath(f"log_{vehicle_type}.csv").open("r") as logfile:
-        df = pd.read_csv(logfile, header=[0, 1], engine="c", low_memory=False, dtype=dtype_map)
-        df = (
-            df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True))
-            .drop(df.columns[0], axis=1)
-            .sort_index(
-                axis=1,
-                level=0,
-                key=lambda x: x.map(
-                    lambda s: int(m.group(1))
-                    # get the last continuous sequence of digits if possible
-                    if (m := re.search(r"(\d+)(?!.*\d)", s))
-                    else s
-                ),
-                sort_remaining=True,
-            )
-            .tz_convert("Europe/Berlin")
-        )
-
-        method_sampling = {
-            "atbase": "bool_all",
-            "atac": "bool_any",
-            "atdc": "bool_any",
-            "dsoc": "numeric_first",
-            "dist": "numeric_sum",
-            "consumption": "numeric_mean",
-        }
-
-        # Efficiently apply the resampling function to each column in the DataFrame
-        df = df.apply(
-            lambda col: _resample_ts(
-                ts=col,
-                dti=settings_sim.dti,
-                method=method_sampling[col.name[1]],
-            ),
-            axis=0,
-        )
-
-    return df.loc[settings_sim.dti, :]
-
-
-@safe_cache_data
-def _get_soc_min(max_charge_rate, dsoc, atbase):
-    # cumulative sums of consumption and possible charging
-    cum_dsoc = np.concatenate(([0.0], np.cumsum(dsoc)))
-    cum_charge = np.concatenate(([0.0], np.cumsum(max_charge_rate * atbase)))
-
-    # transform space: subtract available charging from required SOC
-    t = cum_dsoc - cum_charge
-
-    # reverse max accumulate and reverse back
-    m = np.maximum.accumulate(t[::-1])[::-1]
-
-    # translate back to SOC requirement at each timestep
-    soc_min = m[1:] - t[:-1]
-
-    # must be at least trip consumption
-    soc_min = np.maximum(soc_min, dsoc)
-
-    # no negative SOC
-    return np.clip(soc_min, 0.0, None)
-
-
 @dataclass
 class Coordinates:
-    latitude: float = 48.148
-    longitude: float = 11.507
+    latitude: float
+    longitude: float
 
     @classmethod
     def from_frontend_coordinates(cls, frontend_coordinates: "FrontendCoordinates") -> Self:
@@ -255,18 +118,18 @@ class SOCError(Exception):
 
 @dataclass(frozen=True)
 class SimSettings:
-    sim_start: pd.Timestamp
-    sim_duration: pd.Timedelta
-    sim_freq: pd.Timedelta
+    start: pd.Timestamp
+    duration: pd.Timedelta
+    freq: pd.Timedelta
 
     coordinates: Coordinates
 
     @classmethod
     def from_series_dict(cls, series: pd.Series) -> Self:
         return cls(
-            sim_start=pd.Timestamp(series["sim_start"]).tz_localize("Europe/Berlin"),
-            sim_duration=pd.Timedelta(days=series["sim_duration"]),
-            sim_freq=pd.Timedelta(hours=series["sim_freq"]),
+            start=pd.Timestamp(series["sim_start"]).tz_localize(series["timezone"]),
+            duration=pd.Timedelta(days=series["sim_duration"]),
+            freq=pd.Timedelta(hours=series["sim_freq"]),
             coordinates=Coordinates(
                 latitude=series["latitude"],
                 longitude=series["longitude"],
@@ -276,9 +139,9 @@ class SimSettings:
     @classmethod
     def from_comparison_object(cls, comp_obj: Any) -> Self:
         return cls(
-            sim_start=comp_obj.sim_start,
-            sim_duration=comp_obj.sim_duration,
-            sim_freq=comp_obj.sim_freq,
+            start=comp_obj.sim_start,
+            duration=comp_obj.sim_duration,
+            freq=comp_obj.sim_freq,
             coordinates=Coordinates(
                 latitude=comp_obj.latitude,
                 longitude=comp_obj.longitude,
@@ -286,9 +149,7 @@ class SimSettings:
         )
 
     def _create_dti(self, inclusive: Literal["both", "left"]) -> pd.DatetimeIndex:
-        return pd.date_range(
-            start=self.sim_start, end=self.sim_start + self.sim_duration, freq=self.sim_freq, inclusive=inclusive
-        )
+        return pd.date_range(start=self.start, end=self.start + self.duration, freq=self.freq, inclusive=inclusive)
 
     @cached_property
     def dti(self) -> pd.DatetimeIndex:
@@ -299,8 +160,12 @@ class SimSettings:
         return self._create_dti("both")
 
     @cached_property
-    def sim_freq_h(self) -> float:
-        return self.sim_freq.total_seconds() / 3600.0
+    def freq_h(self) -> float:
+        return self.freq.total_seconds() / 3600.0
+
+    @cached_property
+    def sim2yr(self) -> float:
+        return pd.Timedelta(days=365) / self.duration
 
 
 class Occurrence(Enum):
@@ -352,6 +217,7 @@ class EcoSettings:
 
 @dataclass
 class ScenarioResult:
+    period_eco: int
     self_sufficiency: float
     self_consumption: float
     home_charging_fraction: float
@@ -554,10 +420,12 @@ class FixedDemand(BaseBlock):
         self.slp = slp
         self.e_yrl = e_yrl
 
-        self.log = _get_log_dem(
-            slp=self.slp,
-            e_yrl=self.e_yrl,
-            settings_sim=self.settings_sim,
+        self.log = (
+            self._get_log_dem(
+                slp=self.slp,
+                settings_sim=self.settings_sim,
+            )
+            * self.e_yrl
         )
 
     @classmethod
@@ -575,6 +443,31 @@ class FixedDemand(BaseBlock):
             **_get_block_series(series, block_name).to_dict(),
             **kwargs,
         )
+
+    @classmethod
+    @safe_cache_data
+    def _get_log_dem(
+        cls,
+        slp: str,
+        settings_sim: SimSettings,
+    ) -> np.typing.NDArray[np.float64]:
+        if slp not in ["h0", "h0_dyn", "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "l0", "l1", "l2"]:
+            raise ValueError(f'Specified SLP "{slp}" is not valid. SLP has to be defined as lower case.')
+
+        # get power profile in 15 minute timesteps
+        ts = pd.concat(
+            [
+                (demandlib.bdew.ElecSlp(year=year).get_scaled_power_profiles({slp: 1}))  # scale to 1 Wh
+                for year in settings_sim.dti.year.unique()
+            ]
+        )[slp]
+
+        # Time index ignores DST, but values adapt to DST -> apply new index with TZ information
+        ts.index = pd.date_range(
+            start=ts.index.min(), end=ts.index.max(), freq=ts.index.freq, inclusive="both", tz=settings_sim.dti.tz
+        )
+
+        return _resample_ts(ts=ts, dti=settings_sim.dti).values
 
     @property
     def _opex_yrl(self) -> float:
@@ -765,13 +658,13 @@ class Grid(ContinuousInvestBlock):
 
         if demand > 0:
             # buying from grid
-            self.e_buy += demand * self.settings_sim.sim_freq_h
+            self.e_buy += demand * self.settings_sim.freq_h
             self.p_peak = max(self.p_peak, demand)
             return 0
         else:
             p_feed_in = min(-1 * demand, self.capacity)
             # selling to grid
-            self.e_sell += p_feed_in * self.settings_sim.sim_freq_h
+            self.e_sell += p_feed_in * self.settings_sim.freq_h
             return demand + p_feed_in
 
 
@@ -786,7 +679,6 @@ class PV(ContinuousInvestBlock):
         capem_spec: float,
         opex_spec: float,
         opem_spec: float,
-        log: np.typing.NDArray[np.float64] | None = None,
     ):
         super().__init__(
             settings_eco=settings_eco,
@@ -800,18 +692,47 @@ class PV(ContinuousInvestBlock):
         )
 
         self.log = (
-            log
-            if log
-            else (
-                _get_log_pv(
-                    coordinates=self.settings_sim.coordinates,
-                    settings_sim=self.settings_sim,
-                )
-                * self.capacity
+            self._get_log_pv(
+                settings_sim=self.settings_sim,
             )
+            * self.capacity
         )
 
         self._p_curt = 0.0
+
+    @classmethod
+    @safe_cache_data
+    def _get_log_pv(
+        cls,
+        settings_sim: SimSettings,
+    ) -> np.typing.NDArray[np.float64]:
+        try:
+            data, *_ = pvlib.iotools.get_pvgis_hourly(
+                latitude=settings_sim.coordinates.latitude,
+                longitude=settings_sim.coordinates.longitude,
+                start=int(settings_sim.dti.year.min()),
+                end=int(settings_sim.dti.year.max()),
+                raddatabase="PVGIS-SARAH3",
+                outputformat="json",
+                pvcalculation=True,
+                peakpower=1,  # convert kWp to Wp
+                pvtechchoice="crystSi",
+                mountingplace="free",
+                loss=0,
+                trackingtype=0,  # fixed mount
+                optimalangles=True,
+                url="https://re.jrc.ec.europa.eu/api/v5_3/",
+                map_variables=True,
+                timeout=30,  # default value
+            )
+            data = data["P"] / 1000
+            data.index = data.index.round("h")
+            data = data.tz_convert(settings_sim.dti.tz)
+            data = _resample_ts(ts=data, dti=settings_sim.dti)
+            return data.values
+        except:
+            warnings.warn("Using random values for PV generation")
+            return np.random.random(len(settings_sim.dti))
 
     @property
     def _opex_yrl(self) -> float:
@@ -832,11 +753,11 @@ class PV(ContinuousInvestBlock):
 
     @property
     def e_curt(self) -> float:
-        return self._p_curt * self.settings_sim.sim_freq_h
+        return self._p_curt * self.settings_sim.freq_h
 
     @property
     def e_pot(self) -> float:
-        return np.sum(self.log) * self.settings_sim.sim_freq_h
+        return np.sum(self.log) * self.settings_sim.freq_h
 
 
 class ESS(ContinuousInvestBlock):
@@ -880,7 +801,7 @@ class ESS(ContinuousInvestBlock):
     def get_p_max(self, idx):
         return min(
             self.capacity * self.c_rate_max,  # power limit due to c-rate
-            self.capacity * self.soc / self.settings_sim.sim_freq_h,  # power limit due to energy content)
+            self.capacity * self.soc / self.settings_sim.freq_h,  # power limit due to energy content)
         )
 
     def satisfy_demand(self, demand: float, idx):
@@ -892,16 +813,16 @@ class ESS(ContinuousInvestBlock):
             p_ess = min(
                 demand,
                 self.capacity * self.c_rate_max,  # power limit due to c-rate
-                self.capacity * self.soc / self.settings_sim.sim_freq_h,  # power limit due to energy content
+                self.capacity * self.soc / self.settings_sim.freq_h,  # power limit due to energy content
             )
         # charging
         else:
             p_ess = max(
                 demand,  # max as all values are negative
                 -self.capacity * self.c_rate_max,  # power limit due to c-rate
-                -self.capacity * (1 - self.soc) / self.settings_sim.sim_freq_h,  # power limit due to energy content
+                -self.capacity * (1 - self.soc) / self.settings_sim.freq_h,  # power limit due to energy content
             )
-        self.soc -= p_ess * self.settings_sim.sim_freq_h / self.capacity
+        self.soc -= p_ess * self.settings_sim.freq_h / self.capacity
         self._soc_track[idx] = self.soc
         if self.soc < (0 - EPS) or self.soc > (1 + EPS):
             raise SOCError(
@@ -1029,7 +950,7 @@ class ElectricFleetUnit:
         settings_sim: SimSettings,
         name: str,
         p_max: float,
-        atbase: np.typing.NDArray[np.float64],
+        atbase: np.typing.NDArray[int],
         consumption: np.typing.NDArray[np.float64],
         capacity: float,
         charger: str,
@@ -1049,9 +970,9 @@ class ElectricFleetUnit:
         self._soc_track = np.zeros(len(self.atbase) + 1)
         self._soc_track[0] = self.soc
 
-        self._soc_min = _get_soc_min(
-            max_charge_rate=self.p_max * self.settings_sim.sim_freq_h / self.capacity,
-            dsoc=self.consumption * self.settings_sim.sim_freq_h / self.capacity,
+        self._soc_min = self._get_soc_min(
+            max_charge_rate=self.p_max * self.settings_sim.freq_h / self.capacity,
+            dsoc=self.consumption * self.settings_sim.freq_h / self.capacity,
             atbase=self.atbase,
         )
 
@@ -1063,7 +984,7 @@ class ElectricFleetUnit:
         cls,
         settings_sim: SimSettings,
         name: str,
-        atbase: np.typing.NDArray[np.float64],
+        atbase: np.typing.NDArray[int],
         consumption: np.typing.NDArray[np.float64],
         subfleet: SubFleet,
     ):
@@ -1075,6 +996,33 @@ class ElectricFleetUnit:
         }
 
         return cls(settings_sim=settings_sim, name=name, atbase=atbase, consumption=consumption, **params_subfleet)
+
+    @classmethod
+    @safe_cache_data
+    def _get_soc_min(
+        cls,
+        max_charge_rate: float,
+        dsoc: np.typing.NDArray[float],
+        atbase: np.typing.NDArray[int],
+    ) -> np.typing.NDArray[float]:
+        # cumulative sums of consumption and possible charging
+        cum_dsoc = np.concatenate(([0.0], np.cumsum(dsoc)))
+        cum_charge = np.concatenate(([0.0], np.cumsum(max_charge_rate * atbase)))
+
+        # transform space: subtract available charging from required SOC
+        t = cum_dsoc - cum_charge
+
+        # reverse max accumulate and reverse back
+        m = np.maximum.accumulate(t[::-1])[::-1]
+
+        # translate back to SOC requirement at each timestep
+        soc_min = m[1:] - t[:-1]
+
+        # must be at least trip consumption
+        soc_min = np.maximum(soc_min, dsoc)
+
+        # no negative SOC
+        return np.clip(soc_min, 0.0, None)
 
     def time_flexibility(self, idx) -> float:
         if self.p_max == 0:  # division by 0 causes error
@@ -1092,7 +1040,7 @@ class ElectricFleetUnit:
         if atbase == 1 and chargers[self.charger] > 0:
             p_site = min(
                 self.p_max_min,  # maximum power based on charger and vehicle limits
-                self.capacity * (1 - self.soc) / self.settings_sim.sim_freq_h,  # maximum power based on SOC limit
+                self.capacity * (1 - self.soc) / self.settings_sim.freq_h,  # maximum power based on SOC limit
                 p_available,  # available power at site
             )
             if p_site > 0:
@@ -1102,13 +1050,11 @@ class ElectricFleetUnit:
         self._p_site[idx] = p_site
 
         # update SOC based on charging power
-        self.soc += (p_site - self.consumption[idx]) * self.settings_sim.sim_freq_h / self.capacity
+        self.soc += (p_site - self.consumption[idx]) * self.settings_sim.freq_h / self.capacity
 
         # on-route charging
         if self.soc < (-EPS) and not atbase:
-            self._p_route[idx] = (
-                -1 * self.soc * self.capacity / self.settings_sim.sim_freq_h
-            )  # power needed to reach SOC=0
+            self._p_route[idx] = -1 * self.soc * self.capacity / self.settings_sim.freq_h  # power needed to reach SOC=0
             self.soc = 0.0
 
         # catch errors
@@ -1125,11 +1071,11 @@ class ElectricFleetUnit:
 
     @property
     def e_site(self) -> float:
-        return float(np.sum(self._p_site) * self.settings_sim.sim_freq_h)
+        return float(np.sum(self._p_site) * self.settings_sim.freq_h)
 
     @property
     def e_route(self) -> float:
-        return float(np.sum(self._p_route) * self.settings_sim.sim_freq_h)
+        return float(np.sum(self._p_route) * self.settings_sim.freq_h)
 
 
 class SubFleet(InvestBlock):
@@ -1189,8 +1135,8 @@ class SubFleet(InvestBlock):
         self.opex_spec_onroute_charging = opex_spec_onroute_charging
         self.opem_spec_onroute_charging = opem_spec_onroute_charging
 
-        self.log = _get_log_subfleet(
-            vehicle_type=self.name,
+        self.log = self._get_log_subfleet(
+            name=self.name,
             settings_sim=self.settings_sim,
         )
 
@@ -1205,6 +1151,63 @@ class SubFleet(InvestBlock):
             for i in range(self.num_bev)
         }
 
+    @classmethod
+    @safe_cache_data
+    def _get_log_subfleet(
+        cls,
+        name: str,
+        settings_sim: SimSettings,
+    ) -> pd.DataFrame:
+        # Create a dtype map to explicitly assign dtypes to columns
+        with resources.files("lift.data.mobility").joinpath(f"log_{name}.csv").open("r") as logfile:
+            dtype_map = {}
+            for col in pd.read_csv(logfile, nrows=0, header=[0, 1]).columns:
+                suffix = col[1]
+                if suffix in {"atbase", "atac", "atdc"}:
+                    dtype_map[col] = "boolean"
+                elif suffix in {"dist", "consumption", "dsoc"}:
+                    dtype_map[col] = "float64"
+
+        with resources.files("lift.data.mobility").joinpath(f"log_{name}.csv").open("r") as logfile:
+            df = pd.read_csv(logfile, header=[0, 1], engine="c", low_memory=False, dtype=dtype_map)
+            df = (
+                df.set_index(pd.to_datetime(df.iloc[:, 0], utc=True))
+                .drop(df.columns[0], axis=1)
+                .sort_index(
+                    axis=1,
+                    level=0,
+                    key=lambda x: x.map(
+                        lambda s: int(m.group(1))
+                        # get the last continuous sequence of digits if possible
+                        if (m := re.search(r"(\d+)(?!.*\d)", s))
+                        else s
+                    ),
+                    sort_remaining=True,
+                )
+                .tz_convert(settings_sim.dti.tz)
+            )
+
+            method_sampling = {
+                "atbase": "bool_all",
+                "atac": "bool_any",
+                "atdc": "bool_any",
+                "dsoc": "numeric_first",
+                "dist": "numeric_sum",
+                "consumption": "numeric_mean",
+            }
+
+            # Efficiently apply the resampling function to each column in the DataFrame
+            df = df.apply(
+                lambda col: _resample_ts(
+                    ts=col,
+                    dti=settings_sim.dti,
+                    method=method_sampling[col.name[1]],
+                ),
+                axis=0,
+            )
+
+        return df.loc[settings_sim.dti, :]
+
     @property
     def _capex_single(self) -> float:
         return self.num_bev * self.capex_per_unit_bev + self.num_icev * self.capex_per_unit_icev
@@ -1215,13 +1218,17 @@ class SubFleet(InvestBlock):
 
     @cached_property
     def _dist_yrl_bev(self) -> float:
-        # ToDo: scale to yearly distance
-        return sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(0, self.num_bev)])
+        return (
+            sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(0, self.num_bev)])
+            * self.settings_sim.sim2yr
+        )
 
     @cached_property
     def _dist_yrl_icev(self) -> float:
-        # ToDo: scale to yearly distance
-        return sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(self.num_bev, self.num_icev)])
+        return (
+            sum([self.log[(f"{self.name}{i}", "dist")].sum() for i in range(self.num_bev, self.num_icev)])
+            * self.settings_sim.sim2yr
+        )
 
     @property
     def _opex_yrl(self) -> float:
@@ -1432,7 +1439,7 @@ class ChargingInfrastructure(Aggregator):
 
 
 @dataclass
-class Scenario(Aggregator):
+class SingleScenario(Aggregator):
     def __init__(
         self,
         settings_eco: EcoSettings,
@@ -1594,6 +1601,7 @@ class Scenario(Aggregator):
         print(f"Scenario simulation time: {time() - start:.4f} s")
 
         return ScenarioResult(
+            period_eco=self.settings_eco.period_eco,
             self_sufficiency=self.self_sufficiency,
             self_consumption=self.self_consumption,
             home_charging_fraction=self.home_charging_fraction,
@@ -1628,16 +1636,16 @@ class Scenario(Aggregator):
 
 
 if __name__ == "__main__":
-    from transpose_csv import transpose_csv
+    from scripts.example.from_csv.transpose_csv import transpose_csv
 
     start1 = time()
     # transpose file -> not directly usable as variable types are only added automatically per column
-    transpose_csv("definition.csv", save=True)
-    df = pd.read_csv(Path("definition_transposed.csv"), index_col=0, header=[0, 1])
+    transpose_csv("../../scripts/example/from_csv/definition.csv", save=True)
+    df = pd.read_csv(Path("../../scripts/example/from_csv/definition_transposed.csv"), index_col=0, header=[0, 1])
 
     series_scn = df.loc["sc1", :]
     start2 = time()
-    scn = Scenario.from_series(series_scn)
+    scn = SingleScenario.from_series(series_scn)
     print(f"Scenario loaded in {time() - start1:.3f} s")
     print(f"Scenario object initialized in {time() - start2:.3f} s")
     start3 = time()

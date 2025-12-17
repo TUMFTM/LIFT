@@ -24,7 +24,7 @@ import streamlit as st
 
 from .utils import get_label
 
-from lift.backend.evaluation.blocks import Coordinates
+from lift.backend.scenario import Coordinates
 
 
 class StreamlitWrapper:
