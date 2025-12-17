@@ -34,7 +34,7 @@
       "name": "hlt",
       "label": {
         "de": "Glieder-/Sattelzüge",
-        "en": "Truck combinations"
+        "en": "Truck Combinations"
       },
       "icon": "🚛",
       "weight_max": "28-42",
@@ -262,7 +262,7 @@
       "name": "usv",
       "label": {
         "de": "Transporter",
-        "en": "Light commercial vehicle"
+        "en": "Light Commercial Vehicle"
       },
       "icon": "🚐",
       "weight_max": "3.5",
@@ -337,8 +337,8 @@
     "pkw": {
       "name": "pkw",
       "label": {
-        "de": "PKW",
-        "en": "Passenger cars"
+        "de": "Pkw",
+        "en": "Passenger Cars"
       },
       "icon": "\uD83D\uDE97",
       "weight_max": "2.5",

@@ -379,7 +379,7 @@ def display_results(results, domain):
                 size=5,
             )
             st.markdown(
-                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {DEF_SCN.period_eco} {get_label('main.time_diagrams.emissions.saving.years')}"
+                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {results.baseline.period_eco} {get_label('main.time_diagrams.emissions.saving.years')}"
             )
 
 
