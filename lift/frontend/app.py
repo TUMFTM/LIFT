@@ -129,17 +129,11 @@ def run_frontend():
     # Subtitle with colors as legend
     app.main.subtitle = app.main().container()
 
-    # Space for KPI diagrams
+    # Container for KPI diagrams
     app.main.kpi_diagrams = app.main().container()
 
-    # Tab structure for cost/emission results
+    # Container for time diagrams
     app.main.time_diagrams = app.main().container()
-    app.main.time_diagrams.costs, app.main.time_diagrams.emissions = app.main().tabs(
-        [
-            get_label("main.time_diagrams.costs.tab"),
-            get_label("main.time_diagrams.emissions.tab"),
-        ]
-    )
 
     # create sidebar and get input parameters from sidebar
     create_sidebar_and_get_input(domain=app.sidebar)

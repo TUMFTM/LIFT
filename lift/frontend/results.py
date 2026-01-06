@@ -128,72 +128,47 @@ def display_results(results, domain):
             width="stretch",
         )
 
-    with domain.time_diagrams.costs():
+    for tab, key in zip(
+        domain().tabs(
+            [
+                get_label("main.time_diagrams.costs.tab"),
+                get_label("main.time_diagrams.emissions.tab"),
+            ]
+        ),
+        ["costs", "emissions"],
+    ):
         # Show heading
         _heading_with_help(
-            label=get_label("main.time_diagrams.costs.title.label"),
-            help_msg=get_label("main.time_diagrams.costs.title.help"),
+            label=get_label(f"main.time_diagrams.{key}.title.label"),
+            help_msg=get_label(f"main.time_diagrams.{key}.title.help"),
+            domain=tab,
         )
 
-        col1, col2 = st.columns([4, 1])
+        col1, col2 = tab.columns([4, 1])
         with col1:
-            st.altair_chart(plots["time_diagrams"]["time_diagrams.costs"].plot, width="stretch")
+            st.altair_chart(plots["time_diagrams"][f"time_diagrams.{key}"].plot, width="stretch")
         with col2:
             _heading_with_help(
-                label=get_label("main.time_diagrams.costs.paybackperiod.title"),
-                help_msg=get_label("main.time_diagrams.costs.paybackperiod.help"),
+                label=get_label(f"main.time_diagrams.{key}.paybackperiod.title"),
+                help_msg=get_label(f"main.time_diagrams.{key}.paybackperiod.help"),
                 adjust="left",
                 size=5,
             )
-            if results.payback_period_yrs is None:
-                st.markdown(get_label("main.time_diagrams.costs.paybackperiod.negative_result"))
+            if results.payback_period[key] is None:
+                st.markdown(get_label(f"main.time_diagrams.{key}.paybackperiod.negative_result"))
             else:
                 st.markdown(
-                    f"{results.payback_period_yrs:.0f} {get_label('main.time_diagrams.costs.paybackperiod.years')}"
+                    f"{results.payback_period[key]:.0f} {get_label(f'main.time_diagrams.{key}.paybackperiod.years')}"
                 )
 
             _heading_with_help(
-                label=get_label("main.time_diagrams.costs.saving.title"),
-                help_msg=get_label("main.time_diagrams.costs.saving.help"),
+                label=get_label(f"main.time_diagrams.{key}.saving.title"),
+                help_msg=get_label(f"main.time_diagrams.{key}.saving.help"),
                 adjust="left",
                 size=5,
             )
             st.markdown(
-                f"{results.npc_delta:,.0f} EUR {get_label('main.time_diagrams.costs.saving.after')} {results.baseline.period_eco} {get_label('main.time_diagrams.costs.saving.years')}"
-            )
-
-    with domain.time_diagrams.emissions():
-        # Show heading
-        _heading_with_help(
-            label=get_label("main.time_diagrams.emissions.title.label"),
-            help_msg=get_label("main.time_diagrams.emissions.title.help"),
-        )
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.altair_chart(plots["time_diagrams"]["time_diagrams.emissions"].plot, width="stretch")
-
-        with col2:
-            _heading_with_help(
-                label=get_label("main.time_diagrams.emissions.paybackperiod.title"),
-                help_msg=get_label("main.time_diagrams.emissions.paybackperiod.help"),
-                adjust="left",
-                size=5,
-            )
-            if results.payback_period_co2_yrs is None:
-                st.markdown(get_label("main.time_diagrams.emissions.paybackperiod.negative_result"))
-            else:
-                st.markdown(
-                    f"{results.payback_period_co2_yrs:.2f} {get_label('main.time_diagrams.emissions.paybackperiod.years')}"
-                )
-
-            _heading_with_help(
-                label=get_label("main.time_diagrams.emissions.saving.title"),
-                help_msg=get_label("main.time_diagrams.emissions.saving.help"),
-                adjust="left",
-                size=5,
-            )
-            st.markdown(
-                f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {results.baseline.period_eco} {get_label('main.time_diagrams.emissions.saving.years')}"
+                f"{results.delta[key]:,.0f} EUR {get_label(f'main.time_diagrams.{key}.saving.after')} {results.baseline.period_eco} {get_label(f'main.time_diagrams.{key}.saving.years')}"
             )
 
     word_bytes = create_report(plots=plots, inputs=st.session_state.inputs.df)

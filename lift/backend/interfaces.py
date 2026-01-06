@@ -326,3 +326,17 @@ class ComparisonResult:
     def payback_period_co2_yrs(self) -> float | None:
         diff = np.cumsum(self.baseline.totem) - np.cumsum(self.expansion.totem)
         return self.get_payback_period_yrs(diff)
+
+    @property
+    def delta(self) -> dict[str, float]:
+        return {
+            "costs": self.npc_delta,
+            "emissions": self.co2_delta,
+        }
+
+    @property
+    def payback_period(self) -> dict[str, float | None]:
+        return {
+            "costs": self.payback_period_yrs,
+            "emissions": self.payback_period_co2_yrs,
+        }
