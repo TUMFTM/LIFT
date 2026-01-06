@@ -1,15 +1,14 @@
-import pandas as pd
+from datetime import datetime
+import io
+
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement, ns
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
-
-from datetime import datetime
+import pandas as pd
 
 from lift.frontend.utils import get_label, get_version
-
-import io
 
 
 def create_report(plots, inputs: pd.DataFrame):
@@ -111,7 +110,6 @@ def create_report(plots, inputs: pd.DataFrame):
     doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
 
     doc.add_heading(get_label("report.table_inputs.title"), level=1)
-    # Create input table
     table = doc.add_table(rows=len(inputs) + 1, cols=4)
     table.style = "Table Grid"
     table.style = "Light List"
