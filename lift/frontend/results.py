@@ -25,7 +25,7 @@ os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 
 from .design import COLOR_BL, COLOR_EX
-from .export import create_report
+from .export import WordReport
 from .plots import BarKpiPlot, RingKpiPlot, TimeseriesPlot
 from .utils import get_label
 
@@ -171,11 +171,11 @@ def display_results(results, domain):
                 f"{results.delta[key]:,.0f} EUR {get_label(f'main.time_diagrams.{key}.saving.after')} {results.baseline.period_eco} {get_label(f'main.time_diagrams.{key}.saving.years')}"
             )
 
-    word_bytes = create_report(plots=plots, inputs=st.session_state.inputs.df)
+    report = WordReport(plots=plots, inputs=st.session_state.inputs.df, language=st.session_state.language_package)
 
     st.download_button(
         "⬇️ Download Word (.docx)",
-        data=word_bytes,
+        data=report.create_report,
         file_name="report.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         on_click="ignore",
