@@ -119,8 +119,8 @@ def create_report(plots, inputs: pd.DataFrame):
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = get_label("report.table_inputs.columns.block")
     hdr_cells[1].text = get_label("report.table_inputs.columns.parameter")
-    hdr_cells[2].text = f"{get_label('report.table_inputs.columns.value')} - Baseline"
-    hdr_cells[3].text = f"{get_label('report.table_inputs.columns.value')} - Expansion"
+    hdr_cells[2].text = f"{get_label('report.table_inputs.columns.value')} ({get_label('main.name_baseline')})"
+    hdr_cells[3].text = f"{get_label('report.table_inputs.columns.value')} ({get_label('main.name_expansion')})"
 
     tbl_header = OxmlElement("w:tblHeader")  # create new oxml element flag which indicates that row is header row
     first_row_props = table.rows[0]._element.get_or_add_trPr()  # get if exists or create new table row properties el
