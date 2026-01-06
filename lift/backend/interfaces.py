@@ -290,7 +290,9 @@ class ComparisonScenario(ComparisonInput):
 
     @property
     def df(self) -> pd.DataFrame:
-        return pd.concat([v.get_df(k) for k, v in self.to_dict.items()], axis=0, sort=False)
+        return pd.concat(
+            [self.settings.get_df("scn")] + [v.get_df(k) for k, v in self.to_dict.items()], axis=0, sort=False
+        )
 
 
 @dataclass
