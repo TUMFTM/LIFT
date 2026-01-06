@@ -178,6 +178,7 @@ def display_results(results, domain):
         data=word_bytes,
         file_name="report.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        on_click="ignore",
     )
 
 
