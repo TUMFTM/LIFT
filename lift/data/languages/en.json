@@ -268,5 +268,16 @@
     "rights": "All Rights Reserved",
     "version_prefix": "Demo Version ",
     "imprint": "Imprint"
+  },
+  "report": {
+    "title": "LIFT Report",
+    "table_inputs": {
+      "title": "Parameter List",
+      "columns": {
+        "block": "Block",
+        "parameter": "Parameter",
+        "value": "Value"
+      }
+    }
   }
 }

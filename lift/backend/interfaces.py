@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import abc
+from dataclasses import dataclass, asdict, fields
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -16,7 +17,38 @@ class ExistExpansionValue:
 
 
 @dataclass(frozen=True)
-class ComparisonSettings:
+class ComparisonInput(abc.ABC):
+    @property
+    @abc.abstractmethod
+    # do not use asdict as this also converts ExistExpansionValue to dicts
+    def to_dict(self): ...
+
+    def get_df(self, block_name: str) -> pd.DataFrame:
+        block_dict = self.to_dict
+        if "subblocks" in block_dict:
+            block_dict["subblocks"] = list(block_dict["subblocks"].keys())
+
+        df = pd.concat(
+            [
+                pd.DataFrame(
+                    data=[
+                        ([v.baseline, v.expansion] if isinstance(v, ExistExpansionValue) else [v, v])
+                        for v in block_dict.values()
+                    ],
+                    columns=["baseline", "expansion"],
+                    index=pd.MultiIndex.from_tuples(
+                        tuples=[(block_name, k) for k in block_dict.keys()], names=["block", "parameter"]
+                    ),
+                )
+            ]
+            + [v.get_df(k) for k, v in getattr(self, "subblocks", {}).items()]
+        )
+
+        return df
+
+
+@dataclass(frozen=True)
+class ComparisonSettings(ComparisonInput):
     latitude: float
     longitude: float
     wacc: float
@@ -39,7 +71,7 @@ class ComparisonSettings:
 
 
 @dataclass(frozen=True)
-class ComparisonFix:
+class ComparisonFix(ComparisonInput):
     capex_initial: ExistExpansionValue
     capem_initial: ExistExpansionValue
 
@@ -52,7 +84,7 @@ class ComparisonFix:
 
 
 @dataclass(frozen=True)
-class ComparisonFixedDemand:
+class ComparisonFixedDemand(ComparisonInput):
     slp: str
     e_yrl: float
 
@@ -65,7 +97,7 @@ class ComparisonFixedDemand:
 
 
 @dataclass(frozen=True)
-class ComparisonGrid:
+class ComparisonGrid(ComparisonInput):
     ls: int
     capacity: ExistExpansionValue
     capex_spec: float
@@ -90,7 +122,7 @@ class ComparisonGrid:
 
 
 @dataclass(frozen=True)
-class ComparisonPV:
+class ComparisonPV(ComparisonInput):
     ls: int
     capacity: ExistExpansionValue
     capex_spec: float
@@ -111,7 +143,7 @@ class ComparisonPV:
 
 
 @dataclass(frozen=True)
-class ComparisonESS:
+class ComparisonESS(ComparisonInput):
     ls: int
     capacity: ExistExpansionValue
     capex_spec: float
@@ -136,7 +168,7 @@ class ComparisonESS:
 
 
 @dataclass(frozen=True)
-class ComparisonSubFleet:
+class ComparisonSubFleet(ComparisonInput):
     name: str
     ls: int
     num_bev: ExistExpansionValue
@@ -181,7 +213,7 @@ class ComparisonSubFleet:
 
 
 @dataclass(frozen=True)
-class ComparisonFleet:
+class ComparisonFleet(ComparisonInput):
     subblocks: dict[str, ComparisonSubFleet]
     opex_spec_fuel: float
     opem_spec_fuel: float
@@ -200,7 +232,7 @@ class ComparisonFleet:
 
 
 @dataclass(frozen=True)
-class ComparisonChargerType:
+class ComparisonChargerType(ComparisonInput):
     name: str
     num: ExistExpansionValue
     p_max: float
@@ -221,7 +253,7 @@ class ComparisonChargerType:
 
 
 @dataclass(frozen=True)
-class ComparisonChargingInfrastructure:
+class ComparisonChargingInfrastructure(ComparisonInput):
     subblocks: dict[str, ComparisonChargerType]
     p_lm_max: ExistExpansionValue
 
@@ -234,7 +266,7 @@ class ComparisonChargingInfrastructure:
 
 
 @dataclass(frozen=True)
-class ComparisonScenario:
+class ComparisonScenario(ComparisonInput):
     settings: ComparisonSettings
     fix: ComparisonFix
     dem: ComparisonFixedDemand
@@ -255,6 +287,10 @@ class ComparisonScenario:
             "fleet": self.fleet,
             "cis": self.cis,
         }
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return pd.concat([v.get_df(k) for k, v in self.to_dict.items()], axis=0, sort=False)
 
 
 @dataclass

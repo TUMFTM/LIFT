@@ -2,6 +2,8 @@ import abc
 from functools import cached_property
 
 import altair as alt
+import altair_saver
+import io
 import numpy as np
 import pandas as pd
 
@@ -40,6 +42,13 @@ class ResultPlot(abc.ABC):
     @abc.abstractmethod
     @cached_property
     def plot(self) -> alt.VConcatChart: ...
+
+    @cached_property
+    def plot_bytestream(self):
+        image_stream = io.BytesIO()
+        self.plot.save(image_stream, format="png", ppi=600)
+        image_stream.seek(0)  # Rewind to the beginning of the buffer
+        return image_stream
 
 
 class KpiPlot(ResultPlot, abc.ABC):

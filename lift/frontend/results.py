@@ -16,8 +16,6 @@ Key Logic:
 from __future__ import annotations
 import os
 
-import altair as alt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -27,6 +25,7 @@ os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 
 from .design import COLOR_BL, COLOR_EX
+from .export import create_report
 from .plots import BarKpiPlot, RingKpiPlot, TimeseriesPlot
 from .utils import get_label
 
@@ -58,102 +57,76 @@ def display_results(results, domain):
 
     phases = (get_label("main.name_baseline"), get_label("main.name_expansion"))
 
-    def _show_kpis(phases: tuple[str, str], domain):
-        col1, col2, col3, col4, col5 = domain().columns([1, 1, 1, 1, 1])
-
-        _heading_with_help(
-            label=get_label("main.kpi_diagrams.costs.title"),
-            help_msg=get_label("main.kpi_diagrams.costs.help"),
-            adjust="center",
-            size=5,
-            margin_left=23,
-            domain=col1,
-        )
-        col1.altair_chart(
-            BarKpiPlot(
+    plots = {
+        "kpi_diagrams": {
+            "kpi_diagrams.costs": BarKpiPlot(
                 val_baseline=results.baseline.totex_dis.sum(),
                 val_expansion=results.expansion.totex_dis.sum(),
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.costs.axis')} in EUR",
                 factor_display=1.0,
-            ).plot.properties(**PLOT_CONFIG),
-            width="stretch",
-        )
-
-        _heading_with_help(
-            label=get_label("main.kpi_diagrams.emissions.title"),
-            help_msg=get_label("main.kpi_diagrams.emissions.help"),
-            adjust="center",
-            size=5,
-            margin_left=23,
-            domain=col2,
-        )
-        col2.altair_chart(
-            BarKpiPlot(
+            ),
+            "kpi_diagrams.emissions": BarKpiPlot(
                 val_baseline=results.baseline.totem.sum(),
                 val_expansion=results.expansion.totem.sum(),
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.emissions.axis')} in t CO₂-eq.",
                 factor_display=1e-3,  # convert from kg to t
-            ).plot.properties(**PLOT_CONFIG),
-            width="stretch",
-        )
-
-        _heading_with_help(
-            label=get_label("main.kpi_diagrams.self_consumption.title"),
-            help_msg=get_label("main.kpi_diagrams.self_consumption.help"),
-            adjust="center",
-            size=5,
-            margin_left=23,
-            domain=col3,
-        )
-        col3.altair_chart(
-            RingKpiPlot(
+            ),
+            "kpi_diagrams.self_consumption": RingKpiPlot(
                 val_baseline=results.baseline.self_consumption,
                 val_expansion=results.expansion.self_consumption,
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_consumption.axis')} in %",
-            ).plot.properties(**PLOT_CONFIG),
-            width="stretch",
-        )
-
-        _heading_with_help(
-            label=get_label("main.kpi_diagrams.self_sufficiency.title"),
-            help_msg=get_label("main.kpi_diagrams.self_sufficiency.help"),
-            adjust="center",
-            size=5,
-            margin_left=23,
-            domain=col4,
-        )
-        col4.altair_chart(
-            RingKpiPlot(
+            ),
+            "kpi_diagrams.self_sufficiency": RingKpiPlot(
                 val_baseline=results.baseline.self_sufficiency,
                 val_expansion=results.expansion.self_sufficiency,
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.self_sufficiency.axis')} in %",
-            ).plot.properties(**PLOT_CONFIG),
-            width="stretch",
-        )
-
-        _heading_with_help(
-            label=get_label("main.kpi_diagrams.home_charging.title"),
-            help_msg=get_label("main.kpi_diagrams.home_charging.help"),
-            adjust="center",
-            size=5,
-            margin_left=23,
-            domain=col5,
-        )
-        col5.altair_chart(
-            RingKpiPlot(
+            ),
+            "kpi_diagrams.home_charging": RingKpiPlot(
                 val_baseline=results.baseline.home_charging_fraction,
                 val_expansion=results.expansion.home_charging_fraction,
                 phase_labels=phases,
                 label=f"{get_label('main.kpi_diagrams.home_charging.axis')} in %",
-            ).plot.properties(**PLOT_CONFIG),
+            ),
+        },
+        "time_diagrams": {
+            "time_diagrams.costs": TimeseriesPlot(
+                baseline_capex=results.baseline.capex_dis,
+                baseline_opex=results.baseline.opex_dis,
+                expansion_capex=results.expansion.capex_dis,
+                expansion_opex=results.expansion.opex_dis,
+                x_label=get_label("main.time_diagrams.costs.xaxis"),
+                y_label=f"{get_label('main.time_diagrams.costs.yaxis')} in EUR",
+                phase_labels=phases,
+            ),
+            "time_diagrams.emissions": TimeseriesPlot(
+                baseline_capex=results.baseline.capem * 1e-3,  # convert from kg to t
+                baseline_opex=results.baseline.opem * 1e-3,  # convert from kg to t
+                expansion_capex=results.expansion.capem * 1e-3,  # convert from kg to t
+                expansion_opex=results.expansion.opem * 1e-3,  # convert from kg to t
+                x_label=get_label("main.time_diagrams.emissions.xaxis"),
+                y_label=f"{get_label('main.time_diagrams.emissions.yaxis')} in t CO₂-eq.",
+                phase_labels=phases,
+            ),
+        },
+    }
+
+    for col, (plot_key, plot_obj) in zip(domain.kpi_diagrams().columns([1, 1, 1, 1, 1]), plots["kpi_diagrams"].items()):
+        _heading_with_help(
+            label=get_label(f"main.{plot_key}.title"),
+            help_msg=get_label(f"main.{plot_key}.help"),
+            adjust="center",
+            size=5,
+            margin_left=23,
+            domain=col,
+        )
+        col.altair_chart(
+            plot_obj.plot.properties(**PLOT_CONFIG),
             width="stretch",
         )
-
-    _show_kpis(phases=phases, domain=domain.kpi_diagrams)
 
     with domain.time_diagrams.costs():
         # Show heading
@@ -164,16 +137,7 @@ def display_results(results, domain):
 
         col1, col2 = st.columns([4, 1])
         with col1:
-            plot_costs = TimeseriesPlot(
-                baseline_capex=results.baseline.capex_dis,
-                baseline_opex=results.baseline.opex_dis,
-                expansion_capex=results.expansion.capex_dis,
-                expansion_opex=results.expansion.opex_dis,
-                x_label=get_label("main.time_diagrams.costs.xaxis"),
-                y_label=f"{get_label('main.time_diagrams.costs.yaxis')} in EUR",
-                phase_labels=phases,
-            )
-            st.altair_chart(plot_costs.plot, width="stretch")
+            st.altair_chart(plots["time_diagrams"]["time_diagrams.costs"].plot, width="stretch")
         with col2:
             _heading_with_help(
                 label=get_label("main.time_diagrams.costs.paybackperiod.title"),
@@ -206,16 +170,7 @@ def display_results(results, domain):
         )
         col1, col2 = st.columns([4, 1])
         with col1:
-            plot_emissions = TimeseriesPlot(
-                baseline_capex=results.baseline.capem * 1e-3,  # convert from kg to t
-                baseline_opex=results.baseline.opem * 1e-3,  # convert from kg to t
-                expansion_capex=results.expansion.capem * 1e-3,  # convert from kg to t
-                expansion_opex=results.expansion.opem * 1e-3,  # convert from kg to t
-                x_label=get_label("main.time_diagrams.emissions.xaxis"),
-                y_label=f"{get_label('main.time_diagrams.emissions.yaxis')} in t CO₂-eq.",
-                phase_labels=phases,
-            )
-            st.altair_chart(plot_emissions.plot, width="stretch")
+            st.altair_chart(plots["time_diagrams"]["time_diagrams.emissions"].plot, width="stretch")
 
         with col2:
             _heading_with_help(
@@ -240,6 +195,15 @@ def display_results(results, domain):
             st.markdown(
                 f"{results.co2_delta * 1e-3:,.0f} t CO₂-eq. {get_label('main.time_diagrams.emissions.saving.after')} {results.baseline.period_eco} {get_label('main.time_diagrams.emissions.saving.years')}"
             )
+
+    word_bytes = create_report(plots=plots, inputs=st.session_state.inputs.df)
+
+    st.download_button(
+        "⬇️ Download Word (.docx)",
+        data=word_bytes,
+        file_name="report.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 def display_empty_results(domain):

@@ -263,7 +263,9 @@ def run_frontend():
 
     if st.session_state["run_backend"] is True:
         try:
-            results = run_comparison(comp_scn=get_inputs())
+            comp_scn = get_inputs()
+            st.session_state["inputs"] = comp_scn
+            results = run_comparison(comp_scn=comp_scn)
             display_results(results, domain=app.main)
         except GridPowerExceededError as e:
             st.error(f"{get_label('main.errors.grid')} {e}")
