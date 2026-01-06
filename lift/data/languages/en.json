@@ -270,6 +270,7 @@
     "imprint": "Imprint"
   },
   "report": {
+    "download_button": "Download Report",
     "title": "LIFT Report",
     "table_inputs": {
       "title": "Parameter List",

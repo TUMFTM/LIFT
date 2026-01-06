@@ -270,6 +270,7 @@
     "imprint": "Impressum"
   },
   "report": {
+    "download_button": "Bericht herunterladen",
     "title": "LIFT Bericht",
     "table_inputs": {
       "title": "Parameterübersicht",

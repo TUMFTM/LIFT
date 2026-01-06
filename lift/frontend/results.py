@@ -174,7 +174,7 @@ def display_results(results, domain):
     report = WordReport(plots=plots, inputs=st.session_state.inputs.df, language=st.session_state.language_package)
 
     st.download_button(
-        "⬇️ Download Word (.docx)",
+        f"⬇️ {get_label('report.download_button')}",
         data=report.create_report,
         file_name="report.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
