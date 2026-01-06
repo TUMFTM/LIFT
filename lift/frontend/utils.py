@@ -192,7 +192,7 @@ def get_label(key: str, language: dict[str, Any] | None = None) -> str:
         if language is None:
             raise RuntimeError("Language not loaded in session_state. Call load_language() first.")
     if key not in language:
-        raise KeyError(f'Label "{key}" not found in language package "{language["language"]}".')
+        raise KeyError(f'Label "{key}" not found in language package "{language}".')
     label = language.get(key)
     return None if label == "None" else label
 
