@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
 import importlib.resources as resources
-from pathlib import Path
 import re
 from time import time
 from typing import Any, Literal, Self
@@ -20,6 +19,12 @@ import pvlib
 from lift.utils import safe_cache_data
 
 EPS = 1e-8
+
+
+@dataclass
+class ExistExpansionValue:
+    baseline: float | int
+    expansion: float | int
 
 
 @safe_cache_data
@@ -1631,30 +1636,3 @@ class SingleScenario(Aggregator):
             return self.fleet.e_site / (self.fleet.e_site + self.fleet.e_route)
         except ZeroDivisionError:
             return 0.0
-
-
-if __name__ == "__main__":
-    from scripts.example.from_csv.transpose_csv import transpose_csv
-
-    start1 = time()
-    # transpose file -> not directly usable as variable types are only added automatically per column
-    transpose_csv("../../scripts/example/from_csv/definition.csv", save=True)
-    df = pd.read_csv(Path("../../scripts/example/from_csv/definition_transposed.csv"), index_col=0, header=[0, 1])
-
-    series_scn = df.loc["sc1", :]
-    start2 = time()
-    scn = SingleScenario.from_series(series_scn)
-    print(f"Scenario loaded in {time() - start1:.3f} s")
-    print(f"Scenario object initialized in {time() - start2:.3f} s")
-    start3 = time()
-    scn.simulate()
-    print(f"Simulation executed in {time() - start3:.3f} s")
-    print(f"Self consumption: {scn.self_consumption * 100:.2f} %")
-    print(f"Self sufficiency: {scn.self_sufficiency * 100:.2f} %")
-    print(f"Depot charging: {scn.home_charging_fraction * 100:.2f} %")
-
-
-@dataclass
-class ExistExpansionValue:
-    baseline: float | int
-    expansion: float | int
