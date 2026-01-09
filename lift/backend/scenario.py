@@ -17,9 +17,7 @@ import numpy as np
 import pandas as pd
 import pvlib
 
-from lift.backend.interfaces import ExistExpansionValue
-from lift.backend.utils import safe_cache_data
-
+from lift.utils import safe_cache_data
 
 EPS = 1e-8
 
@@ -1654,3 +1652,9 @@ if __name__ == "__main__":
     print(f"Self consumption: {scn.self_consumption * 100:.2f} %")
     print(f"Self sufficiency: {scn.self_sufficiency * 100:.2f} %")
     print(f"Depot charging: {scn.home_charging_fraction * 100:.2f} %")
+
+
+@dataclass
+class ExistExpansionValue:
+    baseline: float | int
+    expansion: float | int

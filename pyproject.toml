@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lift"
-version = "0.9.3a1"
+version = "0.9.3a2"
 description = "LIFT - Logistics Infrastructure & Fleet Transformation"
 authors = [
     { name = "Brian Dietermann", email = "brian.dietermann@tum.de"},
