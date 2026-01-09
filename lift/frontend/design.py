@@ -13,11 +13,11 @@ import importlib.resources
 import toml
 from typing import Tuple
 
-import streamlit as st
+from lift.utils import safe_cache_data
 
 
 # Load specified project colors from colors.toml
-@st.cache_data
+@safe_cache_data
 def get_colors() -> Tuple[str, str, str, str]:
     # Get custom colors from config.toml
     with importlib.resources.files("lift").joinpath(".streamlit/colors.toml").open("r") as f:

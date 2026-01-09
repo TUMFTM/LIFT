@@ -27,6 +27,8 @@ from typing import Any
 
 import streamlit as st
 
+from lift.utils import safe_cache_data
+
 
 def _flatten_dict(d: dict[str, Any], sep: str = ".", _parent_key: str | None = None) -> dict[str, Any]:
     """
@@ -113,7 +115,7 @@ def read_json_from_package_data(resource: str, package: str = "lift.data") -> di
         raise FileNotFoundError(f'Specified resource "{resource}" does not exist in package "{package}".')
 
 
-@st.cache_data
+@safe_cache_data
 def _load_language_from_json(language: str) -> dict[str, str]:
     """
     Load and flatten a language JSON file from the package resources.
@@ -197,7 +199,7 @@ def get_label(key: str, language: dict[str, Any] | None = None) -> str:
     return None if label == "None" else label
 
 
-@st.cache_data
+@safe_cache_data
 def get_version() -> str:
     """
     Retrieve the current version of the `lift` package.
