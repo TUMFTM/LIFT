@@ -19,9 +19,13 @@ Fabian Mayer, B.Sc. - Semester Thesis submitted 09/2025
 ## Installation
 
 #### Step 1: Getting the source code
-LIFT is available on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) and can be cloned from there using 
+LIFT is available on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) and [GitHub](https://github.com/TUMFTM/LIFT) and can be cloned from there using 
 ```bash
 git clone https://gitlab.lrz.de/energysystemmodelling/lift.git
+```
+or
+```bash
+git clone https://github.com/TUMFTM/LIFT.git
 ```
 
 #### Step 2: Create a clean virtual environment
