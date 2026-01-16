@@ -50,6 +50,8 @@
 \convertRGB{227}{114}{34}{tumorange}
 \convertRGB{162}{173}{0}{tumgreen}
 \convertRGB{51}{51}{51}{tumgrey80}
+\convertRGB{102}{102}{102}{tumgrey50}
+\convertRGB{204}{204}{204}{tumgrey20}
 
 
 % Commands
@@ -109,19 +111,52 @@
     \foreach \idx/\colorname/\value in {2/tumblue/#4, 1/tumorange/#5, 0/tumgreen/#6} {
         \pgfmathsetmacro{\outerR}{\wedgearcrouter - \idx * (\wedgearcwidth + \wedgearcspace)}
         \pgfmathsetmacro{\innerR}{\outerR - \wedgearcwidth}
-        \drawwedge{#1}{\innerR}{\outerR}{\value}{\colorname}
+
+        % Clip value at 1
+        \pgfmathsetmacro{\clippedvalue}{min(\value,1.0)}
+
+        % Choose color: grey if value > 1, otherwise original color
+        \pgfmathparse{\value > 1}
+        \ifnum\pgfmathresult=1
+            \def\finalcolor{tumgrey20}% overflow color
+        \else
+            \def\finalcolor{\colorname}
+        \fi
+
+        \drawwedge{#1}{\innerR}{\outerR}{\clippedvalue}{\finalcolor}
     }
 
     % Add values
     \foreach \idx/\colorname/\value in {2/tumblue/#4, 1/tumorange/#5, 0/tumgreen/#6}{
-        \pgfmathsetmacro{\share}{round(\value * 100)}
-        \pgfmathsetmacro{\labelheight}{\wedgearcrouter - \idx * (\wedgearcwidth + \wedgearcspace) - \wedgearcwidth/2}
-        \node[
-            font=\scriptsize,
-            text=\colorname, % or do text=black and reduce contour line width to 0.25
-            anchor=east,
-            inner sep=0pt
-        ] at ($(#1) + (-0.01, \labelheight)$) {\contour{white}{\pgfmathprintnumber[precision=0]{\share}\%}};
+        \pgfmathsetmacro{\labelheight}{%
+            \wedgearcrouter - \idx * (\wedgearcwidth + \wedgearcspace) - \wedgearcwidth/2
+        }
+
+        % Test for overflow
+        \pgfmathparse{\value > 1}
+        \ifnum\pgfmathresult=1
+            % Overflow case
+            \node[
+                font=\scriptsize,
+                text=tumgrey50,
+                anchor=east,
+                inner sep=0pt
+            ] at ($(#1) + (-0.01, \labelheight)$) {%
+                \contour{white}{N.A.}%
+            };
+        \else
+            % Normal case
+            \pgfmathsetmacro{\share}{round(\value * 100)}
+            \node[
+                font=\scriptsize,
+                text=\colorname,
+                anchor=east,
+                inner sep=0pt
+            ] at ($(#1) + (-0.01, \labelheight)$) {%
+                \contour{white}{\pgfmathprintnumber[precision=0]{\share}\%}%
+            };
+        \fi
+
     }
 
     % Add caption in center
