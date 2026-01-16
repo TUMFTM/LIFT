@@ -59,8 +59,8 @@ class KpiPlot(ResultPlot, abc.ABC):
         phase_labels: tuple[str, str],
         label: str,
     ):
-        self.val_baseline = val_baseline
-        self.val_expansion = val_expansion
+        self.val_baseline = np.nan_to_num(val_baseline, nan=0.0)
+        self.val_expansion = np.nan_to_num(val_expansion, nan=0.0)
         self.phase_labels = phase_labels
         self.label = label
 

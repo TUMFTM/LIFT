@@ -1621,18 +1621,18 @@ class SingleScenario(Aggregator):
         if self.pv.e_pot > 0:
             return 1 - ((self.pv.e_curt + self.grid.e_sell) / self.pv.e_pot)
         else:
-            return 0.0
+            return np.nan
 
     @property
     def self_sufficiency(self) -> float:
         if (e_site := (self.fleet.e_site + self.dem.e_site)) > 0:
             return (self.pv.e_pot - self.pv.e_curt - self.grid.e_sell) / e_site
         else:
-            return 0.0
+            return np.nan
 
     @property
     def home_charging_fraction(self) -> float:
         try:
             return self.fleet.e_site / (self.fleet.e_site + self.fleet.e_route)
         except ZeroDivisionError:
-            return 0.0
+            return np.nan
