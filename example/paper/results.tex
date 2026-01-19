@@ -334,27 +334,27 @@
     \newcommand{\legendlabelwidth}{3.65}
     \pgfmathsetmacro{\legendelementwidth}{\legendblockwidth + \legendlabelwidth}
 
-    \node (legendcolumnleft) at ($(legendcenter) + (-1.5 * \legendelementwidth, 0)$) {};
-    \node (legendcolumncenter) at ($(legendcenter) + (-0.5 * \legendelementwidth, 0)$) {};
-    \node (legendcolumnright) at ($(legendcenter) + (0.5*\legendelementwidth, 0)$) {};
+    \node (legendcolumnleft) at ($(legendcenter) + (-1.55 * \legendelementwidth, 0)$) {};
+    \node (legendcolumncenter) at ($(legendcenter) + (-0.52 * \legendelementwidth, 0)$) {};
+    \node (legendcolumnright) at ($(legendcenter) + (0.55*\legendelementwidth, 0)$) {};
 
     \newcommand{\legendlabel}[2]{
         % Parameters:
         % #1 = start node (west of element's block)
         % #2 = label text
         \node[
-            anchor=west
-        ] at ($(#1) + (\legendblockwidth, 0)$) {#2};
+            anchor=base west
+        ] at ($(#1) + (\legendblockwidth, -0.12)$) {#2};
     }
 
     \fill[color=tumblue] ($(legendcolumnleft)+(0, \legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
-    \legendlabel{$(legendcolumnleft)+(0, \legendvspace/2)$}{Baseline}
+    \legendlabel{$(legendcolumnleft)+(0, \legendvspace/2)$}{I: Baseline}
 
     \fill[color=tumgreen] ($(legendcolumnleft)+(0, -\legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
-    \legendlabel{$(legendcolumnleft)+(0, -\legendvspace/2)$}{Fleet Electrification \& Energy system expansion}
+    \legendlabel{$(legendcolumnleft)+(0, -\legendvspace/2)$}{III: Fleet Electrification \& Energy system expansion}
 
     \fill[color=tumorange] ($(legendcolumncenter)+(0, \legendvspace/2 -\legendblockheight/2)$) rectangle ++(\legendblockwidth,\legendblockheight);
-    \legendlabel{$(legendcolumncenter)+(0, \legendvspace/2)$}{Fleet Electrification}
+    \legendlabel{$(legendcolumncenter)+(0, \legendvspace/2)$}{II: Fleet Electrification}
 
     \fill[
         draw=tumgrey80,
