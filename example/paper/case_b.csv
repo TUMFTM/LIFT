@@ -79,6 +79,6 @@ cis,p_lm_max,inf,inf,inf
 ac,name,ac,ac,ac
 ac,num,0,45,45
 ac,p_max,43e3,43e3,43e3
-ac,capex_per_unit,800,800,800
+ac,capex_per_unit,2000,2000,2000
 ac,capem_per_unit,65.4,65.4,65.4
 ac,ls,8,8,8
