@@ -58,6 +58,11 @@ def display_footer():
         'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
         ">GitLab</a>"
         f"{sep}"
+        '<a href="https://github.com/TUMFTM/LIFT" '
+        'target="_blank" '  # open in new tab
+        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+        ">GitHub</a>"
+        f"{sep}"
         '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
         'target="_blank" '  # open in new tab
         'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
