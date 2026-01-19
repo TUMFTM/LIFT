@@ -20,6 +20,7 @@ Key Logic:
 
 from __future__ import annotations
 
+import git
 import importlib.metadata
 import importlib.resources as resources
 import json
@@ -233,3 +234,11 @@ def get_supported_languages() -> dict[str, str]:
         d["flag"]: d["name"]
         for d in read_json_from_package_data(resource="options.json", package="lift.data.languages").values()
     }
+
+
+@safe_cache_data
+def get_remote_repo() -> tuple[str, str]:
+    if ["gitlab.lrz.de" in remote.url for remote in git.Repo(search_parent_directories=True).remotes]:
+        return "GitLab", "https://gitlab.lrz.de/energysystemmodelling/lift"
+    else:
+        return "GitHub", "https://github.com/tumftm/lift"

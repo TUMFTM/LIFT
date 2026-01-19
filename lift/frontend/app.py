@@ -32,7 +32,7 @@ from lift.frontend.design import STYLES
 from lift.frontend.interfaces import StreamlitWrapper
 from lift.frontend.sidebar import create_sidebar_and_get_input
 from lift.frontend.results import display_results, display_empty_results
-from lift.frontend.utils import load_language, get_version, get_label
+from lift.frontend.utils import load_language, get_version, get_label, get_remote_repo
 
 VERSION = get_version()
 
@@ -53,15 +53,10 @@ def display_footer():
         f"{sep}"
         f"{get_label('footer.version_prefix')}{VERSION}"
         f"{sep}"
-        '<a href="https://gitlab.lrz.de/energysystemmodelling/lift" '
+        f"<a href={get_remote_repo()[1]} "
         'target="_blank" '  # open in new tab
         'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-        ">GitLab</a>"
-        f"{sep}"
-        '<a href="https://github.com/TUMFTM/LIFT" '
-        'target="_blank" '  # open in new tab
-        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-        ">GitHub</a>"
+        f">{get_remote_repo()[0]}</a>"
         f"{sep}"
         '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
         'target="_blank" '  # open in new tab
