@@ -384,6 +384,7 @@
         x label style={at={(axis description cs:0.38,0)},anchor=north},
         y label style={at={(axis description cs:0.075,.5)},anchor=south},
         xlabel={Time in years},
+        ylabel={Present cost in million €},
         grid=major,
         minor x tick num = 4,
         xtick={0,5,10,15,20},
@@ -392,13 +393,13 @@
         xmin=-0.5, xmax=27.5,
     ] at (\figwidth/2, 0)
 
-    \nextgroupplot[ylabel={Cost in million €}, ymax=45]
+    \nextgroupplot[ymax=45]
     \createlinebarplot{A_data_time.csv}{A_data_total.csv}
     \node at (current axis.east) (node1) {};
-    \nextgroupplot[ylabel={Cost in million €}, ymax=13]
+    \nextgroupplot[ymax=13]
     \createlinebarplot{B_data_time.csv}{B_data_total.csv}
     \node at (current axis.east) (node2) {};
-    \nextgroupplot[ylabel={Cost in million €}, ymax=11]
+    \nextgroupplot[ymax=11]
     \createlinebarplot{C_data_time.csv}{C_data_total.csv}
     \node at (current axis.east) (node3) {};
 
