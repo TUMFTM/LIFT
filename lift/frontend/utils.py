@@ -20,6 +20,7 @@ Key Logic:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import git
 import importlib.metadata
 import importlib.resources as resources
@@ -237,8 +238,32 @@ def get_supported_languages() -> dict[str, str]:
 
 
 @safe_cache_data
-def get_remote_repo() -> tuple[str, str]:
-    if ["gitlab.lrz.de" in remote.url for remote in git.Repo(search_parent_directories=True).remotes]:
-        return "GitLab", "https://gitlab.lrz.de/energysystemmodelling/lift"
+def is_lrz_gitlab() -> bool:
+    """
+    Check if the current git repository has LRZ's GitLab as a remote.
+
+    Returns:
+        bool: True if LRZ's GitLab is a remote, False otherwise.
+    """
+    return any("gitlab.lrz.de" in remote.url for remote in git.Repo(search_parent_directories=True).remotes)
+
+
+@dataclass(frozen=True)
+class RemoteRepo:
+    name: str
+    url: str
+
+
+@safe_cache_data
+def get_remote_repo() -> RemoteRepo:
+    """
+    Determine whether the LRZ's GitLab is in the current git repository's remotes.
+    If yes return GitLab info, else return GitHub info.
+
+    Returns:
+        RemoteRepo: Dataclass containing the name and URL of the remote repository to display in the GUI's footer.
+    """
+    if is_lrz_gitlab():
+        return RemoteRepo(name="GitLab", url="https://gitlab.lrz.de/energysystemmodelling/lift")
     else:
-        return "GitHub", "https://github.com/tumftm/lift"
+        return RemoteRepo(name="GitHub", url="https://github.com/tumftm/lift")

@@ -32,7 +32,7 @@ from lift.frontend.design import STYLES
 from lift.frontend.interfaces import StreamlitWrapper
 from lift.frontend.sidebar import create_sidebar_and_get_input
 from lift.frontend.results import display_results, display_empty_results
-from lift.frontend.utils import load_language, get_version, get_label, get_remote_repo
+from lift.frontend.utils import load_language, get_version, get_label, get_remote_repo, is_lrz_gitlab
 
 VERSION = get_version()
 
@@ -40,28 +40,44 @@ VERSION = get_version()
 def display_footer():
     # Inject footer into the page
     # st.markdown(footer, unsafe_allow_html=True)
-    sep = '<span style="margin: 0 20px;"> | </span>'
+
+    remote = get_remote_repo()
+    content_list = [
+        # copyright
+        (
+            "© 2025 "
+            f"<a href='{get_label('footer.institute_url')}' "
+            f"target='_blank' "  # open in new tab
+            "rel='noopener noreferrer'"  # prevent security and privacy issues with new tab
+            f">{get_label('footer.institute')}</a>"
+            f" – {get_label('footer.rights')}"
+        ),
+        # package version
+        f"{get_label('footer.version_prefix')}{VERSION}",
+        # remote repository
+        (
+            f"<a href={remote.url} "
+            'target="_blank" '  # open in new tab
+            'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+            f">{remote.name}</a>"
+        ),
+        # imprint
+        (
+            '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
+            'target="_blank" '  # open in new tab
+            'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
+            f">{get_label('footer.imprint')}</a>"
+        )
+        if is_lrz_gitlab()
+        else "",
+    ]
+
+    sep = "<span style='margin: 0 20px;'> | </span>"
+
     st.markdown(
         '<div class="footer">'
         "<b>"
-        "© 2025 "
-        f"<a href='{get_label('footer.institute_url')}' "
-        f"target='_blank' "  # open in new tab
-        "rel='noopener noreferrer'"  # prevent security and privacy issues with new tab
-        f">{get_label('footer.institute')}</a>"
-        f" – {get_label('footer.rights')}"
-        f"{sep}"
-        f"{get_label('footer.version_prefix')}{VERSION}"
-        f"{sep}"
-        f"<a href={get_remote_repo()[1]} "
-        'target="_blank" '  # open in new tab
-        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-        f">{get_remote_repo()[0]}</a>"
-        f"{sep}"
-        '<a href="https://www.mos.ed.tum.de/ftm/impressum/" '
-        'target="_blank" '  # open in new tab
-        'rel="noopener noreferrer"'  # prevent security and privacy issues with new tab
-        f">{get_label('footer.imprint')}</a>"
+        f"{sep.join([x for x in content_list if x != ''])}"
         '<span style="margin: 0 10px;"> </span>'
         "</b></div>",
         unsafe_allow_html=True,
