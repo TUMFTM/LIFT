@@ -14,18 +14,20 @@ anna.paper@tum.de
 2025
 
 #### Contributors  
+Philipp Rosner, M.Sc. - Research Associate  
 Fabian Mayer, B.Sc. - Semester Thesis submitted 09/2025
 
 ## Installation
 
 #### Step 1: Getting the source code
-LIFT is available on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) and [GitHub](https://github.com/TUMFTM/LIFT) and can be cloned from there using 
+LIFT is available on the Institute of Automotive Technology's [GitHub](https://github.com/TUMFTM/LIFT) account as well as on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) for users affiliated to the Institute of Automotive Technology.
+To clone the repository use the following commands: 
 ```bash
-git clone https://gitlab.lrz.de/energysystemmodelling/lift.git
+git clone https://github.com/TUMFTM/LIFT.git
 ```
 or
 ```bash
-git clone https://github.com/TUMFTM/LIFT.git
+git clone https://gitlab.lrz.de/energysystemmodelling/lift.git
 ```
 
 #### Step 2: Create a clean virtual environment
@@ -69,11 +71,22 @@ LIFT can be run using one of two terminal commands, given the correct virtual en
 ## Advanced Usage - GUI mode
 LIFT includes predefined options for vehicles, chargers and other assumptions. Those can be found in the JSON files located in ```lift/data/*```.
 To change those predefined values or create a new type of charger or vehicle modify or add a new entry to the JSON files.
-If LIFT is installed in editable mode, the frontend will automatically include the changes made.
 If a new type of vehicle is added, providing an according mobility CSV files in ```lift/data/mobility/``` is required.
 This file has to be named as the new type of vehicle.
+With LIFT being installed in editable mode, the frontend will automatically include the changes made.
+Otherwise, you have to reinstall LIFT after making changes to the JSON files.
+
+## Server Usage - GUI mode
+LIFT's GUI can also be run on a server and accessed remotely via a web browser.
+For this, start LIFT with the following command:
+```bash
+lift
+```
+
+The GUI is served on the port shown in the terminal (default: 8050).
+Forward or expose this port as needed and access it via the browser.
 
 ## Basic Usage - Scalable mode
 LIFT as being clearly divided into a frontend and backend also features the option to only use the backend without the frontend.
 This allows for scalable multi-scenario investigations.
-An example for a single scenario is given in ```scripts/run_lift.ipynb```.
+Scenarios can either be defined using CSV files (```example/from_csv/```) or by directly defining a scenario or comparison object in Python code (```example/from_comparison_obj/```).
