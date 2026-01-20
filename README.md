@@ -62,6 +62,7 @@ pip install -e . --group dev
 ```
 Use the editable mode if you plan to modify the code during development.
 
+![LIFT's GUI](./docs/gui_v1-0-0_en.png "LIFT's GUI")
 
 ## Basic Usage - GUI mode
 LIFT can be run using one of two terminal commands, given the correct virtual environment is activated:
@@ -83,7 +84,7 @@ For this, start LIFT with the following command:
 lift
 ```
 
-The GUI is served on the port shown in the terminal (default: 8050).
+The GUI is served on the port shown in the terminal (default: 8501).
 Forward or expose this port as needed and access it via the browser.
 
 ## Basic Usage - Scalable mode
