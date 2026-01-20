@@ -20,7 +20,7 @@ Fabian Mayer, B.Sc. - Semester Thesis submitted 09/2025
 ## Installation
 
 #### Step 1: Getting the source code
-LIFT is available on the Institute of Automotive Technology's [GitHub](https://github.com/TUMFTM/LIFT) account as well as on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) for users affiliated to the Institute of Automotive Technology.
+LIFT is available on the Institute of Automotive Technology's [GitHub](https://github.com/TUMFTM/LIFT) account as well as on [GitLab](https://gitlab.lrz.de/energysystemmodelling/lift) for users affiliated with the Institute of Automotive Technology.
 To clone the repository use the following commands: 
 ```bash
 git clone https://github.com/TUMFTM/LIFT.git
