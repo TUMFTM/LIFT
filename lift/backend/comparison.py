@@ -1,13 +1,12 @@
 import abc
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from time import time
 
 import numpy as np
 import pandas as pd
 
+from lift.backend.scenario import ExistExpansionValue, ScenarioResult, SingleScenario
 from lift.utils import safe_cache_data
-
-from lift.backend.scenario import ScenarioResult, SingleScenario, ExistExpansionValue
 
 
 @dataclass(frozen=True)

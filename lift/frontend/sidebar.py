@@ -18,31 +18,29 @@ Key Logic:
 """
 
 from __future__ import annotations
+
 from typing import Literal
 
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
-
 from .definitions import (
-    DEF_LANGUAGE_OPTIONS,
-    DEF_GRID,
-    DEF_PV,
+    DEF_CIS,
     DEF_ESS,
     DEF_FLEET,
-    DEF_CIS,
+    DEF_GRID,
+    DEF_LANGUAGE_OPTIONS,
+    DEF_PV,
     DEF_SCN,
 )
-
+from .design import LINE_HORIZONTAL
 from .interfaces import (
+    FrontendChargerTypeInterface,
     FrontendCoordinates,
     FrontendSubfleetInterface,
-    FrontendChargerTypeInterface,
 )
-
-from .design import LINE_HORIZONTAL
-from .utils import load_language, get_label
+from .utils import get_label, load_language
 
 SHARE_COLUMN_INPUT = [3, 7]
 
@@ -347,9 +345,8 @@ def _get_params_charging_infrastructure(domain):
     with domain().expander(label=f"**{get_label('sidebar.chargers.load_mngmnt.title')}**", icon="⚖️"):
         _get_load_mngmnt(phase="baseline")
         _get_load_mngmnt(phase="expansion")
-    chargers = {
-        chg_name: _get_params_charger(chg_def, domain=domain) for chg_name, chg_def in DEF_CIS.subblocks.items()
-    }
+        for chg_name, chg_def in DEF_CIS.subblocks.items():
+            _get_params_charger(chg_def, domain=domain)
 
 
 def _get_simsettings(domain):

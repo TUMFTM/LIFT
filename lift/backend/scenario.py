@@ -1,22 +1,27 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import ast
+import importlib.resources as resources
+import re
+import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-import importlib.resources as resources
-import re
 from time import time
-from typing import Any, Literal, Self
-import warnings
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 import demandlib
 import numpy as np
 import pandas as pd
 import pvlib
+import requests
 
 from lift.utils import safe_cache_data
+
+if TYPE_CHECKING:
+    from lift.frontend.interfaces import FrontendCoordinates
+
 
 EPS = 1e-8
 
@@ -733,8 +738,8 @@ class PV(ContinuousInvestBlock):
             data = data.tz_convert(settings_sim.dti.tz)
             data = _resample_ts(ts=data, dti=settings_sim.dti)
             return data.values
-        except:
-            warnings.warn("Using random values for PV generation")
+        except requests.exceptions.ConnectionError:
+            warnings.warn("Connection error: Using random values for PV generation")
             return np.random.random(len(settings_sim.dti))
 
     @property

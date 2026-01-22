@@ -20,13 +20,13 @@ Key Logic:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-import git
 import importlib.metadata
 import importlib.resources as resources
 import json
+from dataclasses import dataclass
 from typing import Any
 
+import git
 import streamlit as st
 
 from lift.utils import safe_cache_data

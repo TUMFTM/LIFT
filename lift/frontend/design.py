@@ -10,8 +10,9 @@ Relationships:
 """
 
 import importlib.resources
-import toml
 from typing import Tuple
+
+import toml
 
 from lift.utils import safe_cache_data
 

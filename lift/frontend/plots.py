@@ -1,9 +1,8 @@
 import abc
+import io
 from functools import cached_property
 
 import altair as alt
-import altair_saver
-import io
 import numpy as np
 import pandas as pd
 

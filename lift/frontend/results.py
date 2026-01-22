@@ -14,9 +14,9 @@ Key Logic:
 """
 
 from __future__ import annotations
+
 import os
 
-import pandas as pd
 import streamlit as st
 
 # Flag to use streamlit caching; required before importing lift.backend.interfaces
@@ -28,7 +28,6 @@ from .design import COLOR_BL, COLOR_EX
 from .export import WordReport
 from .plots import BarKpiPlot, RingKpiPlot, TimeseriesPlot
 from .utils import get_label
-
 
 PLOT_CONFIG = {"usermeta": {"embedOptions": {"actions": False}}}
 

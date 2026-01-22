@@ -22,9 +22,9 @@ from typing import Any, Literal, Self
 import pandas as pd
 import streamlit as st
 
-from .utils import get_label
-
 from lift.backend.scenario import Coordinates
+
+from .utils import get_label
 
 
 class StreamlitWrapper:

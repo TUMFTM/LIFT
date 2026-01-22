@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 import traceback
 
@@ -10,29 +11,28 @@ import streamlit as st
 os.environ["LIFT_USE_STREAMLIT_CACHE"] = "1"
 
 from lift.backend.comparison import (
-    ComparisonScenario,
-    ComparisonSettings,
+    ComparisonChargerType,
+    ComparisonChargingInfrastructure,
+    ComparisonESS,
     ComparisonFix,
     ComparisonFixedDemand,
+    ComparisonFleet,
     ComparisonGrid,
     ComparisonPV,
-    ComparisonESS,
-    ComparisonFleet,
+    ComparisonScenario,
+    ComparisonSettings,
     ComparisonSubFleet,
-    ComparisonChargingInfrastructure,
-    ComparisonChargerType,
     run_comparison,
 )
-
-from lift.backend.scenario import GridPowerExceededError, SOCError, ExistExpansionValue
+from lift.backend.scenario import ExistExpansionValue, GridPowerExceededError, SOCError
 
 # relative imports (e.g. from .design) do not work as app.py is not run as part of the package but as standalone script
-from lift.frontend.definitions import DEF_GRID, DEF_PV, DEF_ESS, DEF_FLEET, DEF_CIS, DEF_SCN
+from lift.frontend.definitions import DEF_CIS, DEF_ESS, DEF_FLEET, DEF_GRID, DEF_PV, DEF_SCN
 from lift.frontend.design import STYLES
 from lift.frontend.interfaces import StreamlitWrapper
+from lift.frontend.results import display_empty_results, display_results
 from lift.frontend.sidebar import create_sidebar_and_get_input
-from lift.frontend.results import display_results, display_empty_results
-from lift.frontend.utils import load_language, get_version, get_label, get_remote_repo, is_lrz_gitlab
+from lift.frontend.utils import get_label, get_remote_repo, get_version, is_lrz_gitlab, load_language
 
 VERSION = get_version()
 
@@ -242,15 +242,15 @@ def run_frontend():
                 p_lm_max=ExistExpansionValue(
                     baseline=(
                         np.inf
-                        if st.session_state[f"load_mngmnt_baseline"]
+                        if st.session_state["load_mngmnt_baseline"]
                         != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                        else st.session_state[f"load_mngmnt_slider_baseline"]
+                        else st.session_state["load_mngmnt_slider_baseline"]
                     ),
                     expansion=(
                         np.inf
-                        if st.session_state[f"load_mngmnt_expansion"]
+                        if st.session_state["load_mngmnt_expansion"]
                         != get_label("sidebar.chargers.load_mngmnt.type.options.static")
-                        else st.session_state[f"load_mngmnt_slider_expansion"]
+                        else st.session_state["load_mngmnt_slider_expansion"]
                     ),
                 ),
                 subblocks={

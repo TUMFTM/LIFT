@@ -1,12 +1,12 @@
-from datetime import datetime
 import io
+from datetime import datetime
 
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.oxml.ns import qn
-from docx.oxml import OxmlElement, ns
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 import pandas as pd
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.oxml import OxmlElement, ns
+from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
 
 from lift.frontend.utils import get_label, get_version
 

@@ -1,14 +1,12 @@
 from lift.frontend.interfaces import (
+    FrontendChargingInfrastructureInterface,
+    FrontendESSInterface,
+    FrontendFleetInterface,
     FrontendGridInterface,
     FrontendPVInterface,
-    FrontendESSInterface,
-    FrontendChargingInfrastructureInterface,
-    FrontendFleetInterface,
     FrontendScenarioInterface,
 )
-
-from lift.frontend.utils import read_json_from_package_data, get_supported_languages
-
+from lift.frontend.utils import get_supported_languages, read_json_from_package_data
 
 DEF_LANGUAGE_OPTIONS = get_supported_languages()
 

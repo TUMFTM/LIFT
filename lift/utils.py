@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-
 # store flag in current process and delete environment variable
 # flag is only set by frontend.py and therefore only exists when a streamlit app is running
 _use_streamlit_cache = os.environ.pop("LIFT_USE_STREAMLIT_CACHE", "0") == "1"
