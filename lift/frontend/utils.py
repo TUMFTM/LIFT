@@ -245,7 +245,10 @@ def is_lrz_gitlab() -> bool:
     Returns:
         bool: True if LRZ's GitLab is a remote, False otherwise.
     """
-    return any("gitlab.lrz.de" in remote.url for remote in git.Repo(search_parent_directories=True).remotes)
+    try:
+        return any("gitlab.lrz.de" in remote.url for remote in git.Repo(search_parent_directories=True).remotes)
+    except git.exc.InvalidGitRepositoryError:
+        return False
 
 
 @dataclass(frozen=True)
