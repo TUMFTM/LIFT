@@ -19,14 +19,12 @@ dependencies = [
     "demandlib",
     "folium",
     "numpy",
-    "matplotlib",
     "pandas",
     "pvlib>=0.13.0",
     "python-docx",
     "pytz",
     "streamlit>=1.52.0",
     "streamlit_folium",
-    "oemof-solph",
     "vl-convert-python",
 ]
 

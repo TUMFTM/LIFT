@@ -1,0 +1,13 @@
+.git/
+.idea/
+.ruff_cache/
+.gitlab-ci.yml
+.pre-commit-config.yaml
+docs/
+example/
+lift.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+README.md
+LICENSE
