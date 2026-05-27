@@ -12,7 +12,7 @@ authors = [
 ]
 
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "altair",
     "altair-saver",
@@ -37,7 +37,7 @@ default-groups = ["example"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable import sorting.
