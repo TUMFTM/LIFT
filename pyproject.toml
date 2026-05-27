@@ -30,6 +30,10 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pre-commit", "ruff"]
+example = ["ipykernel"]
+
+[tool.uv]
+default-groups = ["example"]
 
 [tool.ruff]
 line-length = 120
