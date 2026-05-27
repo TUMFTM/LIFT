@@ -34,7 +34,7 @@ git clone https://gitlab.lrz.de/energysystemmodelling/lift.git
 It is recommended to create and activate a clean virtual environment for the installation of LIFT.
 This can be done using conda:
 ```bash
-conda create -n <name_of_virtual_environment> python=3.11
+conda create -n <name_of_virtual_environment> python=3.12
 conda activate <name_of_virtual_environment>
 ```
 or alternatively with the following command:
