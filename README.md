@@ -43,6 +43,10 @@ python -m venv <path_to_virtual_environment>
 source <path_to_virtual_environment>/bin/activate
 ```
 
+If you are not familiar with virtual environments or conda, you can find detailed information on how to 
+[install conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) and 
+[getting started with conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) in the official conda documentation.
+
 #### Step 3: Install package and dependencies locally
 After cloning the repository, navigate to its root directory (where ```README.md``` and ```pyproject.toml``` are located) in your terminal.
 Then install the package and its dependencies using one of the following commands depending on the chosen mode of installation:
