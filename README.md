@@ -54,6 +54,8 @@ Then install the package and its dependencies using one of the following command
 This copies the package into your (virtual environment’s) site-packages directory:
 ```bash
 pip install .
+# or if you want to run the example scripts, which require additional dependencies:
+pip install . --group example
 ```
 After pulling new changes from the repository, the package has to be reinstalled using the same command to take the changes into account.
 
@@ -91,3 +93,7 @@ The GUI is served on port 8501, so make sure it is reachable.
 LIFT as being clearly divided into a frontend and backend also features the option to only use the backend without the frontend.
 This allows for scalable multi-scenario investigations.
 Scenarios can either be defined using CSV files (```example/from_csv/```) or by directly defining a scenario or comparison object in Python code (```example/from_comparison_obj/```).
+
+## Basic Usage - Use Cases included in the SoftwareX Publication
+To simulate the use cases included in the SoftwareX publication, navigate to the ```example/paper``` directory and run the ```paper_example.ipynb``` Jupyter Notebook.
+This notebook creates output files which then are used by ```results.tex``` to create the visualization used in the publication.
