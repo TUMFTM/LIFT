@@ -29,8 +29,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pre-commit", "ruff"]
-example = ["ipykernel"]
+dev = [
+    "pre-commit",
+    "ruff",
+    ]
+example = [
+    "ipykernel",
+    "matplotlib",
+]
 
 [tool.uv]
 default-groups = ["example"]

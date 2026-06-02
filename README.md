@@ -95,5 +95,7 @@ This allows for scalable multi-scenario investigations.
 Scenarios can either be defined using CSV files (```example/from_csv/```) or by directly defining a scenario or comparison object in Python code (```example/from_comparison_obj/```).
 
 ## Basic Usage - Use Cases included in the SoftwareX Publication
-To simulate the use cases included in the SoftwareX publication, navigate to the ```example/paper``` directory and run the ```run.ipynb``` Jupyter Notebook.
+To simulate the use cases included in the SoftwareX publication, navigate to the ```example/paper``` directory and run the ```run_example.ipynb``` Jupyter Notebook.
 This notebook creates output files which then can be used to generate the visualization used in the publication by compiling ```results.tex```.
+To perform the publication's sensitivity analysis, navigate to the ```example/paper``` directory and run the ```run_sensitivity_analysis.ipynb``` Jupyter Notebook.
+This notebook already creates the figures included in the paper.
