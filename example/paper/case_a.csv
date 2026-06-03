@@ -30,7 +30,7 @@ ess,capem_spec,69e-3,69e-3,69e-3
 ess,opex_spec,0,0,0
 ess,opem_spec,0,0,0
 ess,ls,12,12,12
-ess,capacity,50e3,50e3,250e3
+ess,capacity,50e3,50e3,500e3
 ess,soc_init,0.5,0.5,0.5
 ess,c_rate_max,0.5,0.5,0.5
 fleet,subblocks,"['hlt']",['hlt'],['hlt']
