@@ -394,20 +394,20 @@
     ] at (\figwidth/2, 0)
 
     \nextgroupplot[ymax=45]
-    \createlinebarplot{A_data_time.csv}{A_data_total.csv}
+    \createlinebarplot{out/A_data_time.csv}{out/A_data_total.csv}
     \node at (current axis.east) (node1) {};
     \nextgroupplot[ymax=13]
-    \createlinebarplot{B_data_time.csv}{B_data_total.csv}
+    \createlinebarplot{out/B_data_time.csv}{out/B_data_total.csv}
     \node at (current axis.east) (node2) {};
     \nextgroupplot[ymax=11]
-    \createlinebarplot{C_data_time.csv}{C_data_total.csv}
+    \createlinebarplot{out/C_data_time.csv}{out/C_data_total.csv}
     \node at (current axis.east) (node3) {};
 
     \end{groupplot}
 
-    \gridplots{node1}{A}{A_data_total.csv}
-    \gridplots{node2}{B}{B_data_total.csv}
-    \gridplots{node3}{C}{C_data_total.csv}
+    \gridplots{node1}{A}{out/A_data_total.csv}
+    \gridplots{node2}{B}{out/B_data_total.csv}
+    \gridplots{node3}{C}{out/C_data_total.csv}
 
 
 \end{tikzpicture}
