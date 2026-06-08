@@ -45,7 +45,7 @@ def display_footer():
     content_list = [
         # copyright
         (
-            "© 2025 "
+            "© 2026 "
             f"<a href='{get_label('footer.institute_url')}' "
             f"target='_blank' "  # open in new tab
             "rel='noopener noreferrer'"  # prevent security and privacy issues with new tab

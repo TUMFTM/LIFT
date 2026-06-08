@@ -68,7 +68,7 @@ pip install -e . --group dev
 ```
 Use the editable mode if you plan to modify the code during development.
 
-![LIFT's GUI](./docs/gui_v1-0-0_en.png "LIFT's GUI")
+![LIFT's GUI](./docs/gui_v1-1-0_en.png "LIFT's GUI")
 
 ## Basic Usage - GUI mode
 LIFT can be run using one of two terminal commands, given the correct virtual environment is activated:
